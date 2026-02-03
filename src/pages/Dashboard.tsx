@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { PortfolioSummary } from '@/components/dashboard/PortfolioSummary';
 import { InvestmentsTable } from '@/components/dashboard/InvestmentsTable';
 import { DistributionsTable } from '@/components/dashboard/DistributionsTable';
+import { AssetAllocationChart } from '@/components/dashboard/AssetAllocationChart';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Investment {
@@ -78,9 +79,12 @@ export default function Dashboard() {
             loading={loading}
           />
 
-          <InvestmentsTable investments={investments} loading={loading} />
+          <div className="grid gap-8 lg:grid-cols-2">
+            <AssetAllocationChart investments={investments} loading={loading} />
+            <DistributionsTable distributions={distributions} loading={loading} />
+          </div>
 
-          <DistributionsTable distributions={distributions} loading={loading} />
+          <InvestmentsTable investments={investments} loading={loading} />
         </div>
       </main>
     </div>
