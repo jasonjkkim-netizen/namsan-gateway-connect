@@ -45,7 +45,7 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
           <Link to="/dashboard" className="flex items-center gap-3">
-            <img src={logo} alt="Namsan Partners" className="h-10 w-auto" />
+            <img src={logo} alt="Namsan Partners" className="h-14 w-auto" />
           </Link>
           
           {user && (
