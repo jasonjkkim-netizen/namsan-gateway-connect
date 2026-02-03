@@ -99,6 +99,9 @@ const translations: Translations = {
   capital_gain: { en: 'Capital Gain', ko: '자본이득' },
   return_of_capital: { en: 'Return of Capital', ko: '원본반환' },
   
+  // Dashboard extras
+  assetAllocation: { en: 'Asset Allocation', ko: '자산 배분' },
+  
   // General
   loading: { en: 'Loading...', ko: '로딩 중...' },
   noData: { en: 'No data available', ko: '데이터가 없습니다' },

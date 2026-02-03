@@ -12,6 +12,7 @@ import Products from "./pages/Products";
 import Research from "./pages/Research";
 import Videos from "./pages/Videos";
 import MarketData from "./pages/MarketData";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,11 @@ const App = () => (
               <Route path="/market-data" element={
                 <ProtectedRoute>
                   <MarketData />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <Admin />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
