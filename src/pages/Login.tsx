@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -122,6 +123,17 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-secondary via-background to-secondary">
+      <div className="absolute top-4 left-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {language === 'ko' ? '홈으로' : 'Back to Home'}
+        </Button>
+      </div>
       <div className="absolute top-4 right-4">
         <LanguageToggle />
       </div>
