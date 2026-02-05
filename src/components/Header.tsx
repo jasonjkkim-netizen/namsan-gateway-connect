@@ -11,9 +11,11 @@ import {
   TrendingUp, 
   LogOut,
   Menu,
-  X
+  X,
+  Settings
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.jpg';
 
 export function Header() {
@@ -22,6 +24,27 @@ export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkAdminRole() {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      setIsAdmin(!!data);
+    }
+
+    checkAdminRole();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -35,6 +58,15 @@ export function Header() {
     { path: '/videos', label: t('videos'), icon: PlayCircle },
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
   ];
+
+  // Add admin link if user is admin
+  if (isAdmin) {
+    navItems.push({ 
+      path: '/admin', 
+      label: language === 'ko' ? '관리자' : 'Admin', 
+      icon: Settings 
+    });
+  }
 
   const displayName = language === 'ko' && profile?.full_name_ko 
     ? profile.full_name_ko 
