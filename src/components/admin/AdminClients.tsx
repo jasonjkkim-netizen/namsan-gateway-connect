@@ -30,6 +30,7 @@ interface Profile {
   full_name: string;
   full_name_ko: string | null;
   phone: string | null;
+  address: string | null;
   preferred_language: string | null;
   birthday: string | null;
   created_at: string;
@@ -47,6 +48,7 @@ export function AdminClients() {
     full_name: '',
     full_name_ko: '',
     phone: '',
+    address: '',
     preferred_language: 'en',
   });
 
@@ -74,6 +76,7 @@ export function AdminClients() {
       full_name: profile.full_name,
       full_name_ko: profile.full_name_ko || '',
       phone: profile.phone || '',
+      address: profile.address || '',
       preferred_language: profile.preferred_language || 'en',
     });
     setDialogOpen(true);
@@ -88,6 +91,7 @@ export function AdminClients() {
         full_name: formData.full_name,
         full_name_ko: formData.full_name_ko || null,
         phone: formData.phone || null,
+        address: formData.address || null,
         preferred_language: formData.preferred_language,
       })
       .eq('id', editingProfile.id);
@@ -133,6 +137,7 @@ export function AdminClients() {
               <TableHead>{language === 'ko' ? '이름 (영문)' : 'Name (EN)'}</TableHead>
               <TableHead>{language === 'ko' ? '이름 (한글)' : 'Name (KO)'}</TableHead>
               <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
+              <TableHead>{language === 'ko' ? '주소' : 'Address'}</TableHead>
               <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
               <TableHead>{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
               <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
@@ -142,7 +147,7 @@ export function AdminClients() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 8 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-5 w-24" />
                     </TableCell>
@@ -151,7 +156,7 @@ export function AdminClients() {
               ))
             ) : filteredProfiles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
                 </TableCell>
               </TableRow>
@@ -162,6 +167,7 @@ export function AdminClients() {
                   <TableCell>{profile.full_name}</TableCell>
                   <TableCell>{profile.full_name_ko || '-'}</TableCell>
                   <TableCell>{profile.phone || '-'}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{profile.address || '-'}</TableCell>
                   <TableCell>{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
                   <TableCell>{formatDate(profile.created_at)}</TableCell>
                   <TableCell>
@@ -207,6 +213,13 @@ export function AdminClients() {
               <Input
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '주소' : 'Address'}</Label>
+              <Input
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
