@@ -1,23 +1,28 @@
 
-# Enlarge Logo in Header
+
+# Remove Redundant Login Button from Home Page
 
 ## Summary
-Increase the Namsan Korea logo size in the header navigation bar that appears on the Dashboard and all other pages after login.
+Remove the "Client Login" button from the center of the About section on the home page, as users can already log in using the button in the header navigation.
 
-## Current State
-The logo in the header is currently set to `h-10` (40px height) which may appear small in the navigation bar.
+## Changes
 
-## Proposed Change
-Enlarge the logo from `h-10` to `h-12` (48px) or `h-14` (56px) for better visibility while maintaining proper header proportions.
+### File: `src/pages/Home.tsx`
 
----
+Remove lines 138-148 which contain:
+```tsx
+{/* Client Login Button */}
+<div className="mt-12">
+  <Link to="/login">
+    <Button 
+      size="lg"
+      className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 h-auto text-base font-medium"
+    >
+      {language === 'ko' ? '고객 로그인' : 'Client Login'}
+    </Button>
+  </Link>
+</div>
+```
 
-## Technical Details
+This is a simple deletion - the header already provides login access via both desktop and mobile navigation.
 
-**File to modify:** `src/components/Header.tsx`
-
-**Change:** Line 48
-- Current: `className="h-10 w-auto"`
-- New: `className="h-12 w-auto"` (or `h-14` for even larger)
-
-This is a single-line CSS class change that will make the logo 20-40% larger in the header while keeping it properly scaled with `w-auto`.
