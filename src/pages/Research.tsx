@@ -4,8 +4,9 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Download, Calendar } from 'lucide-react';
+import { FileText, Download, Calendar, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { SummaryDialog } from '@/components/research/SummaryDialog';
 
 interface Report {
   id: string;
@@ -23,6 +24,8 @@ export default function Research() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   useEffect(() => {
     async function fetchReports() {
@@ -147,18 +150,35 @@ export default function Research() {
                   </div>
                 </div>
 
-                <Button 
-                  variant="outline" 
-                  className="md:self-center"
-                  disabled={!report.pdf_url}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {t('downloadPdf')}
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 md:self-center">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedReport(report);
+                      setSummaryOpen(true);
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {language === 'ko' ? 'AI 분석' : 'AI Summary'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    disabled={!report.pdf_url}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {t('downloadPdf')}
+                  </Button>
+                </div>
               </div>
             ))
           )}
         </div>
+
+        <SummaryDialog 
+          report={selectedReport} 
+          open={summaryOpen} 
+          onOpenChange={setSummaryOpen} 
+        />
       </main>
     </div>
   );
