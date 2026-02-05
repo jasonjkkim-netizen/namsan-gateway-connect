@@ -78,7 +78,7 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-3">
             <img src={logo} alt="Namsan Partners" className="h-20 w-auto" />
           </Link>
           
