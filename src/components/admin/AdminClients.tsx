@@ -31,6 +31,7 @@ interface Profile {
   full_name_ko: string | null;
   phone: string | null;
   preferred_language: string | null;
+  birthday: string | null;
   created_at: string;
 }
 
@@ -132,6 +133,7 @@ export function AdminClients() {
               <TableHead>{language === 'ko' ? '이름 (영문)' : 'Name (EN)'}</TableHead>
               <TableHead>{language === 'ko' ? '이름 (한글)' : 'Name (KO)'}</TableHead>
               <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
+              <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
               <TableHead>{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
               <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
             </TableRow>
@@ -140,7 +142,7 @@ export function AdminClients() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 6 }).map((_, j) => (
+                  {Array.from({ length: 7 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-5 w-24" />
                     </TableCell>
@@ -149,7 +151,7 @@ export function AdminClients() {
               ))
             ) : filteredProfiles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
                 </TableCell>
               </TableRow>
@@ -160,6 +162,7 @@ export function AdminClients() {
                   <TableCell>{profile.full_name}</TableCell>
                   <TableCell>{profile.full_name_ko || '-'}</TableCell>
                   <TableCell>{profile.phone || '-'}</TableCell>
+                  <TableCell>{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
                   <TableCell>{formatDate(profile.created_at)}</TableCell>
                   <TableCell>
                     <Button
