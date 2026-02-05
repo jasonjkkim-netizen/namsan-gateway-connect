@@ -157,8 +157,13 @@ export function ChatWidget() {
                 </p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-              <X className="h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsOpen(false)}
+              className="hover:bg-destructive/10 hover:text-destructive"
+            >
+              <X className="h-5 w-5" />
             </Button>
           </div>
 
