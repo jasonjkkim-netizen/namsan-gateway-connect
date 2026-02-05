@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   X,
-  Settings
+  Settings,
+  Home
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +53,7 @@ export function Header() {
   };
 
   const navItems = [
+    { path: '/', label: language === 'ko' ? '홈' : 'Home', icon: Home },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText },
