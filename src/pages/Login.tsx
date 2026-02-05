@@ -6,7 +6,15 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.jpg';
 import { z } from 'zod';
 
@@ -17,13 +25,27 @@ const loginSchema = z.object({
 
 const signUpSchema = loginSchema.extend({
   fullName: z.string().min(1, 'Name is required').max(100),
+  phone: z.string().min(10, 'Phone number must be at least 10 digits').max(20),
+  birthYear: z.string().min(4, 'Year is required'),
+  birthMonth: z.string().min(1, 'Month is required'),
+  birthDay: z.string().min(1, 'Day is required'),
 });
+
+// Generate year options (1920 to current year)
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: currentYear - 1919 }, (_, i) => currentYear - i);
+const months = Array.from({ length: 12 }, (_, i) => i + 1);
+const days = Array.from({ length: 31 }, (_, i) => i + 1);
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthYear, setBirthYear] = useState('');
+  const [birthMonth, setBirthMonth] = useState('');
+  const [birthDay, setBirthDay] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const { t, language } = useLanguage();
@@ -35,18 +57,41 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        const validation = signUpSchema.safeParse({ email, password, fullName });
+        const validation = signUpSchema.safeParse({ 
+          email, 
+          password, 
+          fullName, 
+          phone,
+          birthYear,
+          birthMonth,
+          birthDay,
+        });
         if (!validation.success) {
           toast.error(validation.error.errors[0].message);
           setLoading(false);
           return;
         }
 
-        const { error } = await signUp(email, password, fullName);
+        // Create birthday date
+        const birthday = `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`;
+
+        const { error, data } = await signUp(email, password, fullName);
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success('Account created! Please check your email to verify your account.');
+          // Update profile with phone and birthday
+          if (data?.user) {
+            await supabase
+              .from('profiles')
+              .update({ 
+                phone,
+                birthday,
+              })
+              .eq('user_id', data.user.id);
+          }
+          toast.success(language === 'ko' 
+            ? '계정이 생성되었습니다! 이메일을 확인하여 계정을 인증해주세요.' 
+            : 'Account created! Please check your email to verify your account.');
           setIsSignUp(false);
         }
       } else {
@@ -102,22 +147,85 @@ export default function Login() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">{t('fullName')}</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Kim Minsoo"
-                    required
-                    className="h-11"
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">{t('fullName')} *</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Kim Minsoo"
+                      required
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">
+                      {language === 'ko' ? '연락처' : 'Phone Number'} *
+                    </Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+82 10 1234 5678"
+                      required
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>
+                      {language === 'ko' ? '생년월일' : 'Date of Birth'} *
+                    </Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Select value={birthYear} onValueChange={setBirthYear} required>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder={language === 'ko' ? '년' : 'Year'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {years.map((year) => (
+                            <SelectItem key={year} value={year.toString()}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={birthMonth} onValueChange={setBirthMonth} required>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder={language === 'ko' ? '월' : 'Month'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {months.map((month) => (
+                            <SelectItem key={month} value={month.toString()}>
+                              {month.toString().padStart(2, '0')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={birthDay} onValueChange={setBirthDay} required>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder={language === 'ko' ? '일' : 'Day'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {days.map((day) => (
+                            <SelectItem key={day} value={day.toString()}>
+                              {day.toString().padStart(2, '0')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">{t('email')}</Label>
+                <Label htmlFor="email">{t('email')} *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -130,7 +238,7 @@ export default function Login() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">{t('password')}</Label>
+                <Label htmlFor="password">{t('password')} *</Label>
                 <Input
                   id="password"
                   type="password"
