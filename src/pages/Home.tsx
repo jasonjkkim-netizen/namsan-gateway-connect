@@ -138,8 +138,8 @@ export default function Home() {
 
             <p className="text-lg italic text-foreground/80">
               {language === 'ko'
-                ? '비바람이나 맑은 날씨, 어둠과 빛, 그리고 시장의 모든 변화에도 굳건히 서 있는 견고한 요새.'
-                : 'A steadfast stronghold, withstanding rain or shine, dark or light, and every turn of the market.'}
+                ? '오랜 신뢰와 견고한 파트너십을 바탕으로, 지속적인 투자 성과를 함께 만들어 갑니다.'
+                : 'Built on enduring trust and lasting partnerships, we deliver consistent investment returns together.'}
             </p>
           </div>
 
