@@ -5,7 +5,13 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Product {
@@ -25,6 +31,14 @@ interface ProductAccess {
   product_id: string;
 }
 
+const PRODUCT_TYPES = [
+  { key: 'bond', icon: Landmark, labelEn: 'Bonds', labelKo: '채권' },
+  { key: 'equity', icon: LineChart, labelEn: 'Equity', labelKo: '주식' },
+  { key: 'fund', icon: Briefcase, labelEn: 'Funds', labelKo: '펀드' },
+  { key: 'real_estate', icon: Building2, labelEn: 'Real Estate', labelKo: '부동산' },
+  { key: 'alternative', icon: Layers, labelEn: 'Alternative', labelKo: '대체투자' },
+];
+
 export default function Products() {
   const { t, language, formatCurrency, formatPercent, formatDate } = useLanguage();
   const { user } = useAuth();
@@ -35,14 +49,12 @@ export default function Products() {
 
   useEffect(() => {
     async function fetchProducts() {
-      // Fetch all active products
       const { data: productsData } = await supabase
         .from('investment_products')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       
-      // Fetch client's product access
       const { data: accessData } = await supabase
         .from('client_product_access')
         .select('product_id');
@@ -53,7 +65,6 @@ export default function Products() {
         setAccessibleProductIds(accessData.map((a: ProductAccess) => a.product_id));
         setHasAccessControl(true);
       } else {
-        // If no access records, show all products (no filtering applied)
         setHasAccessControl(false);
       }
       
@@ -72,16 +83,13 @@ export default function Products() {
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'bond': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'equity': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'fund': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-      case 'real_estate': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
-      case 'alternative': return 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200';
-      default: return 'bg-muted text-muted-foreground';
-    }
+  const getProductsByType = (type: string) => {
+    return products.filter(p => p.type === type);
   };
+
+  const typesWithProducts = PRODUCT_TYPES.filter(
+    type => getProductsByType(type.key).length > 0
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,96 +103,126 @@ export default function Products() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {loading ? (
-            Array.from({ length: 4 }).map((_, i) => (
+        {loading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="card-elevated p-6">
-                <Skeleton className="h-6 w-3/4 mb-4" />
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-2/3 mb-6" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-6 w-1/4 mb-4" />
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <Skeleton className="h-48" />
+                  <Skeleton className="h-48" />
+                </div>
               </div>
-            ))
-          ) : products.length === 0 ? (
-            <div className="col-span-full text-center py-12 text-muted-foreground">
-              {t('noData')}
-            </div>
-          ) : (
-            products.map((product, index) => {
-              const hasAccess = !hasAccessControl || accessibleProductIds.includes(product.id);
+            ))}
+          </div>
+        ) : typesWithProducts.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {t('noData')}
+          </div>
+        ) : (
+          <Accordion 
+            type="multiple" 
+            defaultValue={typesWithProducts.map(t => t.key)}
+            className="space-y-4"
+          >
+            {typesWithProducts.map((typeInfo) => {
+              const TypeIcon = typeInfo.icon;
+              const typeProducts = getProductsByType(typeInfo.key);
               
               return (
-                <div 
-                  key={product.id} 
-                  className={`card-elevated p-6 flex flex-col animate-fade-in transition-all duration-300 ${
-                    hasAccess ? 'hover:shadow-lg' : 'opacity-60'
-                  }`}
-                  style={{ animationDelay: `${index * 100}ms` }}
+                <AccordionItem 
+                  key={typeInfo.key} 
+                  value={typeInfo.key}
+                  className="card-elevated border-none"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex gap-2">
-                      <Badge className={getTypeColor(product.type)}>
-                        {t(product.type)}
-                      </Badge>
-                      <Badge className={getStatusColor(product.status)}>
-                        {t(product.status)}
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                    <div className="flex items-center gap-3">
+                      <TypeIcon className="h-5 w-5 text-accent" />
+                      <span className="text-lg font-serif font-semibold">
+                        {language === 'ko' ? typeInfo.labelKo : typeInfo.labelEn}
+                      </span>
+                      <Badge variant="secondary" className="ml-2">
+                        {typeProducts.length}
                       </Badge>
                     </div>
-                    {!hasAccess && (
-                      <Lock className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-6">
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {typeProducts.map((product, index) => {
+                        const hasAccess = !hasAccessControl || accessibleProductIds.includes(product.id);
+                        
+                        return (
+                          <div 
+                            key={product.id} 
+                            className={`bg-muted/30 rounded-lg p-5 flex flex-col animate-fade-in transition-all duration-300 ${
+                              hasAccess ? 'hover:bg-muted/50' : 'opacity-60'
+                            }`}
+                            style={{ animationDelay: `${index * 50}ms` }}
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <Badge className={getStatusColor(product.status)}>
+                                {t(product.status)}
+                              </Badge>
+                              {!hasAccess && (
+                                <Lock className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
 
-                  <h3 className="text-lg font-serif font-semibold mb-2">
-                    {language === 'ko' ? product.name_ko : product.name_en}
-                  </h3>
-                  
-                  <p className="text-sm text-muted-foreground mb-6 flex-grow">
-                    {language === 'ko' ? product.description_ko : product.description_en}
-                  </p>
+                            <h3 className="text-base font-serif font-semibold mb-2">
+                              {language === 'ko' ? product.name_ko : product.name_en}
+                            </h3>
+                            
+                            <p className="text-sm text-muted-foreground mb-4 flex-grow line-clamp-2">
+                              {language === 'ko' ? product.description_ko : product.description_en}
+                            </p>
 
-                  <div className="space-y-3 mb-6">
-                    {product.target_return && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <TrendingUp className="h-4 w-4 text-accent" />
-                        <span className="text-muted-foreground">{t('targetReturn')}:</span>
-                        <span className="font-medium text-accent">{formatPercent(product.target_return)}</span>
-                      </div>
-                    )}
-                    
-                    {product.minimum_investment && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{t('minimumInvestment')}:</span>
-                        <span className="font-medium">{formatCurrency(product.minimum_investment)}</span>
-                      </div>
-                    )}
+                            <div className="space-y-2 mb-4 text-sm">
+                              {product.target_return && (
+                                <div className="flex items-center gap-2">
+                                  <TrendingUp className="h-3.5 w-3.5 text-accent" />
+                                  <span className="text-muted-foreground">{t('targetReturn')}:</span>
+                                  <span className="font-medium text-accent">{formatPercent(product.target_return)}</span>
+                                </div>
+                              )}
+                              
+                              {product.minimum_investment && (
+                                <div className="flex items-center gap-2">
+                                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span className="text-muted-foreground">{t('minimumInvestment')}:</span>
+                                  <span className="font-medium">{formatCurrency(product.minimum_investment)}</span>
+                                </div>
+                              )}
 
-                    {product.募集_deadline && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">{t('deadline')}:</span>
-                        <span className="font-medium">{formatDate(product.募集_deadline)}</span>
-                      </div>
-                    )}
-                  </div>
+                              {product.募集_deadline && (
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span className="text-muted-foreground">{t('deadline')}:</span>
+                                  <span className="font-medium">{formatDate(product.募集_deadline)}</span>
+                                </div>
+                              )}
+                            </div>
 
-                  {hasAccess ? (
-                    <Button className="w-full btn-gold group">
-                      {t('learnMore')}
-                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                  ) : (
-                    <Button className="w-full" variant="outline" disabled>
-                      <Lock className="mr-2 h-4 w-4" />
-                      {language === 'ko' ? '접근 제한' : 'Restricted'}
-                    </Button>
-                  )}
-                </div>
+                            {hasAccess ? (
+                              <Button size="sm" className="w-full btn-gold group">
+                                {t('learnMore')}
+                                <ArrowRight className="ml-2 h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+                              </Button>
+                            ) : (
+                              <Button size="sm" className="w-full" variant="outline" disabled>
+                                <Lock className="mr-2 h-3.5 w-3.5" />
+                                {language === 'ko' ? '접근 제한' : 'Restricted'}
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
               );
-            })
-          )}
-        </div>
+            })}
+          </Accordion>
+        )}
       </main>
     </div>
   );
