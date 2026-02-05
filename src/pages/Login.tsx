@@ -26,6 +26,7 @@ const loginSchema = z.object({
 const signUpSchema = loginSchema.extend({
   fullName: z.string().min(1, 'Name is required').max(100),
   phone: z.string().min(10, 'Phone number must be at least 10 digits').max(20),
+  address: z.string().min(5, 'Address must be at least 5 characters').max(500),
   birthYear: z.string().min(4, 'Year is required'),
   birthMonth: z.string().min(1, 'Month is required'),
   birthDay: z.string().min(1, 'Day is required'),
@@ -43,6 +44,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [birthYear, setBirthYear] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthDay, setBirthDay] = useState('');
@@ -62,6 +64,7 @@ export default function Login() {
           password, 
           fullName, 
           phone,
+          address,
           birthYear,
           birthMonth,
           birthDay,
@@ -79,12 +82,13 @@ export default function Login() {
         if (error) {
           toast.error(error.message);
         } else {
-          // Update profile with phone and birthday
+          // Update profile with phone, address, and birthday
           if (data?.user) {
             await supabase
               .from('profiles')
               .update({ 
                 phone,
+                address,
                 birthday,
               })
               .eq('user_id', data.user.id);
@@ -171,6 +175,21 @@ export default function Login() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+82 10 1234 5678"
+                      required
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="address">
+                      {language === 'ko' ? '주소' : 'Residential Address'} *
+                    </Label>
+                    <Input
+                      id="address"
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder={language === 'ko' ? '서울시 강남구...' : '123 Main Street...'}
                       required
                       className="h-11"
                     />
