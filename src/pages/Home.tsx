@@ -1,12 +1,20 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
+import { Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
 import heroImage from '@/assets/hero-mountain.jpg';
 
 export default function Home() {
   const { language } = useLanguage();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const navLinks = [
+    { href: '#about', label: language === 'ko' ? '회사소개' : 'About Us' },
+    { href: '#contact', label: language === 'ko' ? '연락처' : 'Contact' },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -19,22 +27,63 @@ export default function Home() {
               Namsan Korea
             </span>
           </div>
-          <nav className="flex items-center gap-6">
-            <a 
-              href="#about" 
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:inline"
-            >
-              {language === 'ko' ? '회사소개' : 'About Us'}
-            </a>
-            <a 
-              href="#contact" 
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden md:inline"
-            >
-              {language === 'ko' ? '연락처' : 'Contact'}
-            </a>
+          
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-6">
+            {navLinks.map((link) => (
+              <a 
+                key={link.href}
+                href={link.href} 
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+            <Link to="/login">
+              <Button variant="outline" size="sm">
+                {language === 'ko' ? '고객 로그인' : 'Client Login'}
+              </Button>
+            </Link>
             <LanguageToggle />
           </nav>
+
+          {/* Mobile Menu Button */}
+          <div className="flex items-center gap-3 md:hidden">
+            <LanguageToggle />
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 text-foreground hover:bg-muted rounded-md transition-colors"
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            >
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-border shadow-lg animate-fade-in">
+            <nav className="container py-4 flex flex-col gap-2">
+              {navLinks.map((link) => (
+                <a 
+                  key={link.href}
+                  href={link.href} 
+                  className="px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-md transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </a>
+              ))}
+              <Link 
+                to="/login" 
+                className="px-4 py-3 text-base font-medium text-accent hover:bg-muted rounded-md transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {language === 'ko' ? '고객 로그인' : 'Client Login'}
+              </Link>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Hero Section with Full-Height Background */}
