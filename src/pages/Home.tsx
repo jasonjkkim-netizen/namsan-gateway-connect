@@ -5,7 +5,6 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
-import heroImage from '@/assets/hero-mountain.jpg';
 
 export default function Home() {
   const { language } = useLanguage();
@@ -17,9 +16,9 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-secondary via-background to-secondary">
       {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-50 px-6 py-4 bg-white/90 backdrop-blur-sm">
+      <header className="absolute top-0 left-0 right-0 z-50 px-6 py-4">
         <div className="container flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Namsan Korea" className="h-12 w-auto" />
@@ -62,7 +61,7 @@ export default function Home() {
 
         {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-border shadow-lg animate-fade-in">
+          <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b border-border shadow-lg animate-fade-in">
             <nav className="container py-4 flex flex-col gap-2">
               {navLinks.map((link) => (
                 <a 
@@ -86,23 +85,19 @@ export default function Home() {
         )}
       </header>
 
-      {/* Hero Section with Full-Height Background */}
-      <section className="relative min-h-[70vh] flex items-center justify-center">
-        {/* Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-black/30" />
-        </div>
-        
-        {/* Hero Content */}
-        <div className="relative z-10 text-center text-white px-6 max-w-4xl mx-auto pt-20">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-medium leading-relaxed mb-6 drop-shadow-lg">
+      {/* Hero Section */}
+      <section className="flex-1 flex items-center justify-center pt-24 pb-16 px-6">
+        <div className="text-center max-w-3xl mx-auto">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-medium leading-relaxed mb-6 text-foreground">
             {language === 'ko' 
               ? '변화하는 시장 속에서도 흔들리지 않는 기반' 
               : 'An unshaken foundation, through every turn of the market'}
           </h1>
+          <p className="text-lg text-muted-foreground mb-8">
+            {language === 'ko'
+              ? '한국 대체투자 전문 외부자산운용사'
+              : 'Korea-Focused Alternative Investment Specialist'}
+          </p>
         </div>
       </section>
 
