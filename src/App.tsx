@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
 import Research from "./pages/Research";
 import Videos from "./pages/Videos";
 import MarketData from "./pages/MarketData";
@@ -37,6 +38,11 @@ const App = () => (
               <Route path="/products" element={
                 <ProtectedRoute>
                   <Products />
+                </ProtectedRoute>
+              } />
+              <Route path="/products/:id" element={
+                <ProtectedRoute>
+                  <ProductDetail />
                 </ProtectedRoute>
               } />
               <Route path="/research" element={
