@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
@@ -42,6 +43,7 @@ const PRODUCT_TYPES = [
 export default function Products() {
   const { t, language, formatCurrency, formatPercent, formatDate } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [accessibleProductIds, setAccessibleProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,7 +205,11 @@ export default function Products() {
                             </div>
 
                             {hasAccess ? (
-                              <Button size="sm" className="w-full btn-gold group">
+                              <Button 
+                                size="sm" 
+                                className="w-full btn-gold group"
+                                onClick={() => navigate(`/products/${product.id}`)}
+                              >
                                 {t('learnMore')}
                                 <ArrowRight className="ml-2 h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
                               </Button>
