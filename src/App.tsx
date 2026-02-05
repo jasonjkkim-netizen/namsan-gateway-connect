@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -15,7 +16,6 @@ import Videos from "./pages/Videos";
 import MarketData from "./pages/MarketData";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -61,6 +61,7 @@ const App = () => (
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <ChatWidget />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
