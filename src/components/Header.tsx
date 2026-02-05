@@ -89,12 +89,14 @@ export function Header() {
                   key={path}
                   to={path}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    location.pathname === path
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    path === '/'
+                      ? 'text-accent hover:text-accent/80 hover:bg-accent/10'
+                      : location.pathname === path
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className={`h-4 w-4 ${path === '/' ? 'text-accent' : ''}`} />
                   {label}
                 </Link>
               ))}
@@ -145,12 +147,14 @@ export function Header() {
                 to={path}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
-                  location.pathname === path
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  path === '/'
+                    ? 'text-accent border border-accent/20 bg-accent/5'
+                    : location.pathname === path
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className={`h-5 w-5 ${path === '/' ? 'text-accent' : ''}`} />
                 {label}
               </Link>
             ))}
