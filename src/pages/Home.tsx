@@ -110,8 +110,8 @@ export default function Home() {
           </h1>
           <p className="text-lg text-muted-foreground mb-8">
             {language === 'ko'
-              ? '한국 대체투자 전문 외부자산운용사'
-              : 'Korea-Focused Alternative Investment Specialist'}
+              ? '아시아 중심 패밀리 오피스 투자 전문가'
+              : 'Asia Focused Family Office Investment Specialist'}
           </p>
         </div>
       </section>
