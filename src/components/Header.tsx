@@ -54,11 +54,11 @@ export function Header() {
 
   const navItems = [
     { path: '/', label: language === 'ko' ? '홈' : 'Home', icon: Home },
+    { path: '/market-data', label: t('marketData'), icon: TrendingUp },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText },
     { path: '/videos', label: t('videos'), icon: PlayCircle },
-    { path: '/market-data', label: t('marketData'), icon: TrendingUp },
   ];
 
   // Add admin link if user is admin
