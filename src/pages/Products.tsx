@@ -12,7 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers, LayoutDashboard, FileText, PlayCircle } from 'lucide-react';
+import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers, LayoutDashboard, FileText, PlayCircle, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Product {
@@ -52,6 +52,7 @@ export default function Products() {
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+    { path: '/products', label: t('products'), icon: Package, active: true },
     { path: '/research', label: t('research'), icon: FileText },
     { path: '/videos', label: t('videos'), icon: PlayCircle },
   ];
@@ -121,9 +122,9 @@ export default function Products() {
             {sections.map((section) => (
               <Button
                 key={section.path}
-                variant="outline"
-                onClick={() => navigate(section.path)}
-                className="flex items-center gap-2"
+                variant={section.active ? "default" : "outline"}
+                onClick={() => !section.active && navigate(section.path)}
+                className={`flex items-center gap-2 ${section.active ? 'pointer-events-none' : ''}`}
               >
                 <section.icon className="h-4 w-4" />
                 {section.label}
