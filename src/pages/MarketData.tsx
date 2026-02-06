@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Package, FileText, PlayCircle } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp } from 'lucide-react';
 
 export default function MarketData() {
   const { t, language } = useLanguage();
@@ -16,6 +16,7 @@ export default function MarketData() {
   ];
 
   const sections = [
+    { path: '/market-data', label: t('marketData'), icon: TrendingUp, active: true },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText },
@@ -43,9 +44,9 @@ export default function MarketData() {
             {sections.map((section) => (
               <Button
                 key={section.path}
-                variant="outline"
-                onClick={() => navigate(section.path)}
-                className="flex items-center gap-2"
+                variant={section.active ? "default" : "outline"}
+                onClick={() => !section.active && navigate(section.path)}
+                className={`flex items-center gap-2 ${section.active ? 'pointer-events-none' : ''}`}
               >
                 <section.icon className="h-4 w-4" />
                 {section.label}
