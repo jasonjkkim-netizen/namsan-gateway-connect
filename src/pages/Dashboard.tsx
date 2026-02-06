@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
+import { Button } from '@/components/ui/button';
 import { PortfolioSummary } from '@/components/dashboard/PortfolioSummary';
 import { InvestmentsTable } from '@/components/dashboard/InvestmentsTable';
 import { DistributionsTable } from '@/components/dashboard/DistributionsTable';
 import { AssetAllocationChart } from '@/components/dashboard/AssetAllocationChart';
 import { supabase } from '@/integrations/supabase/client';
+import { TrendingUp, Package, FileText, PlayCircle } from 'lucide-react';
 
 interface Investment {
   id: string;
@@ -32,9 +35,17 @@ interface Distribution {
 export default function Dashboard() {
   const { t, language } = useLanguage();
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [distributions, setDistributions] = useState<Distribution[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const sections = [
+    { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+    { path: '/products', label: t('products'), icon: Package },
+    { path: '/research', label: t('research'), icon: FileText },
+    { path: '/videos', label: t('videos'), icon: PlayCircle },
+  ];
 
   useEffect(() => {
     async function fetchData() {
@@ -69,6 +80,26 @@ export default function Dashboard() {
             {t('welcomeBack')}, {displayName}
           </h1>
           <p className="mt-1 text-muted-foreground">{t('portfolioSummary')}</p>
+        </div>
+
+        {/* Section Navigation Buttons */}
+        <div className="mb-8 animate-fade-in" style={{ animationDelay: '50ms' }}>
+          <p className="text-sm text-muted-foreground mb-3">
+            {language === 'ko' ? '섹션으로 이동' : 'Navigate to section'}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {sections.map((section) => (
+              <Button
+                key={section.path}
+                variant="outline"
+                onClick={() => navigate(section.path)}
+                className="flex items-center gap-2"
+              >
+                <section.icon className="h-4 w-4" />
+                {section.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-8">

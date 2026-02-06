@@ -12,7 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers } from 'lucide-react';
+import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers, LayoutDashboard, FileText, PlayCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Product {
@@ -48,6 +48,13 @@ export default function Products() {
   const [accessibleProductIds, setAccessibleProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAccessControl, setHasAccessControl] = useState(false);
+
+  const sections = [
+    { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+    { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+    { path: '/research', label: t('research'), icon: FileText },
+    { path: '/videos', label: t('videos'), icon: PlayCircle },
+  ];
 
   useEffect(() => {
     async function fetchProducts() {
@@ -103,6 +110,26 @@ export default function Products() {
           <p className="mt-1 text-muted-foreground">
             {language === 'ko' ? '현재 모집 중인 투자 상품을 확인하세요' : 'Explore our currently available investment products'}
           </p>
+        </div>
+
+        {/* Section Navigation Buttons */}
+        <div className="mb-8 animate-fade-in" style={{ animationDelay: '50ms' }}>
+          <p className="text-sm text-muted-foreground mb-3">
+            {language === 'ko' ? '섹션으로 이동' : 'Navigate to section'}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {sections.map((section) => (
+              <Button
+                key={section.path}
+                variant="outline"
+                onClick={() => navigate(section.path)}
+                className="flex items-center gap-2"
+              >
+                <section.icon className="h-4 w-4" />
+                {section.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {loading ? (

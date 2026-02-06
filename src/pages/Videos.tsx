@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Play, ExternalLink } from 'lucide-react';
+import { Play, ExternalLink, TrendingUp, LayoutDashboard, Package, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Video {
@@ -34,10 +35,18 @@ function getYoutubeEmbedUrl(url: string): string {
 
 export default function Videos() {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+
+  const sections = [
+    { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+    { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+    { path: '/products', label: t('products'), icon: Package },
+    { path: '/research', label: t('research'), icon: FileText },
+  ];
 
   useEffect(() => {
     async function fetchVideos() {
@@ -93,6 +102,26 @@ export default function Videos() {
           <p className="mt-1 text-muted-foreground">
             {language === 'ko' ? '투자 교육 및 시장 인사이트 영상' : 'Investment education and market insights videos'}
           </p>
+        </div>
+
+        {/* Section Navigation Buttons */}
+        <div className="mb-8 animate-fade-in" style={{ animationDelay: '50ms' }}>
+          <p className="text-sm text-muted-foreground mb-3">
+            {language === 'ko' ? '섹션으로 이동' : 'Navigate to section'}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {sections.map((section) => (
+              <Button
+                key={section.path}
+                variant="outline"
+                onClick={() => navigate(section.path)}
+                className="flex items-center gap-2"
+              >
+                <section.icon className="h-4 w-4" />
+                {section.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Filter tabs */}
