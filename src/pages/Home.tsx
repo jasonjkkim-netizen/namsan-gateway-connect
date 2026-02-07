@@ -292,8 +292,8 @@ export default function Home() {
               </h3>
               <p className="text-foreground">
                 {language === 'ko' 
-                  ? '서울특별시 중구 남산동'
-                  : 'Namsan-dong, Jung-gu'}
+                  ? '서울특별시 강남구 역삼동 705-22'
+                  : '705-22 Yeoksam Dong, Gangnam Gu'}
                 <br />
                 {language === 'ko' ? '서울, 대한민국' : 'Seoul, South Korea'}
               </p>
