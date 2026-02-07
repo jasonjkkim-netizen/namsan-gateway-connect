@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Bot, Sparkles, X } from 'lucide-react';
+import { Bot, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,6 +10,8 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Report {
   id: string;
@@ -42,11 +44,17 @@ export function SummaryDialog({ report, open, onOpenChange }: SummaryDialogProps
     setSummary('');
 
     try {
+      // Get user session for JWT authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error(language === 'ko' ? '로그인이 필요합니다' : 'Authentication required');
+      }
+
       const resp = await fetch(SUMMARIZE_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           title: language === 'ko' ? report.title_ko : report.title_en,
@@ -58,6 +66,15 @@ export function SummaryDialog({ report, open, onOpenChange }: SummaryDialogProps
 
       if (!resp.ok) {
         const error = await resp.json().catch(() => ({ error: 'Request failed' }));
+        if (resp.status === 401) {
+          throw new Error(language === 'ko' ? '인증이 만료되었습니다. 다시 로그인해주세요.' : 'Session expired. Please log in again.');
+        }
+        if (resp.status === 429) {
+          throw new Error(language === 'ko' ? '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' : 'Too many requests. Please try again later.');
+        }
+        if (resp.status === 402) {
+          throw new Error(language === 'ko' ? '서비스 크레딧이 부족합니다.' : 'Service credits exhausted.');
+        }
         throw new Error(error.error || 'Failed to get summary');
       }
 
