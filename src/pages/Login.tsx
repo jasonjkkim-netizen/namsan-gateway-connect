@@ -105,6 +105,31 @@ export default function Login() {
                 birthday,
               })
               .eq('user_id', data.user.id);
+
+            // Send notification to admin about new signup
+            try {
+              await supabase.functions.invoke('notify-admin-signup', {
+                body: {
+                  userName: fullName,
+                  userEmail: email,
+                  userPhone: phone,
+                  userAddress: address,
+                  userBirthday: birthday,
+                  signupDate: new Date().toLocaleString('ko-KR', { 
+                    timeZone: 'Asia/Seoul',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                },
+              });
+              console.log('Admin notification sent successfully');
+            } catch (notifyError) {
+              console.error('Failed to send admin notification:', notifyError);
+              // Don't block signup if notification fails
+            }
           }
           toast.success(language === 'ko' 
             ? '계정이 생성되었습니다! 이메일을 확인하여 계정을 인증해주세요.' 
