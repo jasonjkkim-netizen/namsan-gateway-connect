@@ -43,11 +43,25 @@ export function ExcelUpload({ onDataParsed, expectedColumns, templateName }: Exc
 
     setParsing(true);
     try {
+      // File size limit: 10MB
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(language === 'ko' ? '파일이 너무 큽니다 (최대 10MB)' : 'File too large (max 10MB)');
+        setParsing(false);
+        return;
+      }
+
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
+
+      // Row count limit: 10,000 rows
+      if (jsonData.length > 10000) {
+        toast.error(language === 'ko' ? '너무 많은 행입니다 (최대 10,000행)' : 'Too many rows (max 10,000)');
+        setParsing(false);
+        return;
+      }
 
       if (jsonData.length === 0) {
         toast.error(language === 'ko' ? '파일에 데이터가 없습니다' : 'No data found in file');
