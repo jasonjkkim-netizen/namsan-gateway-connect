@@ -187,7 +187,7 @@ export default function Home() {
               <p className="text-lg">
                 {language === 'ko'
                   ? '남산코리아는 아시아 지역의 고액자산가 고객을 위한 자산관리(Wealth Management) 서비스를 제공하고 있습니다.'
-                  : 'Namsan Korea provides Wealth Management services for high-net-worth clients in the Asia region.'}
+                  : 'Namsan Korea provides Wealth Management Services for high-net-worth clients in the Asia region.'}
               </p>
               
               <p className="text-lg">
