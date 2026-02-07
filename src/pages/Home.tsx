@@ -322,11 +322,11 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 bg-secondary text-foreground">
+      <footer className="py-12 px-6 bg-primary text-primary-foreground">
         <div className="container max-w-4xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <img src={logo} alt="Namsan Korea" className="h-10 w-auto" />
+              <img src={logo} alt="Namsan Korea" className="h-10 w-auto brightness-0 invert" />
               <span className="font-semibold tracking-wide">NAMSAN KOREA</span>
             </div>
             <p className="text-sm opacity-80">
