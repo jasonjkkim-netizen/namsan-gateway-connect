@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Upload, FileSpreadsheet, X, CheckCircle } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface ExcelUploadProps {
   onDataParsed: (data: Record<string, any>[]) => void;
@@ -51,10 +51,48 @@ export function ExcelUpload({ onDataParsed, expectedColumns, templateName }: Exc
       }
 
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, any>[];
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
+        toast.error(language === 'ko' ? '워크시트를 찾을 수 없습니다' : 'No worksheet found');
+        setParsing(false);
+        return;
+      }
+
+      // Extract headers from first row
+      const headers: string[] = [];
+      const headerRow = worksheet.getRow(1);
+      headerRow.eachCell((cell, colNumber) => {
+        headers[colNumber - 1] = String(cell.value || '');
+      });
+
+      // Convert rows to JSON
+      const jsonData: Record<string, any>[] = [];
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) return; // Skip header row
+        
+        const rowData: Record<string, any> = {};
+        row.eachCell((cell, colNumber) => {
+          const header = headers[colNumber - 1];
+          if (header) {
+            // Handle different cell value types
+            let value = cell.value;
+            if (cell.value && typeof cell.value === 'object' && 'result' in cell.value) {
+              value = cell.value.result; // Formula result
+            } else if (cell.value && typeof cell.value === 'object' && 'text' in cell.value) {
+              value = cell.value.text; // Rich text
+            }
+            rowData[header] = value;
+          }
+        });
+        
+        // Only add non-empty rows
+        if (Object.keys(rowData).length > 0) {
+          jsonData.push(rowData);
+        }
+      });
 
       // Row count limit: 10,000 rows
       if (jsonData.length > 10000) {
@@ -70,9 +108,7 @@ export function ExcelUpload({ onDataParsed, expectedColumns, templateName }: Exc
       }
 
       // Check for expected columns
-      const firstRow = jsonData[0];
-      const fileColumns = Object.keys(firstRow);
-      const missingColumns = expectedColumns.filter(col => !fileColumns.includes(col));
+      const missingColumns = expectedColumns.filter(col => !headers.includes(col));
 
       if (missingColumns.length > 0) {
         toast.error(
@@ -99,13 +135,40 @@ export function ExcelUpload({ onDataParsed, expectedColumns, templateName }: Exc
     }
   };
 
-  const downloadTemplate = () => {
-    const worksheet = XLSX.utils.json_to_sheet([
-      expectedColumns.reduce((acc, col) => ({ ...acc, [col]: '' }), {}),
-    ]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
-    XLSX.writeFile(workbook, `${templateName || 'template'}.xlsx`);
+  const downloadTemplate = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Template');
+    
+    // Add header row
+    worksheet.addRow(expectedColumns);
+    
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+    });
+    
+    // Auto-fit columns
+    worksheet.columns.forEach((column, index) => {
+      column.width = Math.max(expectedColumns[index]?.length || 10, 15);
+    });
+
+    // Generate and download file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${templateName || 'template'}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const clearFile = () => {
