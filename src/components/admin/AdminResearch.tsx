@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { researchSchema, validateFormData } from '@/lib/admin-validation';
 import {
   Dialog,
   DialogContent,
@@ -111,15 +112,32 @@ export function AdminResearch() {
   };
 
   const handleSave = async () => {
-    const payload = {
+    // Validate form data
+    const validationResult = validateFormData(researchSchema, {
       title_en: formData.title_en,
       title_ko: formData.title_ko,
-      category: formData.category,
+      category: formData.category as 'market_update' | 'product_analysis' | 'economic_outlook',
       summary_en: formData.summary_en || null,
       summary_ko: formData.summary_ko || null,
       pdf_url: formData.pdf_url || null,
       publication_date: formData.publication_date,
       is_active: formData.is_active,
+    }, language);
+
+    if (!validationResult.success) {
+      toast.error(validationResult.error);
+      return;
+    }
+
+    const payload = {
+      title_en: validationResult.data.title_en!,
+      title_ko: validationResult.data.title_ko!,
+      category: validationResult.data.category!,
+      summary_en: validationResult.data.summary_en ?? null,
+      summary_ko: validationResult.data.summary_ko ?? null,
+      pdf_url: validationResult.data.pdf_url ?? null,
+      publication_date: validationResult.data.publication_date!,
+      is_active: validationResult.data.is_active!,
     };
 
     let error;

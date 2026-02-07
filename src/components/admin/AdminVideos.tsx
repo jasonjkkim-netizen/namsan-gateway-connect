@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { videoSchema, validateFormData } from '@/lib/admin-validation';
 import {
   Dialog,
   DialogContent,
@@ -111,15 +112,32 @@ export function AdminVideos() {
   };
 
   const handleSave = async () => {
-    const payload = {
+    // Validate form data
+    const validationResult = validateFormData(videoSchema, {
       title_en: formData.title_en,
       title_ko: formData.title_ko,
-      category: formData.category,
+      category: formData.category as 'market_commentary' | 'product_explanation' | 'educational',
       description_en: formData.description_en || null,
       description_ko: formData.description_ko || null,
       youtube_url: formData.youtube_url,
       thumbnail_url: formData.thumbnail_url || null,
       is_active: formData.is_active,
+    }, language);
+
+    if (!validationResult.success) {
+      toast.error(validationResult.error);
+      return;
+    }
+
+    const payload = {
+      title_en: validationResult.data.title_en!,
+      title_ko: validationResult.data.title_ko!,
+      category: validationResult.data.category!,
+      description_en: validationResult.data.description_en ?? null,
+      description_ko: validationResult.data.description_ko ?? null,
+      youtube_url: validationResult.data.youtube_url!,
+      thumbnail_url: validationResult.data.thumbnail_url ?? null,
+      is_active: validationResult.data.is_active!,
     };
 
     let error;
