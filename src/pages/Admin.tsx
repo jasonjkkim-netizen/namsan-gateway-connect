@@ -9,8 +9,9 @@ import { AdminInvestments } from '@/components/admin/AdminInvestments';
 import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminResearch } from '@/components/admin/AdminResearch';
 import { AdminVideos } from '@/components/admin/AdminVideos';
+import { AdminApprovals } from '@/components/admin/AdminApprovals';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, FileText, PlayCircle } from 'lucide-react';
+import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -57,6 +58,7 @@ export default function Admin() {
   }
 
   const tabs = [
+    { id: 'approvals', label: language === 'ko' ? '가입 승인' : 'Approvals', icon: UserCheck },
     { id: 'clients', label: language === 'ko' ? '고객 관리' : 'Clients', icon: Users },
     { id: 'investments', label: language === 'ko' ? '투자 관리' : 'Investments', icon: Briefcase },
     { id: 'products', label: language === 'ko' ? '상품 관리' : 'Products', icon: Package },
@@ -78,8 +80,8 @@ export default function Admin() {
           </p>
         </div>
 
-        <Tabs defaultValue="clients" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 h-auto">
+        <Tabs defaultValue="approvals" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6 h-auto">
             {tabs.map(({ id, label, icon: Icon }) => (
               <TabsTrigger
                 key={id}
@@ -91,6 +93,10 @@ export default function Admin() {
               </TabsTrigger>
             ))}
           </TabsList>
+
+          <TabsContent value="approvals">
+            <AdminApprovals />
+          </TabsContent>
 
           <TabsContent value="clients">
             <AdminClients />
