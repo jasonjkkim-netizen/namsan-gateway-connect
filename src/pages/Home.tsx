@@ -6,6 +6,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Menu, X, TrendingUp, Shield, Users, Globe } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
+import namsanTowerBg from '@/assets/namsan-tower-night.jpg';
 
 export default function Home() {
   const { language } = useLanguage();
@@ -133,19 +134,30 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <section className="flex-1 flex items-center justify-center pt-32 pb-24 px-6 min-h-[80vh] bg-gradient-to-b from-secondary/30 to-background">
-        <div className="text-center max-w-4xl mx-auto">
+      <section 
+        className="relative flex-1 flex items-center justify-center pt-32 pb-24 px-6 min-h-[80vh]"
+        style={{
+          backgroundImage: `url(${namsanTowerBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black/60" />
+        
+        <div className="relative z-10 text-center max-w-4xl mx-auto">
           <div className="mb-8">
             <span className="text-sm font-medium text-accent tracking-widest uppercase">
               {language === 'ko' ? '아시아 패밀리오피스 전문' : 'Asia Family Office Specialist'}
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium leading-tight mb-8 text-foreground">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-medium leading-tight mb-8 text-white">
             {language === 'ko' 
               ? '변화하는 시장 속에서도\n흔들리지 않는 기반' 
               : 'An Unshaken Foundation\nThrough Every Turn of the Market'}
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-200 mb-12 max-w-2xl mx-auto leading-relaxed">
             {language === 'ko'
               ? '장기적인 관점과 철저한 리스크 관리로\n고객의 자산 가치를 지켜갑니다'
               : 'Protecting your asset value through\nlong-term perspectives and thorough risk management'}
