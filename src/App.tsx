@@ -64,11 +64,7 @@ const App = () => (
                     <Videos />
                   </ProtectedRoute>
                 } />
-                <Route path="/market-data" element={
-                  <ProtectedRoute>
-                    <MarketData />
-                  </ProtectedRoute>
-                } />
+                <Route path="/market-data" element={<MarketData />} />
                 <Route path="/admin" element={
                   <ProtectedRoute>
                     <Admin />
