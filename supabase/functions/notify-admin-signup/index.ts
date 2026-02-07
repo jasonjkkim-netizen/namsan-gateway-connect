@@ -42,7 +42,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const emailResponse = await resend.emails.send({
-      from: "Namsan Korea <noreply@namsankorea.com>",
+      from: "Namsan Korea <onboarding@resend.dev>",
       to: [ADMIN_EMAIL],
       subject: `[Namsan Korea] 신규 가입 승인 요청 - ${userName}`,
       html: `
