@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -29,17 +31,32 @@ export function ChatWidget() {
   }, [messages]);
 
   const streamChat = useCallback(async (userMessages: Message[]) => {
+    // Get user session for JWT authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error(language === 'ko' ? '로그인이 필요합니다' : 'Authentication required');
+    }
+
     const resp = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({ messages: userMessages }),
     });
 
     if (!resp.ok) {
       const error = await resp.json().catch(() => ({ error: 'Request failed' }));
+      if (resp.status === 401) {
+        throw new Error(language === 'ko' ? '인증이 만료되었습니다. 다시 로그인해주세요.' : 'Session expired. Please log in again.');
+      }
+      if (resp.status === 429) {
+        throw new Error(language === 'ko' ? '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' : 'Too many requests. Please try again later.');
+      }
+      if (resp.status === 402) {
+        throw new Error(language === 'ko' ? '서비스 크레딧이 부족합니다.' : 'Service credits exhausted.');
+      }
       throw new Error(error.error || 'Failed to get response');
     }
 
@@ -89,7 +106,7 @@ export function ChatWidget() {
         }
       }
     }
-  }, []);
+  }, [language]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
