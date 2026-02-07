@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
-import { Menu, X, TrendingUp, Shield, Users, Globe, BarChart3 } from 'lucide-react';
+import { Menu, X, TrendingUp, Shield, Users, Globe } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
 import namsanTowerBg from '@/assets/namsan-tower-night.jpg';
 
@@ -30,7 +30,6 @@ export default function Home() {
     { href: '#about', label: language === 'ko' ? '회사소개' : 'About Us' },
     { href: '#philosophy', label: language === 'ko' ? '투자철학' : 'Philosophy' },
     { href: '#contact', label: language === 'ko' ? '연락처' : 'Contact' },
-    { href: '/market-data', label: language === 'ko' ? '시장 데이터' : 'Market Data', isRoute: true },
   ];
 
   const values = [
@@ -79,24 +78,13 @@ export default function Home() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              link.isRoute ? (
-                <Link 
-                  key={link.href}
-                  to={link.href}
-                  className="text-sm font-medium text-accent hover:text-accent/80 transition-colors tracking-wide flex items-center gap-1.5"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  {link.label}
-                </Link>
-              ) : (
-                <a 
-                  key={link.href}
-                  href={link.href} 
-                  className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors tracking-wide"
-                >
-                  {link.label}
-                </a>
-              )
+              <a 
+                key={link.href}
+                href={link.href} 
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors tracking-wide"
+              >
+                {link.label}
+              </a>
             ))}
             <Link to="/login">
               <Button variant="outline" size="sm" className="ml-4">
@@ -124,26 +112,14 @@ export default function Home() {
           <div className="md:hidden absolute top-full left-0 right-0 bg-background border-b border-border shadow-lg animate-fade-in">
             <nav className="container py-4 flex flex-col gap-2">
               {navLinks.map((link) => (
-                link.isRoute ? (
-                  <Link 
-                    key={link.href}
-                    to={link.href}
-                    className="px-4 py-3 text-base font-medium text-accent hover:bg-muted rounded-md transition-colors flex items-center gap-2"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <BarChart3 className="h-5 w-5" />
-                    {link.label}
-                  </Link>
-                ) : (
-                  <a 
-                    key={link.href}
-                    href={link.href} 
-                    className="px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-md transition-colors"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {link.label}
-                  </a>
-                )
+                <a 
+                  key={link.href}
+                  href={link.href} 
+                  className="px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-md transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </a>
               ))}
               <Link 
                 to="/login" 
