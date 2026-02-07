@@ -8,8 +8,7 @@ export default function MarketData() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
-  const widgets = [
-    { symbol: 'KRX:KOSPI', title: t('kospiIndex') },
+  const tradingViewWidgets = [
     { symbol: 'FX:USDKRW', title: t('usdKrw') },
     { symbol: 'TVC:US10Y', title: t('us10yTreasury') },
     { symbol: 'FOREXCOM:SPXUSD', title: t('sp500') },
@@ -56,11 +55,43 @@ export default function MarketData() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
-          {widgets.map((widget, index) => (
+          {/* KOSPI - Naver Finance */}
+          <div 
+            className="card-elevated overflow-hidden animate-fade-in"
+            style={{ animationDelay: '100ms' }}
+          >
+            <div className="p-4 border-b border-border">
+              <h3 className="font-serif font-semibold">{t('kospiIndex')}</h3>
+            </div>
+            <div className="h-[350px] w-full">
+              <iframe
+                src="https://ssl.pstatic.net/imgfinance/chart/mobile/world/day/KOSPI_search.png"
+                className="w-full h-full border-0 hidden"
+              />
+              <a 
+                href="https://finance.naver.com/sise/sise_index.naver?code=KOSPI" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block w-full h-full"
+              >
+                <img 
+                  src="https://ssl.pstatic.net/imgfinance/chart/sise/KOSPI_search.png" 
+                  alt="KOSPI Chart"
+                  className="w-full h-auto object-contain p-4"
+                />
+                <div className="text-center text-sm text-muted-foreground pb-4">
+                  {language === 'ko' ? '네이버 금융에서 자세히 보기 →' : 'View details on Naver Finance →'}
+                </div>
+              </a>
+            </div>
+          </div>
+
+          {/* TradingView Widgets */}
+          {tradingViewWidgets.map((widget, index) => (
             <div 
               key={widget.symbol} 
               className="card-elevated overflow-hidden animate-fade-in"
-              style={{ animationDelay: `${(index + 1) * 100}ms` }}
+              style={{ animationDelay: `${(index + 2) * 100}ms` }}
             >
               <div className="p-4 border-b border-border">
                 <h3 className="font-serif font-semibold">{widget.title}</h3>
