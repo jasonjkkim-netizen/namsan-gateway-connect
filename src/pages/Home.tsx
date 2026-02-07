@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Menu, X, TrendingUp, Shield, Users, Globe } from 'lucide-react';
-import { StatsSection } from '@/components/home/StatsSection';
 import logo from '@/assets/logo.jpg';
 
 export default function Home() {
@@ -211,9 +210,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Stats Section */}
-      <StatsSection />
 
       {/* Philosophy Section */}
       <section id="philosophy" className="py-24 md:py-32 px-6 bg-secondary/30">
