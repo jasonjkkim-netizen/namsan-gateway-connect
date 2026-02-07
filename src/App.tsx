@@ -17,6 +17,7 @@ import Research from "./pages/Research";
 import Videos from "./pages/Videos";
 import MarketData from "./pages/MarketData";
 import Admin from "./pages/Admin";
+import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,11 @@ const App = () => (
                   </ProtectedRoute>
                 } />
                 <Route path="/market-data" element={<MarketData />} />
+                <Route path="/pending-approval" element={
+                  <ProtectedRoute requireApproval={false}>
+                    <PendingApproval />
+                  </ProtectedRoute>
+                } />
                 <Route path="/admin" element={
                   <ProtectedRoute>
                     <Admin />

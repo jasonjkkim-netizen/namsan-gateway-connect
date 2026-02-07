@@ -197,6 +197,8 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          approved_at: string | null
+          approved_by: string | null
           birthday: string | null
           created_at: string
           email: string
@@ -204,6 +206,7 @@ export type Database = {
           full_name_ko: string | null
           id: string
           is_admin: boolean | null
+          is_approved: boolean | null
           phone: string | null
           preferred_language: string | null
           updated_at: string
@@ -211,6 +214,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           birthday?: string | null
           created_at?: string
           email: string
@@ -218,6 +223,7 @@ export type Database = {
           full_name_ko?: string | null
           id?: string
           is_admin?: boolean | null
+          is_approved?: boolean | null
           phone?: string | null
           preferred_language?: string | null
           updated_at?: string
@@ -225,6 +231,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           birthday?: string | null
           created_at?: string
           email?: string
@@ -232,6 +240,7 @@ export type Database = {
           full_name_ko?: string | null
           id?: string
           is_admin?: boolean | null
+          is_approved?: boolean | null
           phone?: string | null
           preferred_language?: string | null
           updated_at?: string

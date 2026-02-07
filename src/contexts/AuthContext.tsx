@@ -11,6 +11,9 @@ interface Profile {
   phone: string | null;
   preferred_language: string;
   is_admin: boolean;
+  is_approved: boolean;
+  approved_at: string | null;
+  approved_by: string | null;
   created_at: string;
   updated_at: string;
 }
