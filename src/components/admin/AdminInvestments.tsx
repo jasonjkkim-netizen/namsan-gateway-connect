@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ExcelUpload } from './ExcelUpload';
+import { investmentSchema, validateFormData, validateBulkImportRow } from '@/lib/admin-validation';
 import {
   Dialog,
   DialogContent,
@@ -121,16 +122,39 @@ export function AdminInvestments() {
   };
 
   const handleSave = async () => {
-    const payload = {
+    // Parse numeric values
+    const investmentAmount = parseFloat(formData.investment_amount);
+    const currentValue = parseFloat(formData.current_value);
+    const expectedReturn = formData.expected_return ? parseFloat(formData.expected_return) : null;
+
+    // Validate form data
+    const validationResult = validateFormData(investmentSchema, {
       user_id: formData.user_id,
       product_name_en: formData.product_name_en,
       product_name_ko: formData.product_name_ko,
-      investment_amount: parseFloat(formData.investment_amount),
-      current_value: parseFloat(formData.current_value),
+      investment_amount: isNaN(investmentAmount) ? -1 : investmentAmount,
+      current_value: isNaN(currentValue) ? -1 : currentValue,
       start_date: formData.start_date,
       maturity_date: formData.maturity_date || null,
-      expected_return: formData.expected_return ? parseFloat(formData.expected_return) : null,
-      status: formData.status,
+      expected_return: expectedReturn,
+      status: formData.status as 'active' | 'matured' | 'pending' | 'closed',
+    }, language);
+
+    if (!validationResult.success) {
+      toast.error(validationResult.error);
+      return;
+    }
+
+    const payload = {
+      user_id: validationResult.data.user_id!,
+      product_name_en: validationResult.data.product_name_en!,
+      product_name_ko: validationResult.data.product_name_ko!,
+      investment_amount: validationResult.data.investment_amount!,
+      current_value: validationResult.data.current_value!,
+      start_date: validationResult.data.start_date!,
+      maturity_date: validationResult.data.maturity_date ?? null,
+      expected_return: validationResult.data.expected_return ?? null,
+      status: validationResult.data.status!,
     };
 
     let error;
@@ -166,25 +190,62 @@ export function AdminInvestments() {
   const handleBulkImport = async () => {
     if (parsedData.length === 0) return;
 
-    const formattedData = parsedData.map((row) => ({
-      user_id: row.user_id,
-      product_name_en: row.product_name_en,
-      product_name_ko: row.product_name_ko,
-      investment_amount: parseFloat(row.investment_amount),
-      current_value: parseFloat(row.current_value),
-      start_date: row.start_date,
-      maturity_date: row.maturity_date || null,
-      expected_return: row.expected_return ? parseFloat(row.expected_return) : null,
-      status: row.status || 'active',
-    }));
+    // Validate all rows first
+    const validatedRows: {
+      user_id: string;
+      product_name_en: string;
+      product_name_ko: string;
+      investment_amount: number;
+      current_value: number;
+      start_date: string;
+      maturity_date: string | null;
+      expected_return: number | null;
+      status: string;
+    }[] = [];
 
-    const { error } = await supabase.from('client_investments').insert(formattedData);
+    for (let i = 0; i < parsedData.length; i++) {
+      const row = parsedData[i];
+      const investmentAmount = parseFloat(row.investment_amount);
+      const currentValue = parseFloat(row.current_value);
+      const expectedReturn = row.expected_return ? parseFloat(row.expected_return) : null;
+
+      const validation = validateBulkImportRow(investmentSchema, {
+        user_id: row.user_id,
+        product_name_en: row.product_name_en,
+        product_name_ko: row.product_name_ko,
+        investment_amount: isNaN(investmentAmount) ? -1 : investmentAmount,
+        current_value: isNaN(currentValue) ? -1 : currentValue,
+        start_date: row.start_date,
+        maturity_date: row.maturity_date || null,
+        expected_return: expectedReturn,
+        status: (row.status || 'active') as 'active' | 'matured' | 'pending' | 'closed',
+      }, i);
+
+      if (!validation.success) {
+        toast.error(validation.error);
+        return;
+      }
+      
+      validatedRows.push({
+        user_id: validation.data.user_id!,
+        product_name_en: validation.data.product_name_en!,
+        product_name_ko: validation.data.product_name_ko!,
+        investment_amount: validation.data.investment_amount!,
+        current_value: validation.data.current_value!,
+        start_date: validation.data.start_date!,
+        maturity_date: validation.data.maturity_date ?? null,
+        expected_return: validation.data.expected_return ?? null,
+        status: validation.data.status!,
+      });
+    }
+
+    const { error } = await supabase.from('client_investments').insert(validatedRows);
 
     if (error) {
       toast.error(language === 'ko' ? '일괄 업로드 실패' : 'Bulk import failed');
       console.error(error);
     } else {
-      toast.success(language === 'ko' ? `${formattedData.length}건 업로드 완료` : `${formattedData.length} records imported`);
+      toast.success(language === 'ko' ? `${validatedRows.length}건 업로드 완료` : `${validatedRows.length} records imported`);
       setUploadDialogOpen(false);
       setParsedData([]);
       fetchData();

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { clientProfileSchema, validateFormData } from '@/lib/admin-validation';
 import {
   Dialog,
   DialogContent,
@@ -85,14 +86,28 @@ export function AdminClients() {
   const handleSave = async () => {
     if (!editingProfile) return;
 
+    // Validate form data
+    const validationResult = validateFormData(clientProfileSchema, {
+      full_name: formData.full_name,
+      full_name_ko: formData.full_name_ko || null,
+      phone: formData.phone || null,
+      address: formData.address || null,
+      preferred_language: formData.preferred_language as 'en' | 'ko',
+    }, language);
+
+    if (!validationResult.success) {
+      toast.error(validationResult.error);
+      return;
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({
-        full_name: formData.full_name,
-        full_name_ko: formData.full_name_ko || null,
-        phone: formData.phone || null,
-        address: formData.address || null,
-        preferred_language: formData.preferred_language,
+        full_name: validationResult.data.full_name!,
+        full_name_ko: validationResult.data.full_name_ko ?? null,
+        phone: validationResult.data.phone ?? null,
+        address: validationResult.data.address ?? null,
+        preferred_language: validationResult.data.preferred_language!,
       })
       .eq('id', editingProfile.id);
 

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { productSchema, validateFormData } from '@/lib/admin-validation';
 import {
   Dialog,
   DialogContent,
@@ -119,17 +120,40 @@ export function AdminProducts() {
   };
 
   const handleSave = async () => {
-    const payload = {
+    // Parse numeric values
+    const targetReturn = formData.target_return ? parseFloat(formData.target_return) : null;
+    const minimumInvestment = formData.minimum_investment ? parseFloat(formData.minimum_investment) : null;
+
+    // Validate form data
+    const validationResult = validateFormData(productSchema, {
       name_en: formData.name_en,
       name_ko: formData.name_ko,
-      type: formData.type,
+      type: formData.type as 'bond' | 'equity' | 'fund' | 'real_estate' | 'alternative',
       description_en: formData.description_en || null,
       description_ko: formData.description_ko || null,
-      target_return: formData.target_return ? parseFloat(formData.target_return) : null,
-      minimum_investment: formData.minimum_investment ? parseFloat(formData.minimum_investment) : null,
+      target_return: targetReturn !== null && isNaN(targetReturn) ? -1 : targetReturn,
+      minimum_investment: minimumInvestment !== null && isNaN(minimumInvestment) ? -1 : minimumInvestment,
       募集_deadline: formData.募集_deadline || null,
-      status: formData.status,
+      status: formData.status as 'open' | 'closed' | 'coming_soon',
       is_active: formData.is_active,
+    }, language);
+
+    if (!validationResult.success) {
+      toast.error(validationResult.error);
+      return;
+    }
+
+    const payload = {
+      name_en: validationResult.data.name_en!,
+      name_ko: validationResult.data.name_ko!,
+      type: validationResult.data.type!,
+      description_en: validationResult.data.description_en ?? null,
+      description_ko: validationResult.data.description_ko ?? null,
+      target_return: validationResult.data.target_return ?? null,
+      minimum_investment: validationResult.data.minimum_investment ?? null,
+      募集_deadline: validationResult.data.募集_deadline ?? null,
+      status: validationResult.data.status!,
+      is_active: validationResult.data.is_active!,
     };
 
     let error;
