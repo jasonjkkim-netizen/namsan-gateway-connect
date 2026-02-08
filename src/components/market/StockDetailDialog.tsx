@@ -4,7 +4,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Calendar, DollarSign, ExternalLink } from 'lucide-react';
 
 interface StockPick {
   id: string;
@@ -132,6 +133,18 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
                 />
               </div>
             </div>
+          )}
+
+          {/* Naver Finance Link */}
+          {stock.stock_code && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${stock.stock_code}`, '_blank')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              {language === 'ko' ? '네이버 금융에서 보기' : 'View on Naver Finance'}
+            </Button>
           )}
 
           {/* Disclaimer */}
