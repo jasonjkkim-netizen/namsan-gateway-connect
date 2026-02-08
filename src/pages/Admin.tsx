@@ -10,8 +10,9 @@ import { AdminProducts } from '@/components/admin/AdminProducts';
 import { AdminResearch } from '@/components/admin/AdminResearch';
 import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminApprovals } from '@/components/admin/AdminApprovals';
+import { AdminMarketOverview } from '@/components/admin/AdminMarketOverview';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck } from 'lucide-react';
+import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -64,6 +65,7 @@ export default function Admin() {
     { id: 'products', label: language === 'ko' ? '상품 관리' : 'Products', icon: Package },
     { id: 'research', label: language === 'ko' ? '리서치 관리' : 'Research', icon: FileText },
     { id: 'videos', label: language === 'ko' ? '비디오 관리' : 'Videos', icon: PlayCircle },
+    { id: 'market', label: language === 'ko' ? '시장 개요' : 'Market', icon: TrendingUp },
   ];
 
   return (
@@ -81,7 +83,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="approvals" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 h-auto">
+          <TabsList className="grid w-full grid-cols-7 h-auto">
             {tabs.map(({ id, label, icon: Icon }) => (
               <TabsTrigger
                 key={id}
@@ -116,6 +118,10 @@ export default function Admin() {
 
           <TabsContent value="videos">
             <AdminVideos />
+          </TabsContent>
+
+          <TabsContent value="market">
+            <AdminMarketOverview />
           </TabsContent>
         </Tabs>
       </main>

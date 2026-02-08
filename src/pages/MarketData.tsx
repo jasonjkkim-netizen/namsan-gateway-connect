@@ -1,8 +1,89 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface MarketItem {
+  id: string;
+  symbol: string;
+  title_ko: string;
+  title_en: string;
+  display_order: number;
+}
+
+function MarketOverviewSection({ language }: { language: string }) {
+  const [items, setItems] = useState<MarketItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchItems() {
+      const { data } = await supabase
+        .from('market_overview_items')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (data) setItems(data);
+      setLoading(false);
+    }
+    fetchItems();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="mt-8 card-elevated overflow-hidden animate-fade-in" style={{ animationDelay: '500ms' }}>
+        <div className="p-4 border-b border-border">
+          <h3 className="font-serif font-semibold">
+            {language === 'ko' ? '한눈에 보는 시장' : 'Market at a Glance'}
+          </h3>
+        </div>
+        <div className="h-[200px] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mt-8 animate-fade-in" style={{ animationDelay: '500ms' }}>
+      <div className="mb-4">
+        <h3 className="font-serif font-semibold text-lg">
+          {language === 'ko' ? '한눈에 보는 시장' : 'Market at a Glance'}
+        </h3>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {items.map((item, index) => (
+          <div
+            key={item.id}
+            className="card-elevated overflow-hidden animate-fade-in"
+            style={{ animationDelay: `${(index + 1) * 100}ms` }}
+          >
+            <div className="p-3 border-b border-border">
+              <h4 className="font-serif font-semibold text-sm">
+                {language === 'ko' ? item.title_ko : item.title_en}
+              </h4>
+            </div>
+            <div className="h-[200px] w-full">
+              <iframe
+                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${item.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
+                className="w-full h-full border-0"
+                allowTransparency={true}
+                scrolling="no"
+                allow="encrypted-media"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 export default function MarketData() {
   const { t, language } = useLanguage();
@@ -138,23 +219,8 @@ export default function MarketData() {
           ))}
         </div>
 
-        {/* Full Market Overview Widget */}
-        <div className="mt-8 card-elevated overflow-hidden animate-fade-in" style={{ animationDelay: '500ms' }}>
-          <div className="p-4 border-b border-border">
-            <h3 className="font-serif font-semibold">
-              {language === 'ko' ? '시장 개요' : 'Market Overview'}
-            </h3>
-          </div>
-          <div className="h-[500px] w-full">
-            <iframe 
-              src={`https://s.tradingview.com/embed-widget/market-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&colorTheme=light&dateRange=12M&showChart=true&isTransparent=true&width=100%25&height=100%25&tabs=forex%2Cindices`}
-              className="w-full h-full border-0"
-              allowTransparency={true}
-              scrolling="no"
-              allow="encrypted-media"
-            />
-          </div>
-        </div>
+        {/* 한눈에 보는 시장 - Dynamic from DB */}
+        <MarketOverviewSection language={language} />
       </main>
     </div>
   );
