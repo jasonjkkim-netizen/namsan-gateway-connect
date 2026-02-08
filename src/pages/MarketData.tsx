@@ -152,11 +152,11 @@ function WeeklyStockPicksTable({ language }: { language: string }) {
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                 {language === 'ko' ? '추천 종목' : 'Stock'}
               </th>
-              <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">
-                {language === 'ko' ? '추천일' : 'Date'}
+              <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                {language === 'ko' ? '2/1 종가' : '2/1 Close'}
               </th>
               <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
-                {language === 'ko' ? '추천일 종가' : 'Rec. Price'}
+                {language === 'ko' ? '2/6 종가' : '2/6 Close'}
               </th>
               <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
                 {language === 'ko' ? '수익률' : 'Return'}
@@ -171,11 +171,11 @@ function WeeklyStockPicksTable({ language }: { language: string }) {
               return (
                 <tr key={stock.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium">{stock.stock_name}</td>
-                  <td className="px-4 py-3 text-center text-sm text-muted-foreground">
-                    {formatDate(stock.recommendation_date)}
-                  </td>
                   <td className="px-4 py-3 text-right">
                     {stock.closing_price_at_recommendation.toLocaleString()}원
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {stock.current_closing_price?.toLocaleString() || '-'}원
                   </td>
                   <td className={`px-4 py-3 text-right font-medium ${
                     returnValue !== null && returnValue > 0
