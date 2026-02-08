@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { useAuthLanguageSync } from "@/hooks/useAuthLanguageSync";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -21,6 +22,9 @@ import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// WhatsApp phone number for customer support
+const WHATSAPP_PHONE = "821012345678"; // Replace with actual phone number
 
 // Component to sync language with auth state
 function AuthLanguageSyncProvider({ children }: { children: React.ReactNode }) {
@@ -79,6 +83,10 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <ChatWidget />
+              <WhatsAppButton 
+                phoneNumber={WHATSAPP_PHONE} 
+                message="안녕하세요, 남산 코리아에 문의드립니다."
+              />
             </BrowserRouter>
           </TooltipProvider>
         </AuthLanguageSyncProvider>
