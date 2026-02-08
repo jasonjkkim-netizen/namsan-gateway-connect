@@ -11,9 +11,10 @@ import { AdminResearch } from '@/components/admin/AdminResearch';
 import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminApprovals } from '@/components/admin/AdminApprovals';
 import { AdminMarketOverview } from '@/components/admin/AdminMarketOverview';
+import { AdminMarketIndices } from '@/components/admin/AdminMarketIndices';
 import { AdminStockPicks } from '@/components/admin/AdminStockPicks';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star } from 'lucide-react';
+import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3 } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -67,6 +68,7 @@ export default function Admin() {
     { id: 'research', label: language === 'ko' ? '리서치 관리' : 'Research', icon: FileText },
     { id: 'videos', label: language === 'ko' ? '비디오 관리' : 'Videos', icon: PlayCircle },
     { id: 'stocks', label: language === 'ko' ? '관심 종목' : 'Stocks', icon: Star },
+    { id: 'indices', label: language === 'ko' ? '지수 관리' : 'Indices', icon: BarChart3 },
     { id: 'market', label: language === 'ko' ? '시장 개요' : 'Market', icon: TrendingUp },
   ];
 
@@ -85,7 +87,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="approvals" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 h-auto">
+          <TabsList className="grid w-full grid-cols-10 h-auto">
             {tabs.map(({ id, label, icon: Icon }) => (
               <TabsTrigger
                 key={id}
@@ -124,6 +126,10 @@ export default function Admin() {
 
           <TabsContent value="stocks">
             <AdminStockPicks />
+          </TabsContent>
+
+          <TabsContent value="indices">
+            <AdminMarketIndices />
           </TabsContent>
 
           <TabsContent value="market">
