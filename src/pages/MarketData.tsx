@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
@@ -9,6 +10,17 @@ import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable
 export default function MarketData() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  
+  // Cache-busting timestamp for Naver Finance images
+  const [cacheKey, setCacheKey] = useState(Date.now());
+  
+  // Refresh Naver images every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCacheKey(Date.now());
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
 
   const sections = [
@@ -72,7 +84,7 @@ export default function MarketData() {
                 className="block w-full h-full flex flex-col items-center justify-center"
               >
                 <img 
-                  src="https://ssl.pstatic.net/imgfinance/chart/sise/KOSPI_search.png" 
+                  src={`https://ssl.pstatic.net/imgfinance/chart/sise/KOSPI_search.png?t=${cacheKey}`} 
                   alt="KOSPI Chart"
                   className="w-full h-auto object-contain p-1 max-h-[110px]"
                 />
@@ -101,7 +113,7 @@ export default function MarketData() {
                 className="block w-full h-full flex flex-col items-center justify-center"
               >
                 <img 
-                  src="https://ssl.pstatic.net/imgfinance/chart/sise/KOSDAQ_search.png" 
+                  src={`https://ssl.pstatic.net/imgfinance/chart/sise/KOSDAQ_search.png?t=${cacheKey}`} 
                   alt="KOSDAQ Chart"
                   className="w-full h-auto object-contain p-1 max-h-[110px]"
                 />
