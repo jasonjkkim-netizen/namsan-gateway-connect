@@ -194,6 +194,39 @@ export type Database = {
         }
         Relationships: []
       }
+      market_overview_items: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          symbol: string
+          title_en: string
+          title_ko: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          symbol: string
+          title_en: string
+          title_ko: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          symbol?: string
+          title_en?: string
+          title_ko?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
