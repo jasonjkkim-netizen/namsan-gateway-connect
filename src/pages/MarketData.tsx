@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from 'next-themes';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,18 +11,6 @@ export default function MarketData() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const { resolvedTheme } = useTheme();
-  
-  // Cache-busting timestamp for Naver Finance images
-  const [cacheKey, setCacheKey] = useState(Date.now());
-  
-  // Refresh Naver images every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCacheKey(Date.now());
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp, active: true },
@@ -79,21 +66,13 @@ export default function MarketData() {
               <h3 className="font-serif font-semibold text-xs">{t('kospiIndex')}</h3>
             </div>
             <div className="h-[140px] w-full">
-              <a 
-                href="https://finance.naver.com/sise/sise_index.naver?code=KOSPI" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block w-full h-full flex flex-col items-center justify-center"
-              >
-                <img 
-                  src={`https://ssl.pstatic.net/imgfinance/chart/sise/KOSPI_search.png?t=${cacheKey}`} 
-                  alt="KOSPI Chart"
-                  className="w-full h-auto object-contain p-1 max-h-[110px]"
-                />
-                <div className="text-center text-xs text-muted-foreground pb-1">
-                  {language === 'ko' ? '네이버 금융 →' : 'Naver Finance →'}
-                </div>
-              </a>
+              <iframe
+                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=KRX:KOSPI&width=100%25&height=100%25&dateRange=12M&colorTheme=${resolvedTheme === 'dark' ? 'dark' : 'light'}&isTransparent=true&autosize=true&largeChartUrl=`}
+                className="w-full h-full border-0"
+                allowTransparency={true}
+                scrolling="no"
+                allow="encrypted-media"
+              />
             </div>
           </div>
 
@@ -108,21 +87,13 @@ export default function MarketData() {
               </h3>
             </div>
             <div className="h-[140px] w-full">
-              <a 
-                href="https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block w-full h-full flex flex-col items-center justify-center"
-              >
-                <img 
-                  src={`https://ssl.pstatic.net/imgfinance/chart/sise/KOSDAQ_search.png?t=${cacheKey}`} 
-                  alt="KOSDAQ Chart"
-                  className="w-full h-auto object-contain p-1 max-h-[110px]"
-                />
-                <div className="text-center text-xs text-muted-foreground pb-1">
-                  {language === 'ko' ? '네이버 금융 →' : 'Naver Finance →'}
-                </div>
-              </a>
+              <iframe
+                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=KRX:KOSDAQ&width=100%25&height=100%25&dateRange=12M&colorTheme=${resolvedTheme === 'dark' ? 'dark' : 'light'}&isTransparent=true&autosize=true&largeChartUrl=`}
+                className="w-full h-full border-0"
+                allowTransparency={true}
+                scrolling="no"
+                allow="encrypted-media"
+              />
             </div>
           </div>
 
