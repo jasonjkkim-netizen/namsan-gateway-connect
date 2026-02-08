@@ -6,6 +6,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Simple in-memory rate limiter
+const rateLimiter = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const userLimit = rateLimiter.get(userId);
+  
+  if (!userLimit || now > userLimit.resetAt) {
+    rateLimiter.set(userId, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  
+  if (userLimit.count >= maxRequests) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
+
+// Clean up old entries periodically to prevent memory bloat
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of rateLimiter.entries()) {
+    if (now > value.resetAt) {
+      rateLimiter.delete(key);
+    }
+  }
+}, 60000); // Clean every minute
+
 const SYSTEM_PROMPT = `You are a financial analyst assistant for Namsan Korea, a premier investment firm specializing in Korean markets and alternative investments.
 
 Your role is to provide comprehensive summaries of research reports. When summarizing:
@@ -47,6 +77,18 @@ serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Rate limiting: 10 requests per minute per user (more restrictive for summarization)
+    const userId = claimsData.claims.sub as string;
+    if (!checkRateLimit(userId, 10, 60000)) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait a moment before requesting more summaries." }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const { title, summary, category, language } = await req.json();
