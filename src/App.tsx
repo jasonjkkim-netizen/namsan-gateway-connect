@@ -23,8 +23,8 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// WhatsApp phone number for customer support
-const WHATSAPP_PHONE = "821012345678"; // Replace with actual phone number
+// WhatsApp phone number for customer support (Hong Kong)
+const WHATSAPP_PHONE = "85294448661";
 
 // Component to sync language with auth state
 function AuthLanguageSyncProvider({ children }: { children: React.ReactNode }) {
