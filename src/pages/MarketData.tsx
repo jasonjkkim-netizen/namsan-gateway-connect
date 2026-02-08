@@ -54,37 +54,66 @@ export default function MarketData() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* KOSPI - Naver Finance */}
+        {/* KOSPI & KOSDAQ - Naver Finance (smaller) */}
+        <div className="grid gap-4 md:grid-cols-2 mb-6">
+          {/* KOSPI */}
           <div 
             className="card-elevated overflow-hidden animate-fade-in"
             style={{ animationDelay: '100ms' }}
           >
-            <div className="p-4 border-b border-border">
-              <h3 className="font-serif font-semibold">{t('kospiIndex')}</h3>
+            <div className="p-3 border-b border-border">
+              <h3 className="font-serif font-semibold text-sm">{t('kospiIndex')}</h3>
             </div>
-            <div className="h-[350px] w-full">
-              <iframe
-                src="https://ssl.pstatic.net/imgfinance/chart/mobile/world/day/KOSPI_search.png"
-                className="w-full h-full border-0 hidden"
-              />
+            <div className="h-[180px] w-full">
               <a 
                 href="https://finance.naver.com/sise/sise_index.naver?code=KOSPI" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="block w-full h-full"
+                className="block w-full h-full flex flex-col items-center justify-center"
               >
                 <img 
                   src="https://ssl.pstatic.net/imgfinance/chart/sise/KOSPI_search.png" 
                   alt="KOSPI Chart"
-                  className="w-full h-auto object-contain p-4"
+                  className="w-full h-auto object-contain p-2 max-h-[140px]"
                 />
-                <div className="text-center text-sm text-muted-foreground pb-4">
-                  {language === 'ko' ? '네이버 금융에서 자세히 보기 →' : 'View details on Naver Finance →'}
+                <div className="text-center text-xs text-muted-foreground pb-2">
+                  {language === 'ko' ? '네이버 금융 →' : 'Naver Finance →'}
                 </div>
               </a>
             </div>
           </div>
+
+          {/* KOSDAQ */}
+          <div 
+            className="card-elevated overflow-hidden animate-fade-in"
+            style={{ animationDelay: '150ms' }}
+          >
+            <div className="p-3 border-b border-border">
+              <h3 className="font-serif font-semibold text-sm">
+                {language === 'ko' ? '코스닥 지수' : 'KOSDAQ Index'}
+              </h3>
+            </div>
+            <div className="h-[180px] w-full">
+              <a 
+                href="https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block w-full h-full flex flex-col items-center justify-center"
+              >
+                <img 
+                  src="https://ssl.pstatic.net/imgfinance/chart/sise/KOSDAQ_search.png" 
+                  alt="KOSDAQ Chart"
+                  className="w-full h-auto object-contain p-2 max-h-[140px]"
+                />
+                <div className="text-center text-xs text-muted-foreground pb-2">
+                  {language === 'ko' ? '네이버 금융 →' : 'Naver Finance →'}
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
 
           {/* TradingView Widgets */}
           {tradingViewWidgets.map((widget, index) => (
