@@ -84,19 +84,19 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
               <span className="h-1 w-1 rounded-full bg-accent" />
               {language === 'ko' ? category.ko : category.en}
             </h4>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {categoryItems.map((item, index) => (
                 <div
                   key={item.id}
                   className="card-elevated overflow-hidden animate-fade-in"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="p-3 border-b border-border">
-                    <h5 className="font-serif font-medium text-sm">
+                  <div className="p-2 border-b border-border">
+                    <h5 className="font-serif font-medium text-xs truncate">
                       {language === 'ko' ? item.title_ko : item.title_en}
                     </h5>
                   </div>
-                  <div className="h-[180px] w-full">
+                  <div className="h-[140px] w-full">
                     <iframe
                       src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${item.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
                       className="w-full h-full border-0"
