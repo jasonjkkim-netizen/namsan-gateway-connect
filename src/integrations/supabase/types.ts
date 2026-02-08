@@ -194,6 +194,54 @@ export type Database = {
         }
         Relationships: []
       }
+      market_indices: {
+        Row: {
+          change_percent: number | null
+          change_value: number | null
+          color_class: string | null
+          created_at: string
+          current_value: number
+          display_order: number | null
+          external_link: string | null
+          id: string
+          is_active: boolean | null
+          name_en: string
+          name_ko: string
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          change_percent?: number | null
+          change_value?: number | null
+          color_class?: string | null
+          created_at?: string
+          current_value: number
+          display_order?: number | null
+          external_link?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_en: string
+          name_ko: string
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          change_percent?: number | null
+          change_value?: number | null
+          color_class?: string | null
+          created_at?: string
+          current_value?: number
+          display_order?: number | null
+          external_link?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_en?: string
+          name_ko?: string
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       market_overview_items: {
         Row: {
           created_at: string

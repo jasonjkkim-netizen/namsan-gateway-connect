@@ -1,53 +1,45 @@
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, ExternalLink } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
+import { supabase } from '@/integrations/supabase/client';
 
-const indexData = [
-  {
-    id: 'kospi',
-    nameKo: 'KOSPI 지수',
-    nameEn: 'KOSPI Index',
-    symbol: 'KOSPI',
-    link: 'https://finance.naver.com/sise/sise_index.naver?code=KOSPI',
-    investingLink: 'https://www.investing.com/indices/kospi',
-    color: 'from-blue-500 to-blue-600',
-  },
-  {
-    id: 'kosdaq',
-    nameKo: '코스닥 지수',
-    nameEn: 'KOSDAQ Index',
-    symbol: 'KOSDAQ',
-    link: 'https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ',
-    investingLink: 'https://www.investing.com/indices/kosdaq',
-    color: 'from-emerald-500 to-emerald-600',
-  },
-  {
-    id: 'nasdaq',
-    nameKo: '나스닥 100',
-    nameEn: 'NASDAQ 100',
-    symbol: 'NDX',
-    link: 'https://www.investing.com/indices/nq-100',
-    investingLink: 'https://www.investing.com/indices/nq-100',
-    color: 'from-purple-500 to-purple-600',
-  },
-  {
-    id: 'sp500',
-    nameKo: 'S&P 500',
-    nameEn: 'S&P 500',
-    symbol: 'SPX',
-    link: 'https://www.investing.com/indices/us-spx-500',
-    investingLink: 'https://www.investing.com/indices/us-spx-500',
-    color: 'from-orange-500 to-orange-600',
-  },
-];
+interface MarketIndex {
+  id: string;
+  symbol: string;
+  name_ko: string;
+  name_en: string;
+  current_value: number;
+  change_value: number;
+  change_percent: number;
+  external_link: string | null;
+  color_class: string | null;
+  display_order: number;
+  updated_at: string;
+}
 
 export default function MarketData() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+
+  const { data: indices, isLoading } = useQuery({
+    queryKey: ['market-indices'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('market_indices')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      
+      if (error) throw error;
+      return data as MarketIndex[];
+    },
+  });
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp, active: true },
@@ -56,6 +48,19 @@ export default function MarketData() {
     { path: '/research', label: t('research'), icon: FileText },
     { path: '/videos', label: t('videos'), icon: PlayCircle },
   ];
+
+  const formatNumber = (value: number, symbol: string) => {
+    // Korean indices use no decimals, US indices use 2 decimals
+    if (symbol === 'KOSPI' || symbol === 'KOSDAQ') {
+      return value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const formatChange = (value: number) => {
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${value.toFixed(2)}`;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,33 +99,68 @@ export default function MarketData() {
 
         {/* Main Index Cards - 4 in a row */}
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
-          {indexData.map((index, i) => (
-            <a
-              key={index.id}
-              href={index.investingLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="card-elevated overflow-hidden animate-fade-in group hover:shadow-lg transition-all duration-300"
-              style={{ animationDelay: `${100 + i * 50}ms` }}
-            >
-              <div className={`h-2 bg-gradient-to-r ${index.color}`} />
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-serif font-semibold text-sm">
-                    {language === 'ko' ? index.nameKo : index.nameEn}
-                  </h3>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="card-elevated overflow-hidden">
+                <Skeleton className="h-2 w-full" />
+                <div className="p-4 space-y-3">
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-8 w-32" />
+                  <Skeleton className="h-4 w-20" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-mono">{index.symbol}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3">
-                  {language === 'ko' ? 'Investing.com에서 실시간 시세 확인 →' : 'View live quotes on Investing.com →'}
-                </p>
               </div>
-            </a>
-          ))}
+            ))
+          ) : (
+            indices?.map((index, i) => {
+              const isPositive = index.change_value >= 0;
+              const TrendIcon = isPositive ? TrendingUp : TrendingDown;
+              
+              return (
+                <a
+                  key={index.id}
+                  href={index.external_link || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="card-elevated overflow-hidden animate-fade-in group hover:shadow-lg transition-all duration-300"
+                  style={{ animationDelay: `${100 + i * 50}ms` }}
+                >
+                  <div className={`h-2 bg-gradient-to-r ${index.color_class || 'from-blue-500 to-blue-600'}`} />
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-serif font-semibold text-sm truncate">
+                        {language === 'ko' ? index.name_ko : index.name_en}
+                      </h3>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                    </div>
+                    
+                    {/* Current Value */}
+                    <div className="text-2xl font-bold text-foreground mb-2">
+                      {formatNumber(index.current_value, index.symbol)}
+                    </div>
+                    
+                    {/* Change Value and Percent */}
+                    <div className={`flex items-center gap-2 ${isPositive ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
+                      <TrendIcon className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        {formatChange(index.change_value)} ({formatChange(index.change_percent)}%)
+                      </span>
+                    </div>
+                    
+                    {/* Updated time */}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {language === 'ko' ? '업데이트: ' : 'Updated: '}
+                      {new Date(index.updated_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                </a>
+              );
+            })
+          )}
         </div>
 
         {/* 한눈에 보는 시장 - Dynamic from DB */}
