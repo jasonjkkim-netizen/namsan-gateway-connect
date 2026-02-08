@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface MarketItem {
   id: string;
@@ -26,6 +26,7 @@ interface MarketOverviewSectionProps {
 export function MarketOverviewSection({ language }: MarketOverviewSectionProps) {
   const [items, setItems] = useState<MarketItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     async function fetchItems() {
@@ -44,6 +45,8 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
   const getItemsByCategory = (orders: number[]) => {
     return items.filter(item => orders.includes(item.display_order));
   };
+
+  const colorTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
 
   if (loading) {
     return (
@@ -98,7 +101,7 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
                   </div>
                   <div className="h-[140px] w-full">
                     <iframe
-                      src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${item.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
+                      src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${item.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=${colorTheme}&isTransparent=true&autosize=true&largeChartUrl=`}
                       className="w-full h-full border-0"
                       allowTransparency={true}
                       scrolling="no"

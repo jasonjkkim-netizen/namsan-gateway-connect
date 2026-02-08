@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable
 export default function MarketData() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  const { resolvedTheme } = useTheme();
   
   // Cache-busting timestamp for Naver Finance images
   const [cacheKey, setCacheKey] = useState(Date.now());
@@ -136,7 +138,7 @@ export default function MarketData() {
             </div>
             <div className="h-[140px] w-full">
               <iframe
-                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=NASDAQ:NDX&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
+                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=NASDAQ:NDX&width=100%25&height=100%25&dateRange=12M&colorTheme=${resolvedTheme === 'dark' ? 'dark' : 'light'}&isTransparent=true&autosize=true&largeChartUrl=`}
                 className="w-full h-full border-0"
                 allowTransparency={true}
                 scrolling="no"
@@ -155,7 +157,7 @@ export default function MarketData() {
             </div>
             <div className="h-[140px] w-full">
               <iframe
-                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=FOREXCOM:SPXUSD&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
+                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=FOREXCOM:SPXUSD&width=100%25&height=100%25&dateRange=12M&colorTheme=${resolvedTheme === 'dark' ? 'dark' : 'light'}&isTransparent=true&autosize=true&largeChartUrl=`}
                 className="w-full h-full border-0"
                 allowTransparency={true}
                 scrolling="no"
