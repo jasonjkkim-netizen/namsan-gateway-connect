@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 
@@ -16,6 +18,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export function ChatWidget() {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -29,11 +32,17 @@ export function ChatWidget() {
   }, [messages]);
 
   const streamChat = useCallback(async (userMessages: Message[]) => {
+    // Get current session for authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error(language === 'ko' ? '로그인이 필요합니다.' : 'Authentication required.');
+    }
+
     const resp = await fetch(CHAT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({ messages: userMessages }),
     });
@@ -103,6 +112,20 @@ export function ChatWidget() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    // Check if user is authenticated
+    if (!user) {
+      setMessages(prev => [
+        ...prev,
+        { 
+          role: 'assistant', 
+          content: language === 'ko' 
+            ? '채팅 서비스를 이용하시려면 로그인이 필요합니다.' 
+            : 'Please log in to use the chat service.' 
+        }
+      ]);
+      return;
+    }
+
     const userMessage: Message = { role: 'user', content: input.trim() };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
@@ -117,9 +140,9 @@ export function ChatWidget() {
         ...prev,
         { 
           role: 'assistant', 
-          content: language === 'ko' 
+          content: error instanceof Error ? error.message : (language === 'ko' 
             ? '죄송합니다. 오류가 발생했습니다. 다시 시도해 주세요.' 
-            : 'Sorry, an error occurred. Please try again.' 
+            : 'Sorry, an error occurred. Please try again.')
         }
       ]);
     } finally {
@@ -133,6 +156,11 @@ export function ChatWidget() {
       handleSend();
     }
   };
+
+  // Only show chat widget for authenticated users
+  if (!user) {
+    return null;
+  }
 
   return (
     <>
