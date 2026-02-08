@@ -113,7 +113,7 @@ export default function MarketData() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
 
           {/* TradingView Widgets */}
           {tradingViewWidgets.map((widget, index) => (
@@ -122,10 +122,10 @@ export default function MarketData() {
               className="card-elevated overflow-hidden animate-fade-in"
               style={{ animationDelay: `${(index + 2) * 100}ms` }}
             >
-              <div className="p-4 border-b border-border">
-                <h3 className="font-serif font-semibold">{widget.title}</h3>
+              <div className="p-3 border-b border-border">
+                <h3 className="font-serif font-semibold text-sm">{widget.title}</h3>
               </div>
-              <div className="h-[350px] w-full">
+              <div className="h-[200px] w-full">
                 <iframe
                   src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${widget.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
                   className="w-full h-full border-0"
