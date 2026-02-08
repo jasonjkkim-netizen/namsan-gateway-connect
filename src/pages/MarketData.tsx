@@ -153,7 +153,7 @@ function WeeklyStockPicksTable({ language }: { language: string }) {
                 {language === 'ko' ? '추천 종목' : 'Stock'}
               </th>
               <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
-                {language === 'ko' ? '2/1 종가' : '2/1 Close'}
+                {language === 'ko' ? '1/30 종가' : '1/30 Close'}
               </th>
               <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
                 {language === 'ko' ? '2/6 종가' : '2/6 Close'}
