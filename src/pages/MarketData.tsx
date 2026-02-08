@@ -140,25 +140,25 @@ function WeeklyStockPicksTable({ language }: { language: string }) {
 
   return (
     <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
-      <div className="p-4 border-b border-border">
-        <h3 className="font-serif font-semibold">
+      <div className="p-3 border-b border-border">
+        <h3 className="font-serif font-medium text-sm">
           {language === 'ko' ? '금주 관심 종목' : 'Weekly Stock Picks'}
         </h3>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full text-xs">
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                 {language === 'ko' ? '추천 종목' : 'Stock'}
               </th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
                 {language === 'ko' ? '1/30 종가' : '1/30 Close'}
               </th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
                 {language === 'ko' ? '2/6 종가' : '2/6 Close'}
               </th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
                 {language === 'ko' ? '수익률' : 'Return'}
               </th>
             </tr>
@@ -170,14 +170,14 @@ function WeeklyStockPicksTable({ language }: { language: string }) {
                 : null;
               return (
                 <tr key={stock.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-medium">{stock.stock_name}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 py-2 font-medium">{stock.stock_name}</td>
+                  <td className="px-3 py-2 text-right">
                     {stock.closing_price_at_recommendation.toLocaleString()}원
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 py-2 text-right">
                     {stock.current_closing_price?.toLocaleString() || '-'}원
                   </td>
-                  <td className={`px-4 py-3 text-right font-medium ${
+                  <td className={`px-3 py-2 text-right font-medium ${
                     returnValue !== null && returnValue > 0
                       ? 'text-green-600'
                       : returnValue !== null && returnValue < 0
