@@ -14,10 +14,10 @@ export default function Home() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Redirect logged-in users to dashboard
+  // Redirect logged-in users to market data
   useEffect(() => {
     if (!loading && user) {
-      navigate('/dashboard', { replace: true });
+      navigate('/market-data', { replace: true });
     }
   }, [user, loading, navigate]);
 

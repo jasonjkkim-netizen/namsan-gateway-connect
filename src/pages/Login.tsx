@@ -54,10 +54,10 @@ export default function Login() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
-  // Redirect already logged-in users to dashboard
+  // Redirect already logged-in users to market data
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/dashboard', { replace: true });
+      navigate('/market-data', { replace: true });
     }
   }, [user, authLoading, navigate]);
 
@@ -148,7 +148,7 @@ export default function Login() {
         if (error) {
           toast.error(error.message);
         } else {
-          navigate('/dashboard');
+          navigate('/market-data');
         }
       }
     } catch (err) {
