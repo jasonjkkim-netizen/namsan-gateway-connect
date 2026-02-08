@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
 import { supabase } from '@/integrations/supabase/client';
+import { ExternalLink } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface MarketItem {
   id: string;
@@ -19,6 +27,35 @@ const MARKET_CATEGORIES = {
   futures: { ko: '선물', en: 'Futures', order: [40, 41] },
 };
 
+// External source links by symbol prefix
+const getExternalLinks = (symbol: string) => {
+  const tradingViewUrl = `https://www.tradingview.com/symbols/${symbol.replace(':', '-')}/`;
+  const investingUrl = getInvestingUrl(symbol);
+  
+  return { tradingViewUrl, investingUrl };
+};
+
+const getInvestingUrl = (symbol: string) => {
+  // Map common symbols to Investing.com URLs
+  const investingMappings: Record<string, string> = {
+    'KRX:KOSPI': 'https://www.investing.com/indices/kospi',
+    'KRX:KOSDAQ': 'https://www.investing.com/indices/kosdaq',
+    'NASDAQ:NDX': 'https://www.investing.com/indices/nq-100',
+    'FOREXCOM:SPXUSD': 'https://www.investing.com/indices/us-spx-500',
+    'FX_IDC:USDKRW': 'https://www.investing.com/currencies/usd-krw',
+    'FX_IDC:EURKRW': 'https://www.investing.com/currencies/eur-krw',
+    'FX_IDC:JPYKRW': 'https://www.investing.com/currencies/jpy-krw',
+    'TVC:US10Y': 'https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield',
+    'TVC:KR10Y': 'https://www.investing.com/rates-bonds/south-korea-10-year-bond-yield',
+    'TVC:GOLD': 'https://www.investing.com/commodities/gold',
+    'TVC:SILVER': 'https://www.investing.com/commodities/silver',
+    'NYMEX:CL1!': 'https://www.investing.com/commodities/crude-oil',
+    'COMEX:GC1!': 'https://www.investing.com/commodities/gold',
+  };
+  
+  return investingMappings[symbol] || `https://www.investing.com/search/?q=${encodeURIComponent(symbol)}`;
+};
+
 interface MarketOverviewSectionProps {
   language: string;
 }
@@ -26,7 +63,6 @@ interface MarketOverviewSectionProps {
 export function MarketOverviewSection({ language }: MarketOverviewSectionProps) {
   const [items, setItems] = useState<MarketItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     async function fetchItems() {
@@ -45,8 +81,6 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
   const getItemsByCategory = (orders: number[]) => {
     return items.filter(item => orders.includes(item.display_order));
   };
-
-  const colorTheme = resolvedTheme === 'dark' ? 'dark' : 'light';
 
   if (loading) {
     return (
@@ -72,48 +106,82 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
           {language === 'ko' ? '한눈에 보는 시장' : 'Market at a Glance'}
         </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          {language === 'ko' ? '주요 자산군별 실시간 시세' : 'Real-time prices by asset class'}
+          {language === 'ko' ? '주요 자산군별 시장 현황 (외부 링크)' : 'Market overview by asset class (external links)'}
         </p>
       </div>
 
-      {/* Category Sections with TradingView Mini Chart Widgets */}
-      {Object.entries(MARKET_CATEGORIES).map(([key, category]) => {
-        const categoryItems = getItemsByCategory(category.order);
-        if (categoryItems.length === 0) return null;
-        
-        return (
-          <div key={key} className="mb-8">
-            <h4 className="font-serif font-medium text-base mb-4 flex items-center gap-2">
-              <span className="h-1 w-1 rounded-full bg-accent" />
-              {language === 'ko' ? category.ko : category.en}
-            </h4>
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {categoryItems.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="card-elevated overflow-hidden animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="p-2 border-b border-border">
-                    <h5 className="font-serif font-medium text-xs truncate">
-                      {language === 'ko' ? item.title_ko : item.title_en}
-                    </h5>
-                  </div>
-                  <div className="h-[140px] w-full">
-                    <iframe
-                      src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${item.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=${colorTheme}&isTransparent=true&autosize=true&largeChartUrl=`}
-                      className="w-full h-full border-0"
-                      allowTransparency={true}
-                      scrolling="no"
-                      allow="encrypted-media"
-                    />
-                  </div>
-                </div>
-              ))}
+      {/* Category Tables */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {Object.entries(MARKET_CATEGORIES).map(([key, category]) => {
+          const categoryItems = getItemsByCategory(category.order);
+          if (categoryItems.length === 0) return null;
+          
+          return (
+            <div key={key} className="card-elevated overflow-hidden">
+              <div className="p-3 border-b border-border bg-muted/30">
+                <h4 className="font-serif font-medium text-sm flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  {language === 'ko' ? category.ko : category.en}
+                </h4>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs h-9">
+                      {language === 'ko' ? '종목' : 'Item'}
+                    </TableHead>
+                    <TableHead className="text-xs h-9 text-right">
+                      {language === 'ko' ? '외부 소스' : 'Sources'}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categoryItems.map((item) => {
+                    const links = getExternalLinks(item.symbol);
+                    return (
+                      <TableRow key={item.id} className="hover:bg-muted/50">
+                        <TableCell className="py-2 font-medium text-sm">
+                          {language === 'ko' ? item.title_ko : item.title_en}
+                        </TableCell>
+                        <TableCell className="py-2 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <a
+                              href={links.tradingViewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              TradingView
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                            <span className="text-muted-foreground">|</span>
+                            <a
+                              href={links.investingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                            >
+                              Investing.com
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+
+      {/* Disclaimer */}
+      <p className="text-xs text-muted-foreground text-center mt-4">
+        {language === 'ko' 
+          ? '* 실시간 시세는 외부 소스에서 확인하세요. 데이터는 지연될 수 있습니다.'
+          : '* Check external sources for real-time quotes. Data may be delayed.'}
+      </p>
     </div>
   );
 }
