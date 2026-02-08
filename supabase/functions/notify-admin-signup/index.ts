@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -27,6 +28,42 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Validate authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing authorization header" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Create Supabase client and verify the user
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims) {
+      console.error("Authentication failed:", claimsError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid authentication" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const authenticatedUserId = claimsData.claims.sub;
+    const authenticatedEmail = claimsData.claims.email;
+
     const { 
       userName, 
       userEmail, 
@@ -39,6 +76,19 @@ const handler = async (req: Request): Promise<Response> => {
     // Validate required fields
     if (!userName || !userEmail) {
       throw new Error("Missing required fields: userName and userEmail");
+    }
+
+    // Security check: Verify the authenticated user matches the signup email
+    // This prevents users from triggering notifications for other users
+    if (authenticatedEmail && userEmail.toLowerCase() !== authenticatedEmail.toLowerCase()) {
+      console.warn(`Email mismatch: authenticated=${authenticatedEmail}, requested=${userEmail}`);
+      return new Response(
+        JSON.stringify({ success: false, error: "Email mismatch - unauthorized" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     const emailResponse = await resend.emails.send({
