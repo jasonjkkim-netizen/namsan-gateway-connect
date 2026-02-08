@@ -84,6 +84,117 @@ function MarketOverviewSection({ language }: { language: string }) {
   );
 }
 
+interface StockPick {
+  id: string;
+  stock_name: string;
+  recommendation_date: string;
+  closing_price_at_recommendation: number;
+  current_closing_price: number | null;
+}
+
+function WeeklyStockPicksTable({ language }: { language: string }) {
+  const [stocks, setStocks] = useState<StockPick[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStocks() {
+      const { data } = await supabase
+        .from('weekly_stock_picks')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (data) setStocks(data);
+      setLoading(false);
+    }
+    fetchStocks();
+  }, []);
+
+  function calculateReturn(recommendedPrice: number, currentPrice: number | null): string {
+    if (!currentPrice) return '-';
+    const returnPct = ((currentPrice - recommendedPrice) / recommendedPrice) * 100;
+    return `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%`;
+  }
+
+  function formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  }
+
+  if (loading) {
+    return (
+      <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
+        <div className="p-4 border-b border-border">
+          <h3 className="font-serif font-semibold">
+            {language === 'ko' ? '금주 관심 종목' : 'Weekly Stock Picks'}
+          </h3>
+        </div>
+        <div className="h-[100px] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (stocks.length === 0) return null;
+
+  return (
+    <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
+      <div className="p-4 border-b border-border">
+        <h3 className="font-serif font-semibold">
+          {language === 'ko' ? '금주 관심 종목' : 'Weekly Stock Picks'}
+        </h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-muted/50">
+            <tr>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                {language === 'ko' ? '추천 종목' : 'Stock'}
+              </th>
+              <th className="px-4 py-3 text-center text-sm font-medium text-muted-foreground">
+                {language === 'ko' ? '추천일' : 'Date'}
+              </th>
+              <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                {language === 'ko' ? '추천일 종가' : 'Rec. Price'}
+              </th>
+              <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                {language === 'ko' ? '수익률' : 'Return'}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {stocks.map((stock) => {
+              const returnValue = stock.current_closing_price 
+                ? ((stock.current_closing_price - stock.closing_price_at_recommendation) / stock.closing_price_at_recommendation) * 100
+                : null;
+              return (
+                <tr key={stock.id} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-3 font-medium">{stock.stock_name}</td>
+                  <td className="px-4 py-3 text-center text-sm text-muted-foreground">
+                    {formatDate(stock.recommendation_date)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {stock.closing_price_at_recommendation.toLocaleString()}원
+                  </td>
+                  <td className={`px-4 py-3 text-right font-medium ${
+                    returnValue !== null && returnValue > 0
+                      ? 'text-green-600'
+                      : returnValue !== null && returnValue < 0
+                        ? 'text-red-600'
+                        : ''
+                  }`}>
+                    {calculateReturn(stock.closing_price_at_recommendation, stock.current_closing_price)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 export default function MarketData() {
   const { t, language } = useLanguage();
@@ -134,6 +245,9 @@ export default function MarketData() {
             ))}
           </div>
         </div>
+
+        {/* Weekly Stock Picks Table */}
+        <WeeklyStockPicksTable language={language} />
 
         {/* KOSPI & KOSDAQ - Naver Finance (smaller) */}
         <div className="grid gap-4 md:grid-cols-2 mb-6">
