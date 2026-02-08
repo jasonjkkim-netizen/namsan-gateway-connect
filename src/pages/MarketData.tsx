@@ -10,7 +10,7 @@ export default function MarketData() {
 
   const tradingViewWidgets = [
     { symbol: 'FX:USDKRW', title: t('usdKrw') },
-    { symbol: 'TVC:US10Y', title: t('us10yTreasury') },
+    { symbol: 'NASDAQ:NDX', title: language === 'ko' ? '나스닥 100' : 'NASDAQ 100' },
     { symbol: 'FOREXCOM:SPXUSD', title: t('sp500') },
   ];
 
