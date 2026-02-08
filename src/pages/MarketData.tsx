@@ -14,6 +14,15 @@ interface MarketItem {
   display_order: number;
 }
 
+// Category definitions for market items
+const MARKET_CATEGORIES = {
+  indices: { ko: '주요 지수', en: 'Major Indices', order: [1, 2, 3] },
+  currencies: { ko: '주요 환율', en: 'Major Currencies', order: [10, 11, 12] },
+  bonds: { ko: '채권', en: 'Bonds', order: [20, 21] },
+  commodities: { ko: '원자재', en: 'Commodities', order: [30, 31, 32, 33] },
+  futures: { ko: '선물', en: 'Futures', order: [40, 41] },
+};
+
 function MarketOverviewSection({ language }: { language: string }) {
   const [items, setItems] = useState<MarketItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +40,10 @@ function MarketOverviewSection({ language }: { language: string }) {
     }
     fetchItems();
   }, []);
+
+  const getItemsByCategory = (orders: number[]) => {
+    return items.filter(item => orders.includes(item.display_order));
+  };
 
   if (loading) {
     return (
@@ -51,35 +64,93 @@ function MarketOverviewSection({ language }: { language: string }) {
 
   return (
     <div className="mt-8 animate-fade-in" style={{ animationDelay: '500ms' }}>
-      <div className="mb-4">
+      <div className="mb-6">
         <h3 className="font-serif font-semibold text-lg">
           {language === 'ko' ? '한눈에 보는 시장' : 'Market at a Glance'}
         </h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          {language === 'ko' ? '주요 자산군별 실시간 시세' : 'Real-time prices by asset class'}
+        </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        {items.map((item, index) => (
-          <div
-            key={item.id}
-            className="card-elevated overflow-hidden animate-fade-in"
-            style={{ animationDelay: `${(index + 1) * 100}ms` }}
-          >
-            <div className="p-3 border-b border-border">
-              <h4 className="font-serif font-semibold text-sm">
-                {language === 'ko' ? item.title_ko : item.title_en}
-              </h4>
-            </div>
-            <div className="h-[200px] w-full">
-              <iframe
-                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${item.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
-                className="w-full h-full border-0"
-                allowTransparency={true}
-                scrolling="no"
-                allow="encrypted-media"
-              />
+
+      {/* Market Summary Table */}
+      <div className="card-elevated overflow-hidden mb-6">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                  {language === 'ko' ? '카테고리' : 'Category'}
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">
+                  {language === 'ko' ? '항목' : 'Items'}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {Object.entries(MARKET_CATEGORIES).map(([key, category]) => {
+                const categoryItems = getItemsByCategory(category.order);
+                if (categoryItems.length === 0) return null;
+                return (
+                  <tr key={key} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3 font-medium whitespace-nowrap">
+                      {language === 'ko' ? category.ko : category.en}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-2">
+                        {categoryItems.map(item => (
+                          <span key={item.id} className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-xs">
+                            {language === 'ko' ? item.title_ko : item.title_en}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Category Sections with TradingView Widgets */}
+      {Object.entries(MARKET_CATEGORIES).map(([key, category]) => {
+        const categoryItems = getItemsByCategory(category.order);
+        if (categoryItems.length === 0) return null;
+        
+        return (
+          <div key={key} className="mb-8">
+            <h4 className="font-serif font-medium text-base mb-4 flex items-center gap-2">
+              <span className="h-1 w-1 rounded-full bg-accent" />
+              {language === 'ko' ? category.ko : category.en}
+            </h4>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {categoryItems.map((item, index) => (
+                <div
+                  key={item.id}
+                  className="card-elevated overflow-hidden animate-fade-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <div className="p-3 border-b border-border">
+                    <h5 className="font-serif font-medium text-sm">
+                      {language === 'ko' ? item.title_ko : item.title_en}
+                    </h5>
+                  </div>
+                  <div className="h-[180px] w-full">
+                    <iframe
+                      src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${item.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
+                      className="w-full h-full border-0"
+                      allowTransparency={true}
+                      scrolling="no"
+                      allow="encrypted-media"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -114,11 +185,6 @@ function WeeklyStockPicksTable({ language }: { language: string }) {
     if (!currentPrice) return '-';
     const returnPct = ((currentPrice - recommendedPrice) / recommendedPrice) * 100;
     return `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%`;
-  }
-
-  function formatDate(dateStr: string): string {
-    const date = new Date(dateStr);
-    return `${date.getMonth() + 1}/${date.getDate()}`;
   }
 
   if (loading) {
@@ -309,7 +375,6 @@ export default function MarketData() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-
           {/* TradingView Widgets */}
           {tradingViewWidgets.map((widget, index) => (
             <div 
