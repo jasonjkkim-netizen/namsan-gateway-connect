@@ -380,6 +380,45 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_stock_picks: {
+        Row: {
+          closing_price_at_recommendation: number
+          created_at: string
+          current_closing_price: number | null
+          display_order: number
+          id: string
+          is_active: boolean
+          recommendation_date: string
+          stock_code: string | null
+          stock_name: string
+          updated_at: string
+        }
+        Insert: {
+          closing_price_at_recommendation: number
+          created_at?: string
+          current_closing_price?: number | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          recommendation_date: string
+          stock_code?: string | null
+          stock_name: string
+          updated_at?: string
+        }
+        Update: {
+          closing_price_at_recommendation?: number
+          created_at?: string
+          current_closing_price?: number | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          recommendation_date?: string
+          stock_code?: string | null
+          stock_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
