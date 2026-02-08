@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { StockDetailDialog } from './StockDetailDialog';
 
 interface StockPick {
   id: string;
   stock_name: string;
+  stock_code: string | null;
   recommendation_date: string;
   closing_price_at_recommendation: number;
   current_closing_price: number | null;
@@ -16,6 +18,8 @@ interface WeeklyStockPicksTableProps {
 export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) {
   const [stocks, setStocks] = useState<StockPick[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedStock, setSelectedStock] = useState<StockPick | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     async function fetchStocks() {
@@ -37,6 +41,11 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
     return `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%`;
   }
 
+  const handleStockClick = (stock: StockPick) => {
+    setSelectedStock(stock);
+    setDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
@@ -55,59 +64,72 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
   if (stocks.length === 0) return null;
 
   return (
-    <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
-      <div className="p-3 border-b border-border">
-        <h3 className="font-serif font-medium text-sm">
-          {language === 'ko' ? '금주 관심 종목' : 'Weekly Stock Picks'}
-        </h3>
+    <>
+      <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
+        <div className="p-3 border-b border-border">
+          <h3 className="font-serif font-medium text-sm">
+            {language === 'ko' ? '금주 관심 종목' : 'Weekly Stock Picks'}
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                  {language === 'ko' ? '추천 종목' : 'Stock'}
+                </th>
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+                  {language === 'ko' ? '1/30 종가' : '1/30 Close'}
+                </th>
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+                  {language === 'ko' ? '2/6 종가' : '2/6 Close'}
+                </th>
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+                  {language === 'ko' ? '수익률' : 'Return'}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {stocks.map((stock) => {
+                const returnValue = stock.current_closing_price 
+                  ? ((stock.current_closing_price - stock.closing_price_at_recommendation) / stock.closing_price_at_recommendation) * 100
+                  : null;
+                return (
+                  <tr 
+                    key={stock.id} 
+                    className="hover:bg-muted/30 transition-colors cursor-pointer"
+                    onClick={() => handleStockClick(stock)}
+                  >
+                    <td className="px-3 py-2 font-medium">{stock.stock_name}</td>
+                    <td className="px-3 py-2 text-right">
+                      {stock.closing_price_at_recommendation.toLocaleString()}원
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {stock.current_closing_price?.toLocaleString() || '-'}원
+                    </td>
+                    <td className={`px-3 py-2 text-right font-medium ${
+                      returnValue !== null && returnValue > 0
+                        ? 'text-green-600'
+                        : returnValue !== null && returnValue < 0
+                          ? 'text-red-600'
+                          : ''
+                    }`}>
+                      {calculateReturn(stock.closing_price_at_recommendation, stock.current_closing_price)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground">
-                {language === 'ko' ? '추천 종목' : 'Stock'}
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
-                {language === 'ko' ? '1/30 종가' : '1/30 Close'}
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
-                {language === 'ko' ? '2/6 종가' : '2/6 Close'}
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
-                {language === 'ko' ? '수익률' : 'Return'}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {stocks.map((stock) => {
-              const returnValue = stock.current_closing_price 
-                ? ((stock.current_closing_price - stock.closing_price_at_recommendation) / stock.closing_price_at_recommendation) * 100
-                : null;
-              return (
-                <tr key={stock.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-3 py-2 font-medium">{stock.stock_name}</td>
-                  <td className="px-3 py-2 text-right">
-                    {stock.closing_price_at_recommendation.toLocaleString()}원
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {stock.current_closing_price?.toLocaleString() || '-'}원
-                  </td>
-                  <td className={`px-3 py-2 text-right font-medium ${
-                    returnValue !== null && returnValue > 0
-                      ? 'text-green-600'
-                      : returnValue !== null && returnValue < 0
-                        ? 'text-red-600'
-                        : ''
-                  }`}>
-                    {calculateReturn(stock.closing_price_at_recommendation, stock.current_closing_price)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+
+      <StockDetailDialog
+        stock={selectedStock}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        language={language}
+      />
+    </>
   );
 }
