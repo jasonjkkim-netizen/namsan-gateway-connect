@@ -10,11 +10,6 @@ export default function MarketData() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
-  const tradingViewWidgets = [
-    { symbol: 'FX:USDKRW', title: t('usdKrw') },
-    { symbol: 'NASDAQ:NDX', title: language === 'ko' ? '나스닥 100' : 'NASDAQ 100' },
-    { symbol: 'FOREXCOM:SPXUSD', title: t('sp500') },
-  ];
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp, active: true },
@@ -59,17 +54,17 @@ export default function MarketData() {
         {/* Weekly Stock Picks Table */}
         <WeeklyStockPicksTable language={language} />
 
-        {/* KOSPI & KOSDAQ - Naver Finance (smaller) */}
-        <div className="grid gap-4 md:grid-cols-2 mb-6">
+        {/* Main Index Charts - 4 in a row */}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
           {/* KOSPI */}
           <div 
             className="card-elevated overflow-hidden animate-fade-in"
             style={{ animationDelay: '100ms' }}
           >
-            <div className="p-3 border-b border-border">
-              <h3 className="font-serif font-semibold text-sm">{t('kospiIndex')}</h3>
+            <div className="p-2 border-b border-border">
+              <h3 className="font-serif font-semibold text-xs">{t('kospiIndex')}</h3>
             </div>
-            <div className="h-[180px] w-full">
+            <div className="h-[140px] w-full">
               <a 
                 href="https://finance.naver.com/sise/sise_index.naver?code=KOSPI" 
                 target="_blank" 
@@ -79,9 +74,9 @@ export default function MarketData() {
                 <img 
                   src="https://ssl.pstatic.net/imgfinance/chart/sise/KOSPI_search.png" 
                   alt="KOSPI Chart"
-                  className="w-full h-auto object-contain p-2 max-h-[140px]"
+                  className="w-full h-auto object-contain p-1 max-h-[110px]"
                 />
-                <div className="text-center text-xs text-muted-foreground pb-2">
+                <div className="text-center text-xs text-muted-foreground pb-1">
                   {language === 'ko' ? '네이버 금융 →' : 'Naver Finance →'}
                 </div>
               </a>
@@ -93,12 +88,12 @@ export default function MarketData() {
             className="card-elevated overflow-hidden animate-fade-in"
             style={{ animationDelay: '150ms' }}
           >
-            <div className="p-3 border-b border-border">
-              <h3 className="font-serif font-semibold text-sm">
+            <div className="p-2 border-b border-border">
+              <h3 className="font-serif font-semibold text-xs">
                 {language === 'ko' ? '코스닥 지수' : 'KOSDAQ Index'}
               </h3>
             </div>
-            <div className="h-[180px] w-full">
+            <div className="h-[140px] w-full">
               <a 
                 href="https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ" 
                 target="_blank" 
@@ -108,38 +103,54 @@ export default function MarketData() {
                 <img 
                   src="https://ssl.pstatic.net/imgfinance/chart/sise/KOSDAQ_search.png" 
                   alt="KOSDAQ Chart"
-                  className="w-full h-auto object-contain p-2 max-h-[140px]"
+                  className="w-full h-auto object-contain p-1 max-h-[110px]"
                 />
-                <div className="text-center text-xs text-muted-foreground pb-2">
+                <div className="text-center text-xs text-muted-foreground pb-1">
                   {language === 'ko' ? '네이버 금융 →' : 'Naver Finance →'}
                 </div>
               </a>
             </div>
           </div>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {/* TradingView Widgets */}
-          {tradingViewWidgets.map((widget, index) => (
-            <div 
-              key={widget.symbol} 
-              className="card-elevated overflow-hidden animate-fade-in"
-              style={{ animationDelay: `${(index + 2) * 100}ms` }}
-            >
-              <div className="p-3 border-b border-border">
-                <h3 className="font-serif font-semibold text-sm">{widget.title}</h3>
-              </div>
-              <div className="h-[200px] w-full">
-                <iframe
-                  src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=${widget.symbol}&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
-                  className="w-full h-full border-0"
-                  allowTransparency={true}
-                  scrolling="no"
-                  allow="encrypted-media"
-                />
-              </div>
+          {/* NASDAQ 100 */}
+          <div 
+            className="card-elevated overflow-hidden animate-fade-in"
+            style={{ animationDelay: '200ms' }}
+          >
+            <div className="p-2 border-b border-border">
+              <h3 className="font-serif font-semibold text-xs">
+                {language === 'ko' ? '나스닥 100' : 'NASDAQ 100'}
+              </h3>
             </div>
-          ))}
+            <div className="h-[140px] w-full">
+              <iframe
+                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=NASDAQ:NDX&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
+                className="w-full h-full border-0"
+                allowTransparency={true}
+                scrolling="no"
+                allow="encrypted-media"
+              />
+            </div>
+          </div>
+
+          {/* S&P 500 */}
+          <div 
+            className="card-elevated overflow-hidden animate-fade-in"
+            style={{ animationDelay: '250ms' }}
+          >
+            <div className="p-2 border-b border-border">
+              <h3 className="font-serif font-semibold text-xs">{t('sp500')}</h3>
+            </div>
+            <div className="h-[140px] w-full">
+              <iframe
+                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=FOREXCOM:SPXUSD&width=100%25&height=100%25&dateRange=12M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
+                className="w-full h-full border-0"
+                allowTransparency={true}
+                scrolling="no"
+                allow="encrypted-media"
+              />
+            </div>
+          </div>
         </div>
 
         {/* 한눈에 보는 시장 - Dynamic from DB */}
