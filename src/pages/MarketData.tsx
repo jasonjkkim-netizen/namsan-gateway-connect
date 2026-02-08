@@ -1,16 +1,53 @@
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from 'next-themes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, ExternalLink } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
+
+const indexData = [
+  {
+    id: 'kospi',
+    nameKo: 'KOSPI 지수',
+    nameEn: 'KOSPI Index',
+    symbol: 'KOSPI',
+    link: 'https://finance.naver.com/sise/sise_index.naver?code=KOSPI',
+    investingLink: 'https://www.investing.com/indices/kospi',
+    color: 'from-blue-500 to-blue-600',
+  },
+  {
+    id: 'kosdaq',
+    nameKo: '코스닥 지수',
+    nameEn: 'KOSDAQ Index',
+    symbol: 'KOSDAQ',
+    link: 'https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ',
+    investingLink: 'https://www.investing.com/indices/kosdaq',
+    color: 'from-emerald-500 to-emerald-600',
+  },
+  {
+    id: 'nasdaq',
+    nameKo: '나스닥 100',
+    nameEn: 'NASDAQ 100',
+    symbol: 'NDX',
+    link: 'https://www.investing.com/indices/nq-100',
+    investingLink: 'https://www.investing.com/indices/nq-100',
+    color: 'from-purple-500 to-purple-600',
+  },
+  {
+    id: 'sp500',
+    nameKo: 'S&P 500',
+    nameEn: 'S&P 500',
+    symbol: 'SPX',
+    link: 'https://www.investing.com/indices/us-spx-500',
+    investingLink: 'https://www.investing.com/indices/us-spx-500',
+    color: 'from-orange-500 to-orange-600',
+  },
+];
 
 export default function MarketData() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const { resolvedTheme } = useTheme();
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp, active: true },
@@ -55,87 +92,35 @@ export default function MarketData() {
         {/* Weekly Stock Picks Table */}
         <WeeklyStockPicksTable language={language} />
 
-        {/* Main Index Charts - 4 in a row */}
+        {/* Main Index Cards - 4 in a row */}
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
-          {/* KOSPI */}
-          <div 
-            className="card-elevated overflow-hidden animate-fade-in"
-            style={{ animationDelay: '100ms' }}
-          >
-            <div className="p-2 border-b border-border">
-              <h3 className="font-serif font-semibold text-xs">{t('kospiIndex')}</h3>
-            </div>
-            <div className="h-[140px] w-full">
-              <iframe
-                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=KRX:KOSPI&width=100%25&height=100%25&dateRange=12M&colorTheme=${resolvedTheme === 'dark' ? 'dark' : 'light'}&isTransparent=true&autosize=true&largeChartUrl=`}
-                className="w-full h-full border-0"
-                allowTransparency={true}
-                scrolling="no"
-                allow="encrypted-media"
-              />
-            </div>
-          </div>
-
-          {/* KOSDAQ */}
-          <div 
-            className="card-elevated overflow-hidden animate-fade-in"
-            style={{ animationDelay: '150ms' }}
-          >
-            <div className="p-2 border-b border-border">
-              <h3 className="font-serif font-semibold text-xs">
-                {language === 'ko' ? '코스닥 지수' : 'KOSDAQ Index'}
-              </h3>
-            </div>
-            <div className="h-[140px] w-full">
-              <iframe
-                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=KRX:KOSDAQ&width=100%25&height=100%25&dateRange=12M&colorTheme=${resolvedTheme === 'dark' ? 'dark' : 'light'}&isTransparent=true&autosize=true&largeChartUrl=`}
-                className="w-full h-full border-0"
-                allowTransparency={true}
-                scrolling="no"
-                allow="encrypted-media"
-              />
-            </div>
-          </div>
-
-          {/* NASDAQ 100 */}
-          <div 
-            className="card-elevated overflow-hidden animate-fade-in"
-            style={{ animationDelay: '200ms' }}
-          >
-            <div className="p-2 border-b border-border">
-              <h3 className="font-serif font-semibold text-xs">
-                {language === 'ko' ? '나스닥 100' : 'NASDAQ 100'}
-              </h3>
-            </div>
-            <div className="h-[140px] w-full">
-              <iframe
-                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=NASDAQ:NDX&width=100%25&height=100%25&dateRange=12M&colorTheme=${resolvedTheme === 'dark' ? 'dark' : 'light'}&isTransparent=true&autosize=true&largeChartUrl=`}
-                className="w-full h-full border-0"
-                allowTransparency={true}
-                scrolling="no"
-                allow="encrypted-media"
-              />
-            </div>
-          </div>
-
-          {/* S&P 500 */}
-          <div 
-            className="card-elevated overflow-hidden animate-fade-in"
-            style={{ animationDelay: '250ms' }}
-          >
-            <div className="p-2 border-b border-border">
-              <h3 className="font-serif font-semibold text-xs">{t('sp500')}</h3>
-            </div>
-            <div className="h-[140px] w-full">
-              <iframe
-                src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=FOREXCOM:SPXUSD&width=100%25&height=100%25&dateRange=12M&colorTheme=${resolvedTheme === 'dark' ? 'dark' : 'light'}&isTransparent=true&autosize=true&largeChartUrl=`}
-                className="w-full h-full border-0"
-                allowTransparency={true}
-                scrolling="no"
-                allow="encrypted-media"
-              />
-            </div>
-          </div>
+          {indexData.map((index, i) => (
+            <a
+              key={index.id}
+              href={index.investingLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="card-elevated overflow-hidden animate-fade-in group hover:shadow-lg transition-all duration-300"
+              style={{ animationDelay: `${100 + i * 50}ms` }}
+            >
+              <div className={`h-2 bg-gradient-to-r ${index.color}`} />
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-serif font-semibold text-sm">
+                    {language === 'ko' ? index.nameKo : index.nameEn}
+                  </h3>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-mono">{index.symbol}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  {language === 'ko' ? 'Investing.com에서 실시간 시세 확인 →' : 'View live quotes on Investing.com →'}
+                </p>
+              </div>
+            </a>
+          ))}
         </div>
 
         {/* 한눈에 보는 시장 - Dynamic from DB */}
