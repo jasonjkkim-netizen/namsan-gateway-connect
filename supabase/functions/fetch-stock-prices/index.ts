@@ -141,9 +141,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    let stockCodes: StockInput[] = body.stockCodes;
-    const isAutoUpdate = body.autoUpdate === true;
+    // Handle empty body gracefully
+    let body: { stockCodes?: StockInput[]; autoUpdate?: boolean } = {};
+    try {
+      const text = await req.text();
+      if (text && text.trim()) {
+        body = JSON.parse(text);
+      }
+    } catch {
+      // If parsing fails, treat as auto-update request
+      body = { autoUpdate: true };
+    }
+
+    let stockCodes: StockInput[] = body.stockCodes || [];
+    const isAutoUpdate = body.autoUpdate === true || stockCodes.length === 0;
 
     // If this is an auto-update request, fetch active stocks from database
     if (isAutoUpdate) {
