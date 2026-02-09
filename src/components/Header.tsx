@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
-import logo from '@/assets/logo.jpg';
+import logo from '@/assets/namsan-logo.png';
 
 export function Header() {
   const { user, profile, signOut } = useAuth();

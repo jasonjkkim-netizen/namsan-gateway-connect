@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { Menu, X, TrendingUp, Shield, Users, Globe } from 'lucide-react';
-import logo from '@/assets/logo.jpg';
+import logo from '@/assets/namsan-logo.png';
 import namsanTowerBg from '@/assets/namsan-tower-night.jpg';
 
 export default function Home() {
