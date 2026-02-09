@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MarketIndex {
@@ -29,6 +29,7 @@ export function AdminMarketIndices() {
   const { language } = useLanguage();
   const [indices, setIndices] = useState<MarketIndex[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MarketIndex | null>(null);
   const [formData, setFormData] = useState({
@@ -206,6 +207,88 @@ export function AdminMarketIndices() {
     }
   }
 
+  async function handleUpdatePrices() {
+    setUpdating(true);
+    
+    try {
+      const activeIndices = indices.filter(i => i.is_active);
+      if (activeIndices.length === 0) {
+        toast.error(language === 'ko' ? '업데이트할 활성 지수가 없습니다' : 'No active indices to update');
+        setUpdating(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('fetch-market-indices', {
+        body: {
+          indices: activeIndices.map(i => ({
+            id: i.id,
+            symbol: i.symbol,
+            name_ko: i.name_ko,
+            name_en: i.name_en,
+            current_value: i.current_value
+          }))
+        }
+      });
+
+      if (error) {
+        console.error('Error calling fetch-market-indices:', error);
+        toast.error(language === 'ko' ? '지수 업데이트 실패' : 'Failed to update indices');
+        setUpdating(false);
+        return;
+      }
+
+      if (data.success && data.data) {
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const result of data.data) {
+          if (result.currentValue) {
+            const { error: updateError } = await supabase
+              .from('market_indices')
+              .update({
+                current_value: result.currentValue,
+                change_value: result.changeValue ?? 0,
+                change_percent: result.changePercent ?? 0,
+                updated_at: new Date().toISOString()
+              })
+              .eq('symbol', result.symbol);
+
+            if (updateError) {
+              console.error(`Failed to update ${result.symbol}:`, updateError);
+              failCount++;
+            } else {
+              successCount++;
+            }
+          } else {
+            failCount++;
+          }
+        }
+
+        if (successCount > 0) {
+          toast.success(
+            language === 'ko' 
+              ? `${successCount}개 지수 업데이트 완료` 
+              : `Updated ${successCount} indices`
+          );
+        }
+        if (failCount > 0) {
+          toast.warning(
+            language === 'ko'
+              ? `${failCount}개 지수 업데이트 실패`
+              : `Failed to update ${failCount} indices`
+          );
+        }
+
+        fetchIndices();
+      }
+    } catch (err) {
+      console.error('Error updating indices:', err);
+      toast.error(language === 'ko' ? '지수 업데이트 중 오류 발생' : 'Error updating indices');
+    } finally {
+      setUpdating(false);
+    }
+  }
+
   function formatNumber(value: number) {
     return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(value);
   }
@@ -218,13 +301,26 @@ export function AdminMarketIndices() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{language === 'ko' ? '시장 지수 관리' : 'Market Indices Management'}</CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAddDialog} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              {language === 'ko' ? '추가' : 'Add'}
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handleUpdatePrices} 
+            variant="outline" 
+            size="sm"
+            disabled={updating}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${updating ? 'animate-spin' : ''}`} />
+            {updating 
+              ? (language === 'ko' ? '업데이트 중...' : 'Updating...') 
+              : (language === 'ko' ? '가격 업데이트' : 'Update Prices')
+            }
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAddDialog} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                {language === 'ko' ? '추가' : 'Add'}
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>
@@ -340,6 +436,7 @@ export function AdminMarketIndices() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>

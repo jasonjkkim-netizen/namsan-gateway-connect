@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.fetch-stock-prices]
 verify_jwt = false
+
+[functions.fetch-market-indices]
+verify_jwt = false
