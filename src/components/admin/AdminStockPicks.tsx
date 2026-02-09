@@ -82,6 +82,29 @@ export function AdminStockPicks() {
     setDialogOpen(true);
   }
 
+  async function fetchSingleStockPrice(stockCode: string, stockName: string): Promise<number | null> {
+    if (!stockCode) return null;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-stock-prices', {
+        body: {
+          stockCodes: [{ code: stockCode, name: stockName }]
+        }
+      });
+
+      if (error || !data.success) {
+        console.warn('Failed to fetch price:', error || data.error);
+        return null;
+      }
+
+      const result = data.data?.[0];
+      return result?.currentPrice || null;
+    } catch (err) {
+      console.warn('Error fetching single stock price:', err);
+      return null;
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -90,12 +113,24 @@ export function AdminStockPicks() {
       return;
     }
 
+    // Auto-fetch current price if stock code is provided and current price is empty
+    let currentPrice = formData.current_closing_price ? parseFloat(formData.current_closing_price) : null;
+    
+    if (formData.stock_code && !currentPrice) {
+      toast.info(language === 'ko' ? '현재가 자동 조회 중...' : 'Fetching current price...');
+      const fetchedPrice = await fetchSingleStockPrice(formData.stock_code, formData.stock_name);
+      if (fetchedPrice) {
+        currentPrice = fetchedPrice;
+        toast.success(language === 'ko' ? `현재가: ${fetchedPrice.toLocaleString()}원` : `Current price: ₩${fetchedPrice.toLocaleString()}`);
+      }
+    }
+
     const payload = {
       stock_name: formData.stock_name,
       stock_code: formData.stock_code || null,
       recommendation_date: formData.recommendation_date,
       closing_price_at_recommendation: parseFloat(formData.closing_price_at_recommendation),
-      current_closing_price: formData.current_closing_price ? parseFloat(formData.current_closing_price) : null,
+      current_closing_price: currentPrice,
       is_active: formData.is_active,
       updated_at: new Date().toISOString()
     };
