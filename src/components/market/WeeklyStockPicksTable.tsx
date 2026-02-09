@@ -8,6 +8,7 @@ interface StockPick {
   stock_name: string;
   stock_code: string | null;
   recommendation_date: string;
+  price_reference_date: string | null;
   closing_price_at_recommendation: number;
   current_closing_price: number | null;
 }
@@ -64,10 +65,12 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
 
   if (stocks.length === 0) return null;
 
-  // Get recommendation date from first stock (all should have same date)
-  const recommendationDate = stocks[0]?.recommendation_date 
-    ? new Date(stocks[0].recommendation_date) 
-    : new Date();
+  // Get price reference date from first stock (base price date, e.g., Jan 30)
+  const priceReferenceDate = stocks[0]?.price_reference_date 
+    ? new Date(stocks[0].price_reference_date) 
+    : stocks[0]?.recommendation_date 
+      ? new Date(stocks[0].recommendation_date)
+      : new Date();
   
   // Format dates for headers
   const formatDateHeader = (date: Date, lang: string) => {
@@ -77,8 +80,14 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
   };
 
   const today = new Date();
-  const recDateHeader = formatDateHeader(recommendationDate, language);
+  const refDateHeader = formatDateHeader(priceReferenceDate, language);
   const todayHeader = formatDateHeader(today, language);
+  
+  // Check if any stock was added on a different date (newly added stocks)
+  const hasNewlyAddedStocks = stocks.some(stock => {
+    const refDate = stock.price_reference_date || stock.recommendation_date;
+    return refDate !== stocks[0]?.price_reference_date;
+  });
 
   return (
     <>
@@ -95,8 +104,11 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                   {language === 'ko' ? '추천 종목' : 'Stock'}
                 </th>
+                <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+                  {language === 'ko' ? '추가일' : 'Added'}
+                </th>
                 <th className="px-3 py-2 text-right font-medium text-muted-foreground">
-                  {recDateHeader}
+                  {refDateHeader}
                 </th>
                 <th className="px-3 py-2 text-right font-medium text-muted-foreground">
                   {todayHeader}
@@ -117,6 +129,10 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
                 const naverUrl = stock.stock_code 
                   ? `https://finance.naver.com/item/main.naver?code=${stock.stock_code}`
                   : null;
+                // Format the added date (recommendation_date)
+                const addedDate = new Date(stock.recommendation_date);
+                const addedDateStr = `${addedDate.getMonth() + 1}/${addedDate.getDate()}`;
+                
                 return (
                   <tr 
                     key={stock.id} 
@@ -124,6 +140,9 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
                     onClick={() => handleStockClick(stock)}
                   >
                     <td className="px-3 py-2 font-medium">{stock.stock_name}</td>
+                    <td className="px-3 py-2 text-center text-muted-foreground">
+                      {addedDateStr}
+                    </td>
                     <td className="px-3 py-2 text-right">
                       {stock.closing_price_at_recommendation.toLocaleString()}원
                     </td>
