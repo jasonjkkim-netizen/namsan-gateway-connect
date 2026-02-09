@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.notify-admin-signup]
 verify_jwt = false
+
+[functions.fetch-stock-prices]
+verify_jwt = false
