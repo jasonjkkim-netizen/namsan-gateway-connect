@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StockDetailDialog } from './StockDetailDialog';
+import { ExternalLink } from 'lucide-react';
 
 interface StockPick {
   id: string;
@@ -103,12 +104,18 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
                 <th className="px-3 py-2 text-right font-medium text-muted-foreground">
                   {language === 'ko' ? '수익률' : 'Return'}
                 </th>
+                <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+                  {language === 'ko' ? '링크' : 'Link'}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {stocks.map((stock) => {
                 const returnValue = stock.current_closing_price 
                   ? ((stock.current_closing_price - stock.closing_price_at_recommendation) / stock.closing_price_at_recommendation) * 100
+                  : null;
+                const naverUrl = stock.stock_code 
+                  ? `https://finance.naver.com/item/main.naver?code=${stock.stock_code}`
                   : null;
                 return (
                   <tr 
@@ -131,6 +138,22 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
                           : ''
                     }`}>
                       {calculateReturn(stock.closing_price_at_recommendation, stock.current_closing_price)}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      {naverUrl ? (
+                        <a
+                          href={naverUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-success hover:bg-success/80 text-success-foreground transition-colors"
+                          title={language === 'ko' ? '네이버 증권에서 보기' : 'View on Naver Finance'}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </td>
                   </tr>
                 );
