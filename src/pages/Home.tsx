@@ -232,7 +232,7 @@ export default function Home() {
       <section id="contact" className="py-24 md:py-32 px-6 bg-background">
         <div className="container max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <span className="text-sm font-medium text-accent tracking-widest uppercase mb-4 block">
+            <span className="text-sm font-medium text-accent tracking-widest uppercase mb-4 block font-serif">
               Contact
             </span>
             <h2 className="text-3xl md:text-4xl font-serif font-semibold text-foreground">
