@@ -277,7 +277,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <img src={logo} alt="Namsan Korea" className="h-10 w-auto brightness-0 invert" />
-              <span className="font-semibold tracking-wide">NAMSAN KOREA</span>
+              <span className="font-semibold tracking-wide font-serif">NAMSAN KOREA</span>
             </div>
             <p className="text-sm opacity-80">
               © {new Date().getFullYear()} Namsan Korea. {language === 'ko' ? '모든 권리 보유.' : 'All rights reserved.'}
