@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StockPick {
@@ -26,6 +26,7 @@ export function AdminStockPicks() {
   const { language } = useLanguage();
   const [items, setItems] = useState<StockPick[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingPrices, setUpdatingPrices] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockPick | null>(null);
   const [formData, setFormData] = useState({
@@ -170,6 +171,93 @@ export function AdminStockPicks() {
     return `${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(2)}%`;
   }
 
+  async function handleFetchPrices() {
+    const stocksWithCodes = items.filter(item => item.stock_code && item.is_active);
+    
+    if (stocksWithCodes.length === 0) {
+      toast.error(language === 'ko' ? '종목 코드가 있는 활성 종목이 없습니다' : 'No active stocks with codes');
+      return;
+    }
+
+    setUpdatingPrices(true);
+    toast.info(language === 'ko' ? '주가 업데이트 중...' : 'Fetching stock prices...');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-stock-prices', {
+        body: {
+          stockCodes: stocksWithCodes.map(item => ({
+            code: item.stock_code,
+            name: item.stock_name
+          }))
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to fetch prices');
+      }
+
+      // Update each stock with fetched price
+      let updatedCount = 0;
+      let failedCount = 0;
+
+      for (const result of data.data) {
+        if (result.currentPrice) {
+          const stockItem = stocksWithCodes.find(s => s.stock_code === result.stockCode);
+          if (stockItem) {
+            const { error: updateError } = await supabase
+              .from('weekly_stock_picks')
+              .update({ 
+                current_closing_price: result.currentPrice,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', stockItem.id);
+            
+            if (!updateError) {
+              updatedCount++;
+            } else {
+              failedCount++;
+            }
+          }
+        } else {
+          failedCount++;
+          console.warn(`Failed to get price for ${result.stockName}: ${result.error}`);
+        }
+      }
+
+      if (updatedCount > 0) {
+        toast.success(
+          language === 'ko' 
+            ? `${updatedCount}개 종목 가격 업데이트 완료` 
+            : `Updated prices for ${updatedCount} stocks`
+        );
+      }
+      
+      if (failedCount > 0) {
+        toast.warning(
+          language === 'ko' 
+            ? `${failedCount}개 종목 가격 업데이트 실패` 
+            : `Failed to update ${failedCount} stocks`
+        );
+      }
+
+      fetchItems();
+
+    } catch (error) {
+      console.error('Error fetching stock prices:', error);
+      toast.error(
+        language === 'ko' 
+          ? '주가 업데이트에 실패했습니다. Firecrawl 커넥터가 연결되었는지 확인해주세요.' 
+          : 'Failed to fetch stock prices. Make sure Firecrawl connector is enabled.'
+      );
+    } finally {
+      setUpdatingPrices(false);
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8">{language === 'ko' ? '로딩 중...' : 'Loading...'}</div>;
   }
@@ -178,13 +266,23 @@ export function AdminStockPicks() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{language === 'ko' ? '금주 관심 종목 관리' : 'Weekly Stock Picks'}</CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAddDialog} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              {language === 'ko' ? '추가' : 'Add'}
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handleFetchPrices} 
+            size="sm" 
+            variant="outline"
+            disabled={updatingPrices}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${updatingPrices ? 'animate-spin' : ''}`} />
+            {language === 'ko' ? '주가 업데이트' : 'Update Prices'}
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAddDialog} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                {language === 'ko' ? '추가' : 'Add'}
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -257,7 +355,8 @@ export function AdminStockPicks() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
