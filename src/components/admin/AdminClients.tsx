@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { clientProfileSchema, validateFormData } from '@/lib/admin-validation';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Table,
@@ -22,7 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Search } from 'lucide-react';
+import { Edit, Search } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -40,7 +40,9 @@ interface Profile {
 export function AdminClients() {
   const { language, formatDate } = useLanguage();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -54,22 +56,79 @@ export function AdminClients() {
   });
 
   useEffect(() => {
-    fetchProfiles();
+    fetchData();
   }, []);
 
-  async function fetchProfiles() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+  async function fetchData() {
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'admin')
+    ]);
 
-    if (error) {
+    if (profilesRes.error) {
       toast.error(language === 'ko' ? '고객 목록 조회 실패' : 'Failed to fetch clients');
     } else {
-      setProfiles(data as Profile[]);
+      setProfiles(profilesRes.data as Profile[]);
     }
+
+    if (!rolesRes.error && rolesRes.data) {
+      setAdminUserIds(new Set(rolesRes.data.map(r => r.user_id)));
+    }
+
     setLoading(false);
   }
+
+  const handleToggleAdmin = async (profile: Profile) => {
+    const isCurrentlyAdmin = adminUserIds.has(profile.user_id);
+    setTogglingAdmin(profile.user_id);
+
+    try {
+      if (isCurrentlyAdmin) {
+        // Remove admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', profile.user_id)
+          .eq('role', 'admin');
+
+        if (error) {
+          if (error.message.includes('count')) {
+            toast.error(language === 'ko' ? '마지막 관리자는 삭제할 수 없습니다' : 'Cannot remove the last admin');
+          } else {
+            throw error;
+          }
+        } else {
+          setAdminUserIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(profile.user_id);
+            return newSet;
+          });
+          toast.success(language === 'ko' ? '관리자 권한이 해제되었습니다' : 'Admin role removed');
+        }
+      } else {
+        // Add admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({ user_id: profile.user_id, role: 'admin' });
+
+        if (error) throw error;
+
+        setAdminUserIds(prev => new Set([...prev, profile.user_id]));
+        toast.success(language === 'ko' ? '관리자 권한이 부여되었습니다' : 'Admin role granted');
+      }
+    } catch (error: any) {
+      toast.error(language === 'ko' ? '권한 변경 실패' : 'Failed to change role');
+      console.error('Toggle admin error:', error);
+    } finally {
+      setTogglingAdmin(null);
+    }
+  };
 
   const handleEdit = (profile: Profile) => {
     setEditingProfile(profile);
@@ -116,7 +175,7 @@ export function AdminClients() {
     } else {
       toast.success(language === 'ko' ? '업데이트 완료' : 'Updated successfully');
       setDialogOpen(false);
-      fetchProfiles();
+      fetchData();
     }
   };
 
@@ -155,6 +214,7 @@ export function AdminClients() {
               <TableHead>{language === 'ko' ? '주소' : 'Address'}</TableHead>
               <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
               <TableHead>{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
+              <TableHead className="text-center">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>
               <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
             </TableRow>
           </TableHeader>
@@ -162,7 +222,7 @@ export function AdminClients() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 8 }).map((_, j) => (
+                  {Array.from({ length: 9 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-5 w-24" />
                     </TableCell>
@@ -171,7 +231,7 @@ export function AdminClients() {
               ))
             ) : filteredProfiles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
                 </TableCell>
               </TableRow>
@@ -185,6 +245,13 @@ export function AdminClients() {
                   <TableCell className="max-w-[200px] truncate">{profile.address || '-'}</TableCell>
                   <TableCell>{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
                   <TableCell>{formatDate(profile.created_at)}</TableCell>
+                  <TableCell className="text-center">
+                    <Switch
+                      checked={adminUserIds.has(profile.user_id)}
+                      onCheckedChange={() => handleToggleAdmin(profile)}
+                      disabled={togglingAdmin === profile.user_id}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Button
                       variant="ghost"
