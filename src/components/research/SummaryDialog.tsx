@@ -140,7 +140,7 @@ export function SummaryDialog({ report, open, onOpenChange }: SummaryDialogProps
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-serif">
             <Sparkles className="h-5 w-5 text-accent" />
@@ -170,8 +170,8 @@ export function SummaryDialog({ report, open, onOpenChange }: SummaryDialogProps
             </Button>
           </div>
         ) : (
-          <ScrollArea className="flex-1 max-h-[400px]">
-            <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
+          <ScrollArea className="flex-1 min-h-0 h-[400px]">
+            <div className="prose prose-sm dark:prose-invert max-w-none px-1 pb-4">
               {isLoading && !summary ? (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <div className="flex gap-1">
