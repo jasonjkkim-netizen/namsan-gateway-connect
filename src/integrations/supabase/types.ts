@@ -436,6 +436,7 @@ export type Database = {
           display_order: number
           id: string
           is_active: boolean
+          price_reference_date: string | null
           recommendation_date: string
           stock_code: string | null
           stock_name: string
@@ -448,6 +449,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          price_reference_date?: string | null
           recommendation_date: string
           stock_code?: string | null
           stock_name: string
@@ -460,6 +462,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          price_reference_date?: string | null
           recommendation_date?: string
           stock_code?: string | null
           stock_name?: string
