@@ -1,3 +1,5 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -10,17 +12,52 @@ interface StockPriceResult {
   error?: string;
 }
 
+interface StockInput {
+  code: string;
+  name: string;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { stockCodes } = await req.json();
+    const body = await req.json();
+    let stockCodes: StockInput[] = body.stockCodes;
+    const isAutoUpdate = body.autoUpdate === true;
+
+    // If this is an auto-update request, fetch active stocks from database
+    if (isAutoUpdate) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const { data: activeStocks, error } = await supabase
+        .from('weekly_stock_picks')
+        .select('stock_code, stock_name')
+        .eq('is_active', true)
+        .not('stock_code', 'is', null);
+
+      if (error) {
+        console.error('Failed to fetch active stocks:', error);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to fetch active stocks' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      stockCodes = (activeStocks || []).map(s => ({
+        code: s.stock_code!,
+        name: s.stock_name
+      }));
+
+      console.log(`Auto-update: Found ${stockCodes.length} active stocks`);
+    }
 
     if (!stockCodes || !Array.isArray(stockCodes) || stockCodes.length === 0) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Stock codes array is required' }),
+        JSON.stringify({ success: false, error: 'No stocks to update' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -147,6 +184,31 @@ Deno.serve(async (req) => {
     }
 
     console.log('Stock price fetch completed:', results);
+
+    // If auto-update, also update the database directly
+    if (isAutoUpdate) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      for (const result of results) {
+        if (result.currentPrice && result.stockCode) {
+          const { error } = await supabase
+            .from('weekly_stock_picks')
+            .update({ 
+              current_closing_price: result.currentPrice,
+              updated_at: new Date().toISOString()
+            })
+            .eq('stock_code', result.stockCode);
+
+          if (error) {
+            console.error(`Failed to update ${result.stockCode}:`, error);
+          } else {
+            console.log(`Updated ${result.stockName}: ${result.currentPrice}`);
+          }
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: results }),
