@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '@/integrations/supabase/client';
@@ -170,7 +170,7 @@ export function SummaryDialog({ report, open, onOpenChange }: SummaryDialogProps
             </Button>
           </div>
         ) : (
-          <ScrollArea className="flex-1 min-h-0 h-[400px]">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-3">
             <div className="prose prose-sm dark:prose-invert max-w-none px-1 pb-4">
               {isLoading && !summary ? (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -187,7 +187,7 @@ export function SummaryDialog({ report, open, onOpenChange }: SummaryDialogProps
                 <ReactMarkdown>{summary}</ReactMarkdown>
               )}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         {hasStarted && !isLoading && summary && (
