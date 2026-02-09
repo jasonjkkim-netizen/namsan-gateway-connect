@@ -63,6 +63,22 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
 
   if (stocks.length === 0) return null;
 
+  // Get recommendation date from first stock (all should have same date)
+  const recommendationDate = stocks[0]?.recommendation_date 
+    ? new Date(stocks[0].recommendation_date) 
+    : new Date();
+  
+  // Format dates for headers
+  const formatDateHeader = (date: Date, lang: string) => {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return lang === 'ko' ? `${month}/${day} 종가` : `${month}/${day} Close`;
+  };
+
+  const today = new Date();
+  const recDateHeader = formatDateHeader(recommendationDate, language);
+  const todayHeader = formatDateHeader(today, language);
+
   return (
     <>
       <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
@@ -79,10 +95,10 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
                   {language === 'ko' ? '추천 종목' : 'Stock'}
                 </th>
                 <th className="px-3 py-2 text-right font-medium text-muted-foreground">
-                  {language === 'ko' ? '1/30 종가' : '1/30 Close'}
+                  {recDateHeader}
                 </th>
                 <th className="px-3 py-2 text-right font-medium text-muted-foreground">
-                  {language === 'ko' ? '2/6 종가' : '2/6 Close'}
+                  {todayHeader}
                 </th>
                 <th className="px-3 py-2 text-right font-medium text-muted-foreground">
                   {language === 'ko' ? '수익률' : 'Return'}
