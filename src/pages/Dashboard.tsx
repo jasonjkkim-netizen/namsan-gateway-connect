@@ -9,7 +9,7 @@ import { InvestmentsTable } from '@/components/dashboard/InvestmentsTable';
 import { DistributionsTable } from '@/components/dashboard/DistributionsTable';
 import { AssetAllocationChart } from '@/components/dashboard/AssetAllocationChart';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, Package, FileText, PlayCircle } from 'lucide-react';
+import { TrendingUp, Package, FileText, PlayCircle, BookOpen } from 'lucide-react';
 
 interface Investment {
   id: string;
@@ -45,6 +45,7 @@ export default function Dashboard() {
     { path: '/dashboard', label: t('dashboard'), icon: TrendingUp, active: true },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText },
+    { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { path: '/videos', label: t('videos'), icon: PlayCircle },
   ];
 
