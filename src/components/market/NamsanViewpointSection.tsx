@@ -27,7 +27,8 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
         .from('namsan_viewpoints')
         .select('*')
         .eq('is_active', true)
-        .order('display_order', { ascending: false });
+        .order('display_order', { ascending: false })
+        .limit(1);
       if (data) setViewpoints(data as Viewpoint[]);
       setLoading(false);
     }
