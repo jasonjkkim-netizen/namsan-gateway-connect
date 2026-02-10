@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { StockDetailDialog } from './StockDetailDialog';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface StockPick {
   id: string;
@@ -20,22 +22,61 @@ interface WeeklyStockPicksTableProps {
 export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) {
   const [stocks, setStocks] = useState<StockPick[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingPrices, setUpdatingPrices] = useState(false);
   const [selectedStock, setSelectedStock] = useState<StockPick | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  useEffect(() => {
-    async function fetchStocks() {
-      const { data } = await supabase
-        .from('weekly_stock_picks')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+  async function fetchStocks() {
+    const { data } = await supabase
+      .from('weekly_stock_picks')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
 
-      if (data) setStocks(data);
-      setLoading(false);
-    }
+    if (data) setStocks(data);
+    setLoading(false);
+  }
+
+  useEffect(() => {
     fetchStocks();
   }, []);
+
+  async function handleUpdatePrices() {
+    setUpdatingPrices(true);
+    toast.info(language === 'ko' ? '현재가 업데이트 중...' : 'Updating prices...');
+
+    try {
+      const stocksWithCodes = stocks.filter(s => s.stock_code);
+      const { data, error } = await supabase.functions.invoke('fetch-stock-prices', {
+        body: {
+          stockCodes: stocksWithCodes.map(s => ({ code: s.stock_code, name: s.stock_name }))
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error);
+
+      // Update DB with fetched prices
+      let updatedCount = 0;
+      for (const result of data.data) {
+        if (result.currentPrice) {
+          await supabase
+            .from('weekly_stock_picks')
+            .update({ current_closing_price: result.currentPrice, updated_at: new Date().toISOString() })
+            .eq('stock_code', result.stockCode);
+          updatedCount++;
+        }
+      }
+
+      toast.success(language === 'ko' ? `${updatedCount}개 종목 업데이트 완료` : `Updated ${updatedCount} stocks`);
+      await fetchStocks();
+    } catch (err) {
+      console.error('Price update error:', err);
+      toast.error(language === 'ko' ? '업데이트 실패' : 'Update failed');
+    } finally {
+      setUpdatingPrices(false);
+    }
+  }
 
   function calculateReturn(recommendedPrice: number, currentPrice: number | null): string {
     if (!currentPrice) return '-';
@@ -91,10 +132,20 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
   return (
     <>
       <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
-        <div className="p-3 border-b border-border">
+        <div className="p-3 border-b border-border flex items-center justify-between">
           <h3 className="font-serif font-medium text-sm">
             {language === 'ko' ? '남산 관심 종목' : 'Namsan Stock Picks'}
           </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleUpdatePrices}
+            disabled={updatingPrices}
+            className="h-7 px-2"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${updatingPrices ? 'animate-spin' : ''}`} />
+            <span className="text-xs">{language === 'ko' ? '업데이트' : 'Update'}</span>
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
