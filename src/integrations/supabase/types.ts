@@ -284,6 +284,45 @@ export type Database = {
         }
         Relationships: []
       }
+      namsan_viewpoints: {
+        Row: {
+          content_en: string
+          content_ko: string
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          title_en: string
+          title_ko: string
+          updated_at: string
+        }
+        Insert: {
+          content_en?: string
+          content_ko?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          title_en?: string
+          title_ko?: string
+          updated_at?: string
+        }
+        Update: {
+          content_en?: string
+          content_ko?: string
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          title_en?: string
+          title_ko?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null

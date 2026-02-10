@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { ExternalLink, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -25,7 +27,7 @@ interface MarketItem {
 // Category definitions for market items
 const MARKET_CATEGORIES = {
   indices: { ko: '주요 지수', en: 'Major Indices', order: [1, 2, 3] },
-  currencies: { ko: '주요 환율', en: 'Major Currencies', order: [10, 11, 12] },
+  currencies: { ko: '주요 환율', en: 'Major Currencies', order: [7, 8, 9, 10, 11, 12] },
   bonds: { ko: '채권', en: 'Bonds', order: [20, 21] },
   commodities: { ko: '원자재', en: 'Commodities', order: [30, 31, 32, 33] },
 };
@@ -35,6 +37,9 @@ const getExternalUrl = (symbol: string) => {
     'TVC:NI225': 'https://finance.yahoo.com/quote/%5EN225/',
     'AMEX:SPY': 'https://finance.yahoo.com/quote/SPY/',
     'TVC:DJI': 'https://finance.yahoo.com/quote/%5EDJI/',
+    'FX:USDKRW': 'https://finance.yahoo.com/quote/USDKRW=X/',
+    'FX:JPYKRW': 'https://finance.yahoo.com/quote/JPYKRW=X/',
+    'FX:HKDKRW': 'https://finance.yahoo.com/quote/HKDKRW=X/',
     'FX:EURUSD': 'https://finance.yahoo.com/quote/EURUSD=X/',
     'FX:USDJPY': 'https://finance.yahoo.com/quote/USDJPY=X/',
     'FX:USDCNY': 'https://finance.yahoo.com/quote/USDCNY=X/',
@@ -55,20 +60,45 @@ interface MarketOverviewSectionProps {
 export function MarketOverviewSection({ language }: MarketOverviewSectionProps) {
   const [items, setItems] = useState<MarketItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+
+  async function fetchItems() {
+    const { data } = await supabase
+      .from('market_overview_items')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (data) setItems(data as MarketItem[]);
+    setLoading(false);
+  }
 
   useEffect(() => {
-    async function fetchItems() {
-      const { data } = await supabase
-        .from('market_overview_items')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (data) setItems(data as MarketItem[]);
-      setLoading(false);
-    }
     fetchItems();
   }, []);
+
+  async function handleUpdatePrices() {
+    setUpdating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-market-indices', {
+        body: { updateOverview: true },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast.success(language === 'ko' ? '시장 데이터가 업데이트되었습니다' : 'Market data updated');
+        await fetchItems();
+      } else {
+        throw new Error(data?.error || 'Update failed');
+      }
+    } catch (err) {
+      console.error('Error updating market overview:', err);
+      toast.error(language === 'ko' ? '업데이트에 실패했습니다' : 'Failed to update');
+    } finally {
+      setUpdating(false);
+    }
+  }
 
   const getItemsByCategory = (orders: number[]) => {
     return items.filter(item => orders.includes(item.display_order));
@@ -104,13 +134,25 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
 
   return (
     <div className="mt-8 animate-fade-in" style={{ animationDelay: '500ms' }}>
-      <div className="mb-6">
-        <h3 className="font-serif font-semibold text-lg">
-          {language === 'ko' ? '한눈에 보는 시장' : 'Market at a Glance'}
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          {language === 'ko' ? '주요 자산군별 시장 현황' : 'Market overview by asset class'}
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h3 className="font-serif font-semibold text-lg">
+            {language === 'ko' ? '한눈에 보는 시장' : 'Market at a Glance'}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            {language === 'ko' ? '주요 자산군별 시장 현황' : 'Market overview by asset class'}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleUpdatePrices}
+          disabled={updating}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${updating ? 'animate-spin' : ''}`} />
+          {language === 'ko' ? '업데이트' : 'Update'}
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
