@@ -4,13 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, Upload, Image } from 'lucide-react';
 import { toast } from 'sonner';
+import { RichPasteEditor } from './RichPasteEditor';
 
 interface Viewpoint {
   id: string;
@@ -155,12 +155,12 @@ export function AdminViewpoints() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>내용 (한국어) - Markdown 지원</Label>
-                <Textarea rows={6} value={formData.content_ko} onChange={e => setFormData({ ...formData, content_ko: e.target.value })} />
+                <Label>내용 (한국어) - 이미지/텍스트 붙여넣기 가능</Label>
+                <RichPasteEditor rows={8} value={formData.content_ko} onChange={v => setFormData({ ...formData, content_ko: v })} placeholder="텍스트나 이미지를 붙여넣기 하세요..." />
               </div>
               <div className="space-y-2">
-                <Label>Content (English) - Markdown supported</Label>
-                <Textarea rows={6} value={formData.content_en} onChange={e => setFormData({ ...formData, content_en: e.target.value })} />
+                <Label>Content (English) - Paste images/text</Label>
+                <RichPasteEditor rows={8} value={formData.content_en} onChange={v => setFormData({ ...formData, content_en: v })} placeholder="Paste text or images here..." />
               </div>
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '이미지' : 'Image'}</Label>
