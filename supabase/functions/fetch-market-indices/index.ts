@@ -15,81 +15,7 @@ interface IndexResult {
   error?: string;
 }
 
-interface IndexInput {
-  id: string;
-  symbol: string;
-  name_ko: string;
-  name_en: string;
-  current_value: number;
-}
-
 const ADMIN_EMAIL = "jason.jk.kim@gmail.com";
-
-// Mapping of symbols to scraping sources
-const INDEX_SOURCES: Record<string, { url: string; type: 'naver' | 'investing' }> = {
-  'KOSPI': { url: 'https://finance.naver.com/sise/sise_index.naver?code=KOSPI', type: 'naver' },
-  'KOSDAQ': { url: 'https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ', type: 'naver' },
-  'NDX': { url: 'https://finance.naver.com/world/sise.naver?symbol=NAS@IXIC', type: 'naver' },
-  'SPX': { url: 'https://finance.naver.com/world/sise.naver?symbol=SPI@SPX', type: 'naver' },
-};
-
-function parseKoreanNumber(str: string): number | null {
-  if (!str) return null;
-  const cleaned = str.replace(/,/g, '').replace(/[^\d.-]/g, '');
-  const num = parseFloat(cleaned);
-  return isNaN(num) ? null : num;
-}
-
-function extractNaverIndexData(html: string, symbol: string): { value: number | null; change: number | null; percent: number | null } {
-  let value: number | null = null;
-  let change: number | null = null;
-  let percent: number | null = null;
-
-  // For Korean indices (KOSPI, KOSDAQ)
-  if (symbol === 'KOSPI' || symbol === 'KOSDAQ') {
-    // Pattern for main index value: <em id="now_value">2,650.00</em>
-    const valueMatch = html.match(/<em id="now_value"[^>]*>([0-9,.]+)<\/em>/i);
-    if (valueMatch) {
-      value = parseKoreanNumber(valueMatch[1]);
-    }
-
-    // Pattern for change value
-    const changeMatch = html.match(/class="(up|down)"[^>]*>[\s\S]*?<em[^>]*>([0-9,.]+)<\/em>/i);
-    if (changeMatch) {
-      const changeVal = parseKoreanNumber(changeMatch[2]);
-      if (changeVal !== null) {
-        change = changeMatch[1] === 'down' ? -changeVal : changeVal;
-      }
-    }
-
-    // Pattern for change percent
-    const percentMatch = html.match(/\(([+-]?[0-9,.]+)%\)/i);
-    if (percentMatch) {
-      percent = parseKoreanNumber(percentMatch[1]);
-    }
-  } else {
-    // For international indices on Naver (NDX, SPX)
-    // Pattern: class="no_today" followed by the value
-    const valueMatch = html.match(/<span class="no_today"[^>]*>[\s\S]*?<span>([0-9,.]+)<\/span>/i) ||
-                       html.match(/<em class="[^"]*k_value[^"]*"[^>]*>([0-9,.]+)<\/em>/i) ||
-                       html.match(/class="value"[^>]*>([0-9,.]+)</i);
-    if (valueMatch) {
-      value = parseKoreanNumber(valueMatch[1]);
-    }
-
-    // Change and percent for international
-    const changeAreaMatch = html.match(/class="(up|down|same)"[^>]*>[\s\S]*?<span[^>]*>([0-9,.]+)<\/span>[\s\S]*?\(([+-]?[0-9,.]+)%\)/i);
-    if (changeAreaMatch) {
-      const changeVal = parseKoreanNumber(changeAreaMatch[2]);
-      if (changeVal !== null) {
-        change = changeAreaMatch[1] === 'down' ? -changeVal : changeVal;
-      }
-      percent = parseKoreanNumber(changeAreaMatch[3]);
-    }
-  }
-
-  return { value, change, percent };
-}
 
 async function sendFailureNotification(failedIndices: IndexResult[], totalIndices: number) {
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
@@ -109,7 +35,7 @@ async function sendFailureNotification(failedIndices: IndexResult[], totalIndice
     minute: '2-digit',
   }).format(now);
 
-  const failedList = failedIndices.map(i => 
+  const failedList = failedIndices.map(i =>
     `<tr>
       <td style="padding: 8px; border-bottom: 1px solid #eee;">${i.name}</td>
       <td style="padding: 8px; border-bottom: 1px solid #eee;">${i.symbol}</td>
@@ -123,85 +49,78 @@ async function sendFailureNotification(failedIndices: IndexResult[], totalIndice
       to: [ADMIN_EMAIL],
       subject: `[Namsan Korea] 시장 지수 업데이트 실패 알림 - ${failedIndices.length}/${totalIndices} 지수`,
       html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border: 1px solid #eee; }
-            .stats { display: flex; justify-content: space-around; margin: 20px 0; text-align: center; }
-            .stat-box { background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .stat-number { font-size: 28px; font-weight: bold; }
-            .stat-label { font-size: 12px; color: #666; }
-            .success { color: #16a34a; }
-            .failure { color: #dc2626; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; }
-            th { text-align: left; padding: 12px 8px; background: #f0f0f0; border-bottom: 2px solid #ddd; }
-            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-            .cta-button { display: inline-block; background: #B8860B; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 style="margin: 0;">⚠️ 시장 지수 업데이트 실패</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">Market Index Update Failed</p>
-            </div>
-            <div class="content">
-              <p>안녕하세요,</p>
-              <p>자동 시장 지수 업데이트 중 일부 지수의 데이터를 가져오지 못했습니다.</p>
-              
-              <div class="stats">
-                <div class="stat-box">
-                  <div class="stat-number success">${totalIndices - failedIndices.length}</div>
-                  <div class="stat-label">성공</div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-number failure">${failedIndices.length}</div>
-                  <div class="stat-label">실패</div>
-                </div>
-              </div>
-              
-              <h3>실패한 지수 목록</h3>
-              <table>
-                <thead>
-                  <tr>
-                    <th>지수명</th>
-                    <th>심볼</th>
-                    <th>오류 내용</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${failedList}
-                </tbody>
-              </table>
-              
-              <p style="color: #666; font-size: 14px;">
-                <strong>업데이트 시간:</strong> ${koreaTime} (KST)
-              </p>
-              
-              <center>
-                <a href="https://namsan-gateway-connect.lovable.app/admin" class="cta-button">
-                  관리자 패널로 이동 →
-                </a>
-              </center>
-            </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Namsan Korea. All rights reserved.</p>
-              <p>This is an automated notification from Namsan Korea Market Data System.</p>
-            </div>
+        <div style="max-width: 600px; margin: 0 auto; font-family: sans-serif;">
+          <div style="background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0;">⚠️ 시장 지수 업데이트 실패</h1>
           </div>
-        </body>
-        </html>
+          <div style="background: #f9f9f9; padding: 30px; border: 1px solid #eee;">
+            <p>성공: ${totalIndices - failedIndices.length} / 실패: ${failedIndices.length}</p>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead><tr><th style="text-align:left;padding:8px;">지수명</th><th style="text-align:left;padding:8px;">심볼</th><th style="text-align:left;padding:8px;">오류</th></tr></thead>
+              <tbody>${failedList}</tbody>
+            </table>
+            <p style="color: #666; font-size: 14px;">업데이트 시간: ${koreaTime} (KST)</p>
+          </div>
+        </div>
       `,
     });
-    console.log('Failure notification email sent to admin');
+    console.log('Failure notification email sent');
   } catch (emailError) {
     console.error('Failed to send notification email:', emailError);
   }
+}
+
+function parsePerplexityLine(line: string, symbol: string): { value: number; change: number; percent: number } | null {
+  // Remove citation markers like [1], [3]
+  const cleaned = line.replace(/\[\d+\]/g, '').trim();
+  
+  // Skip N/A lines
+  if (cleaned.includes('N/A') || cleaned.includes('not available')) return null;
+
+  // Find the value after the symbol
+  const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const lineMatch = cleaned.match(new RegExp(`${escapedSymbol}[:\\s]+([\\d,]+\\.?\\d*)`, 'i'));
+  if (!lineMatch) return null;
+
+  const value = parseFloat(lineMatch[1].replace(/,/g, ''));
+  if (isNaN(value) || value <= 0) return null;
+
+  // Try to extract change and percent
+  let change = 0;
+  let percent = 0;
+
+  // Handle "flat" or "0%" cases
+  if (cleaned.includes('flat') || cleaned.match(/\(0[,\s]*0%\)/)) {
+    return { value, change: 0, percent: 0 };
+  }
+
+  // Pattern: (+/-VALUE, +/-PERCENT%) or just numbers after the value
+  const changeMatch = cleaned.match(/([+-]?\d[\d,]*\.?\d*)[,\s]+([+-]?\d[\d,]*\.?\d*)%/);
+  if (changeMatch) {
+    change = parseFloat(changeMatch[1].replace(/,/g, ''));
+    percent = parseFloat(changeMatch[2].replace(/,/g, ''));
+  }
+
+  return { value, change: isNaN(change) ? 0 : change, percent: isNaN(percent) ? 0 : percent };
+}
+
+function parsePerplexityResponse(content: string, symbols: string[]): Record<string, { value: number; change: number; percent: number }> {
+  const results: Record<string, { value: number; change: number; percent: number }> = {};
+  const lines = content.split('\n');
+
+  for (const symbol of symbols) {
+    // Find the line containing this symbol
+    const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matchingLine = lines.find(line => new RegExp(escapedSymbol, 'i').test(line));
+    if (matchingLine) {
+      const parsed = parsePerplexityLine(matchingLine, symbol);
+      if (parsed) {
+        results[symbol] = parsed;
+      }
+    }
+  }
+
+  return results;
 }
 
 Deno.serve(async (req) => {
@@ -212,152 +131,205 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const isAutoUpdate = body.autoUpdate === true;
-    let indicesToUpdate: IndexInput[] = body.indices || [];
+    const updateOverview = body.updateOverview === true;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // If auto-update or no indices provided, fetch active indices from database
-    if (isAutoUpdate || indicesToUpdate.length === 0) {
-      const { data: activeIndices, error } = await supabase
-        .from('market_indices')
-        .select('id, symbol, name_ko, name_en, current_value')
-        .eq('is_active', true);
-
-      if (error) {
-        console.error('Failed to fetch active indices:', error);
-        return new Response(
-          JSON.stringify({ success: false, error: 'Failed to fetch active indices' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      indicesToUpdate = activeIndices || [];
-      console.log(`Auto-update: Found ${indicesToUpdate.length} active indices`);
-    }
-
-    if (indicesToUpdate.length === 0) {
+    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!PERPLEXITY_API_KEY) {
       return new Response(
-        JSON.stringify({ success: false, error: 'No indices to update' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
-    if (!apiKey) {
-      console.error('FIRECRAWL_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Firecrawl connector not configured' }),
+        JSON.stringify({ success: false, error: 'PERPLEXITY_API_KEY is not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Fetch active indices from database
+    const { data: activeIndices, error: idxError } = await supabase
+      .from('market_indices')
+      .select('id, symbol, name_ko, name_en, current_value')
+      .eq('is_active', true);
+
+    if (idxError || !activeIndices?.length) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'No active indices found' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Build the prompt with all index symbols
+    const symbolList = activeIndices.map(i => `${i.symbol} (${i.name_en})`).join(', ');
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    console.log(`Fetching market data via Perplexity for: ${symbolList}`);
+
+    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar-pro',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a financial data assistant. Return ONLY the requested data in the exact format specified. Every line must have a numeric value - never write N/A. No explanations.',
+          },
+          {
+            role: 'user',
+            content: `What are the most recent closing prices for these stock market indices? Search for each one individually.
+
+${activeIndices.map(i => `- ${i.symbol} (${i.name_en})`).join('\n')}
+
+IMPORTANT: You MUST provide a numeric value for EVERY index. Search finance sites like Yahoo Finance, Google Finance, Investing.com.
+
+Format EXACTLY like this (one per line):
+${activeIndices.map(i => `${i.symbol}: [price] ([change], [change_pct]%)`).join('\n')}
+
+Example: KOSPI: 2,650.31 (+15.23, +0.58%)
+If change is zero: KOSPI: 2,650.31 (0.00, 0.00%)`,
+          },
+        ],
+        search_recency_filter: 'week',
+      }),
+    });
+
+    if (!perplexityResponse.ok) {
+      const errText = await perplexityResponse.text();
+      console.error('Perplexity API error:', perplexityResponse.status, errText);
+      return new Response(
+        JSON.stringify({ success: false, error: `Perplexity API error [${perplexityResponse.status}]` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const perplexityData = await perplexityResponse.json();
+    const content = perplexityData.choices?.[0]?.message?.content || '';
+    console.log('Perplexity response:', content);
+
+    const symbols = activeIndices.map(i => i.symbol);
+    const parsed = parsePerplexityResponse(content, symbols);
+
     const results: IndexResult[] = [];
 
-    for (const index of indicesToUpdate) {
-      const source = INDEX_SOURCES[index.symbol];
-      
-      if (!source) {
-        console.log(`No source configured for ${index.symbol}, skipping`);
+    for (const index of activeIndices) {
+      const data = parsed[index.symbol];
+      if (data) {
         results.push({
           symbol: index.symbol,
           name: index.name_ko,
-          currentValue: null,
-          changeValue: null,
-          changePercent: null,
-          error: 'No scraping source configured for this symbol'
-        });
-        continue;
-      }
-
-      try {
-        console.log(`Scraping index data for ${index.name_ko} (${index.symbol}) from ${source.url}`);
-
-        const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: source.url,
-            formats: ['html'],
-            onlyMainContent: false,
-            waitFor: 2000,
-          }),
+          currentValue: data.value,
+          changeValue: data.change,
+          changePercent: data.percent,
         });
 
-        const data = await response.json();
+        // Update DB
+        const { error: updateError } = await supabase
+          .from('market_indices')
+          .update({
+            current_value: data.value,
+            change_value: data.change,
+            change_percent: data.percent,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', index.id);
 
-        if (!response.ok) {
-          console.error(`Firecrawl API error for ${index.symbol}:`, data);
-          results.push({
-            symbol: index.symbol,
-            name: index.name_ko,
-            currentValue: null,
-            changeValue: null,
-            changePercent: null,
-            error: data.error || `Request failed with status ${response.status}`
-          });
-          continue;
+        if (updateError) {
+          console.error(`Failed to update ${index.symbol}:`, updateError);
+        } else {
+          console.log(`Updated ${index.name_ko}: ${data.value}`);
         }
-
-        const html = data.data?.html || data.html || '';
-        const extracted = extractNaverIndexData(html, index.symbol);
-
-        console.log(`Extracted for ${index.symbol}:`, extracted);
-
-        results.push({
-          symbol: index.symbol,
-          name: index.name_ko,
-          currentValue: extracted.value,
-          changeValue: extracted.change,
-          changePercent: extracted.percent,
-          error: extracted.value ? undefined : 'Could not extract index data from page'
-        });
-
-        // Add delay between requests
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-      } catch (indexError) {
-        console.error(`Error processing index ${index.symbol}:`, indexError);
+      } else {
         results.push({
           symbol: index.symbol,
           name: index.name_ko,
           currentValue: null,
           changeValue: null,
           changePercent: null,
-          error: indexError instanceof Error ? indexError.message : 'Unknown error'
+          error: 'Could not parse data from Perplexity response',
         });
       }
     }
 
-    console.log('Market index fetch completed:', results);
+    // Also update market overview items if requested
+    let overviewResults: any[] = [];
+    if (updateOverview) {
+      const { data: overviewItems } = await supabase
+        .from('market_overview_items')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
 
-    // Update database with fetched results
-    if (isAutoUpdate) {
-      for (const result of results) {
-        if (result.currentValue) {
-          const { error } = await supabase
-            .from('market_indices')
-            .update({
-              current_value: result.currentValue,
-              change_value: result.changeValue ?? 0,
-              change_percent: result.changePercent ?? 0,
-              updated_at: new Date().toISOString()
-            })
-            .eq('symbol', result.symbol);
+      if (overviewItems?.length) {
+        const overviewSymbols = overviewItems.map(i => `${i.title_en} (${i.symbol})`).join(', ');
 
-          if (error) {
-            console.error(`Failed to update ${result.symbol}:`, error);
-          } else {
-            console.log(`Updated ${result.name}: ${result.currentValue}`);
+        const overviewResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'sonar-pro',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a financial data assistant. Return ONLY the requested data in the exact format specified. Every line must have a numeric value - never write N/A. No explanations.',
+              },
+              {
+                role: 'user',
+                content: `What are the most recent prices for these financial instruments? Search for each one individually on Yahoo Finance, Google Finance, or Investing.com.
+
+${overviewItems.map(i => `- ${i.symbol} (${i.title_en})`).join('\n')}
+
+IMPORTANT: You MUST provide a numeric value for EVERY item.
+
+Format EXACTLY like this (one per line, use the full symbol including prefix):
+${overviewItems.map(i => `${i.symbol}: [price] ([change], [change_pct]%)`).join('\n')}
+
+Example: TVC:GOLD: 2,875.30 (+12.50, +0.44%)
+If change is zero: TVC:GOLD: 2,875.30 (0.00, 0.00%)`,
+              },
+            ],
+            search_recency_filter: 'week',
+          }),
+        });
+
+        if (overviewResponse.ok) {
+          const overviewData = await overviewResponse.json();
+          const overviewContent = overviewData.choices?.[0]?.message?.content || '';
+          console.log('Overview Perplexity response:', overviewContent);
+
+          for (const item of overviewItems) {
+            const parsed = parsePerplexityLine(
+              overviewContent.split('\n').find(line => line.includes(item.symbol)) || '',
+              item.symbol
+            );
+            if (parsed) {
+              await supabase
+                .from('market_overview_items')
+                .update({
+                  current_value: parsed.value,
+                  change_value: parsed.change,
+                  change_percent: parsed.percent,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', item.id);
+
+              overviewResults.push({ symbol: item.symbol, title: item.title_en, ...parsed });
+            } else {
+              overviewResults.push({ symbol: item.symbol, title: item.title_en, error: 'Could not parse' });
+            }
           }
         }
       }
+    }
 
-      // Send failure notification if any indices failed
+    // Send failure notification if auto-update
+    if (isAutoUpdate) {
       const failedIndices = results.filter(r => !r.currentValue || r.error);
       if (failedIndices.length > 0) {
         await sendFailureNotification(failedIndices, results.length);
@@ -365,15 +337,13 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, data: results }),
+      JSON.stringify({ success: true, data: results, overview: overviewResults }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error) {
     console.error('Error fetching market indices:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch market indices';
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

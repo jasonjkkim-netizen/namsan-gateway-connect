@@ -220,13 +220,8 @@ export function AdminMarketIndices() {
 
       const { data, error } = await supabase.functions.invoke('fetch-market-indices', {
         body: {
-          indices: activeIndices.map(i => ({
-            id: i.id,
-            symbol: i.symbol,
-            name_ko: i.name_ko,
-            name_en: i.name_en,
-            current_value: i.current_value
-          }))
+          autoUpdate: true,
+          updateOverview: true,
         }
       });
 
@@ -237,38 +232,16 @@ export function AdminMarketIndices() {
         return;
       }
 
-      if (data.success && data.data) {
-        let successCount = 0;
-        let failCount = 0;
+      if (data.success) {
+        const successCount = data.data?.filter((r: any) => r.currentValue).length || 0;
+        const failCount = data.data?.filter((r: any) => !r.currentValue).length || 0;
+        const overviewCount = data.overview?.filter((r: any) => r.value).length || 0;
 
-        for (const result of data.data) {
-          if (result.currentValue) {
-            const { error: updateError } = await supabase
-              .from('market_indices')
-              .update({
-                current_value: result.currentValue,
-                change_value: result.changeValue ?? 0,
-                change_percent: result.changePercent ?? 0,
-                updated_at: new Date().toISOString()
-              })
-              .eq('symbol', result.symbol);
-
-            if (updateError) {
-              console.error(`Failed to update ${result.symbol}:`, updateError);
-              failCount++;
-            } else {
-              successCount++;
-            }
-          } else {
-            failCount++;
-          }
-        }
-
-        if (successCount > 0) {
+        if (successCount > 0 || overviewCount > 0) {
           toast.success(
             language === 'ko' 
-              ? `${successCount}개 지수 업데이트 완료` 
-              : `Updated ${successCount} indices`
+              ? `지수 ${successCount}개, 시장 개요 ${overviewCount}개 업데이트 완료` 
+              : `Updated ${successCount} indices, ${overviewCount} overview items`
           );
         }
         if (failCount > 0) {

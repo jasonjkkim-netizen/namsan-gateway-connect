@@ -244,7 +244,10 @@ export type Database = {
       }
       market_overview_items: {
         Row: {
+          change_percent: number | null
+          change_value: number | null
           created_at: string
+          current_value: number | null
           display_order: number
           id: string
           is_active: boolean
@@ -254,7 +257,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          change_percent?: number | null
+          change_value?: number | null
           created_at?: string
+          current_value?: number | null
           display_order?: number
           id?: string
           is_active?: boolean
@@ -264,7 +270,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          change_percent?: number | null
+          change_value?: number | null
           created_at?: string
+          current_value?: number | null
           display_order?: number
           id?: string
           is_active?: boolean
