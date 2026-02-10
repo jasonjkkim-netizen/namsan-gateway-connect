@@ -23,6 +23,7 @@ import {
   Download
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { ConsultationButton } from '@/components/ConsultationButton';
 
 interface Product {
   id: string;
@@ -351,9 +352,12 @@ export default function ProductDetail() {
         {/* CTA */}
         {product.status === 'open' && (
           <div className="text-center py-8 animate-fade-in" style={{ animationDelay: '600ms' }}>
-            <Button size="lg" className="btn-gold px-12 py-6 h-auto text-lg">
-              {language === 'ko' ? '투자 상담 신청' : 'Request Consultation'}
-            </Button>
+            <ConsultationButton 
+              variant="gold" 
+              size="lg" 
+              className="px-12 py-6 h-auto text-lg"
+              productName={language === 'ko' ? product.name_ko : product.name_en}
+            />
             <p className="text-sm text-muted-foreground mt-3">
               {language === 'ko' 
                 ? '전문 상담원이 투자에 대해 안내해 드립니다'

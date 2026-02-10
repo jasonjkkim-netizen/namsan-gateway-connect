@@ -6,6 +6,7 @@ import { LanguageToggle } from './LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { LogOut, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { ConsultationButton } from './ConsultationButton';
 import logo from '@/assets/namsan-logo.png';
 
 export function Header() {
@@ -53,6 +54,7 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-4">
+          <ConsultationButton variant="gold" size="sm" />
           <LanguageToggle />
           
           {user && (
