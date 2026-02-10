@@ -362,7 +362,7 @@ export function AdminStockPicks() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '현재 종가' : 'Current Closing Price'}</Label>
+                <Label>{language === 'ko' ? '현재 가격' : 'Current Price'}</Label>
                 <Input
                   type="number"
                   value={formData.current_closing_price}
@@ -401,7 +401,7 @@ export function AdminStockPicks() {
               <TableHead>{language === 'ko' ? '종목명' : 'Stock'}</TableHead>
               <TableHead>{language === 'ko' ? '추천일' : 'Date'}</TableHead>
               <TableHead>{language === 'ko' ? '추천일 종가' : 'Rec. Price'}</TableHead>
-              <TableHead>{language === 'ko' ? '현재 종가' : 'Current'}</TableHead>
+              <TableHead>{language === 'ko' ? '현재 가격' : 'Current'}</TableHead>
               <TableHead>{language === 'ko' ? '수익률' : 'Return'}</TableHead>
               <TableHead>{language === 'ko' ? '활성' : 'Active'}</TableHead>
               <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
