@@ -27,6 +27,7 @@ interface MarketItem {
 // Category definitions for market items
 const MARKET_CATEGORIES = {
   indices: { ko: '주요 지수', en: 'Major Indices', order: [1, 2, 3] },
+  crypto: { ko: '암호화폐', en: 'Cryptocurrency', order: [4, 5, 6] },
   currencies: { ko: '주요 환율', en: 'Major Currencies', order: [7, 8, 9, 10, 11, 12] },
   bonds: { ko: '채권', en: 'Bonds', order: [20, 21] },
   commodities: { ko: '원자재', en: 'Commodities', order: [30, 31, 32, 33] },
@@ -49,6 +50,9 @@ const getExternalUrl = (symbol: string) => {
     'TVC:SILVER': 'https://finance.yahoo.com/quote/SI=F/',
     'TVC:USOIL': 'https://finance.yahoo.com/quote/CL=F/',
     'NYMEX:NG1!': 'https://finance.yahoo.com/quote/NG=F/',
+    'CRYPTO:BTC': 'https://finance.yahoo.com/quote/BTC-USD/',
+    'CRYPTO:ETH': 'https://finance.yahoo.com/quote/ETH-USD/',
+    'CRYPTO:XRP': 'https://finance.yahoo.com/quote/XRP-USD/',
   };
   return map[symbol] || `https://finance.yahoo.com/lookup/?s=${encodeURIComponent(symbol)}`;
 };
