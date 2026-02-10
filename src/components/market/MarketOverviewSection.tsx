@@ -30,25 +30,22 @@ const MARKET_CATEGORIES = {
   commodities: { ko: '원자재', en: 'Commodities', order: [30, 31, 32, 33] },
 };
 
-const getTradingViewUrl = (symbol: string) =>
-  `https://www.tradingview.com/symbols/${symbol.replace(':', '-')}/`;
-
-const getInvestingUrl = (symbol: string) => {
+const getExternalUrl = (symbol: string) => {
   const map: Record<string, string> = {
-    'TVC:NI225': 'https://www.investing.com/indices/japan-ni225',
-    'AMEX:SPY': 'https://www.investing.com/etfs/spdr-s-p-500',
-    'TVC:DJI': 'https://www.investing.com/indices/us-30',
-    'FX:EURUSD': 'https://www.investing.com/currencies/eur-usd',
-    'FX:USDJPY': 'https://www.investing.com/currencies/usd-jpy',
-    'FX:USDCNY': 'https://www.investing.com/currencies/usd-cny',
-    'TVC:US10Y': 'https://www.investing.com/rates-bonds/u.s.-10-year-bond-yield',
-    'TVC:US02Y': 'https://www.investing.com/rates-bonds/u.s.-2-year-bond-yield',
-    'TVC:GOLD': 'https://www.investing.com/commodities/gold',
-    'TVC:SILVER': 'https://www.investing.com/commodities/silver',
-    'TVC:USOIL': 'https://www.investing.com/commodities/crude-oil',
-    'NYMEX:NG1!': 'https://www.investing.com/commodities/natural-gas',
+    'TVC:NI225': 'https://finance.yahoo.com/quote/%5EN225/',
+    'AMEX:SPY': 'https://finance.yahoo.com/quote/SPY/',
+    'TVC:DJI': 'https://finance.yahoo.com/quote/%5EDJI/',
+    'FX:EURUSD': 'https://finance.yahoo.com/quote/EURUSD=X/',
+    'FX:USDJPY': 'https://finance.yahoo.com/quote/USDJPY=X/',
+    'FX:USDCNY': 'https://finance.yahoo.com/quote/USDCNY=X/',
+    'TVC:US10Y': 'https://finance.yahoo.com/quote/%5ETNX/',
+    'TVC:US02Y': 'https://finance.yahoo.com/quote/2YY=F/',
+    'TVC:GOLD': 'https://finance.yahoo.com/quote/GC=F/',
+    'TVC:SILVER': 'https://finance.yahoo.com/quote/SI=F/',
+    'TVC:USOIL': 'https://finance.yahoo.com/quote/CL=F/',
+    'NYMEX:NG1!': 'https://finance.yahoo.com/quote/NG=F/',
   };
-  return map[symbol] || `https://www.investing.com/search/?q=${encodeURIComponent(symbol)}`;
+  return map[symbol] || `https://finance.yahoo.com/lookup/?s=${encodeURIComponent(symbol)}`;
 };
 
 interface MarketOverviewSectionProps {
@@ -169,26 +166,15 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
                           )}
                         </TableCell>
                         <TableCell className="py-2 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <a
-                              href={getTradingViewUrl(item.symbol)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1 rounded hover:bg-muted transition-colors"
-                              title="TradingView"
-                            >
-                              <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-primary" />
-                            </a>
-                            <a
-                              href={getInvestingUrl(item.symbol)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1 rounded hover:bg-muted transition-colors text-[10px] font-medium text-muted-foreground hover:text-primary"
-                              title="Investing.com"
-                            >
-                              inv
-                            </a>
-                          </div>
+                          <a
+                            href={getExternalUrl(item.symbol)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 rounded hover:bg-muted transition-colors inline-flex"
+                            title="Yahoo Finance"
+                          >
+                            <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                          </a>
                         </TableCell>
                       </TableRow>
                     );

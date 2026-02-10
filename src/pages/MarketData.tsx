@@ -137,22 +137,13 @@ export default function MarketData() {
                       </h3>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <a
-                          href={`https://www.tradingview.com/symbols/${index.symbol}/`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1 rounded hover:bg-muted transition-colors"
-                          title="TradingView"
-                        >
-                          <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-primary" />
-                        </a>
-                        <a
                           href={index.external_link || '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1 rounded hover:bg-muted transition-colors text-[10px] font-medium text-muted-foreground hover:text-primary"
-                          title="Investing.com"
+                          title={index.external_link?.includes('naver') ? '네이버 금융' : 'Yahoo Finance'}
                         >
-                          inv
+                          <ExternalLink className="h-3 w-3" />
                         </a>
                       </div>
                     </div>
