@@ -73,6 +73,7 @@ export function AdminBlog() {
   const [sending, setSending] = useState(false);
   const [newsletters, setNewsletters] = useState<any[]>([]);
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
+  const [sendAsNewsletter, setSendAsNewsletter] = useState(false);
 
   async function fetchPosts() {
     const { data } = await supabase
@@ -179,6 +180,7 @@ export function AdminBlog() {
   function openNew() {
     setEditingId(null);
     setFormData(defaultFormData);
+    setSendAsNewsletter(false);
     setDialogOpen(true);
   }
 
@@ -249,6 +251,61 @@ export function AdminBlog() {
     }
 
     toast.success(language === 'ko' ? '저장 완료' : 'Saved');
+    
+    // Auto-send as newsletter if checked
+    if (sendAsNewsletter && formData.is_active) {
+      try {
+        setSending(true);
+        const content = formData.content_ko || formData.content_en;
+        const subject = formData.title_ko || formData.title_en;
+        
+        const htmlContent = content
+          .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+          .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+          .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(/!\[.*?\]\((.*?)\)/g, '<img src="$1" style="max-width:100%;border-radius:8px;margin:12px 0" />')
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#2d4a7c">$1</a>')
+          .replace(/\n\n/g, '</p><p style="margin:12px 0">')
+          .replace(/\n/g, '<br/>');
+
+        // Create newsletter record
+        const { data: nlData } = await supabase
+          .from('newsletters')
+          .insert({
+            subject_ko: subject,
+            subject_en: subject,
+            content_ko: content,
+            content_en: content,
+            status: 'sending',
+          })
+          .select()
+          .single();
+
+        const { data, error: sendError } = await supabase.functions.invoke('send-newsletter', {
+          body: {
+            subject,
+            htmlContent: `<p style="margin:12px 0">${htmlContent}</p>`,
+            newsletterId: nlData?.id,
+          },
+        });
+
+        if (sendError) throw sendError;
+        toast.success(
+          language === 'ko'
+            ? `${data.sentCount}명에게 뉴스레터 자동 발송 완료!`
+            : `Newsletter auto-sent to ${data.sentCount} recipients!`
+        );
+        fetchNewsletters();
+      } catch (err) {
+        console.error('Auto newsletter error:', err);
+        toast.error(language === 'ko' ? '뉴스레터 자동 발송 실패' : 'Auto newsletter send failed');
+      } finally {
+        setSending(false);
+      }
+    }
+
     setDialogOpen(false);
     fetchPosts();
   }
@@ -511,12 +568,35 @@ export function AdminBlog() {
               <Label>{language === 'ko' ? '활성' : 'Active'}</Label>
             </div>
 
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <Switch
+                checked={sendAsNewsletter}
+                onCheckedChange={setSendAsNewsletter}
+              />
+              <div>
+                <Label className="flex items-center gap-1.5 cursor-pointer">
+                  <Mail className="h-4 w-4 text-primary" />
+                  {language === 'ko' ? '저장 시 뉴스레터 자동 발송' : 'Auto-send as newsletter on save'}
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {language === 'ko' 
+                    ? '승인된 모든 고객에게 이메일로 발송됩니다' 
+                    : 'Will be emailed to all approved clients'}
+                </p>
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 {language === 'ko' ? '취소' : 'Cancel'}
               </Button>
-              <Button onClick={handleSave}>
-                {language === 'ko' ? '저장' : 'Save'}
+              <Button onClick={handleSave} disabled={sending} className="flex items-center gap-2">
+                {sendAsNewsletter && <Send className="h-4 w-4" />}
+                {sending 
+                  ? (language === 'ko' ? '발송 중...' : 'Sending...') 
+                  : sendAsNewsletter 
+                    ? (language === 'ko' ? '저장 & 발송' : 'Save & Send')
+                    : (language === 'ko' ? '저장' : 'Save')}
               </Button>
             </div>
           </div>
