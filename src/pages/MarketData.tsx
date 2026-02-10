@@ -97,11 +97,11 @@ export default function MarketData() {
           </div>
         </div>
 
+        {/* Namsan View Point - moved to top */}
+        <NamsanViewpointSection language={language} />
+
         {/* Weekly Stock Picks Table */}
         <WeeklyStockPicksTable language={language} />
-
-        {/* Namsan View Point */}
-        <NamsanViewpointSection language={language} />
 
         {/* Today's Market Closing News */}
         <MarketNewsSection language={language} />
