@@ -266,6 +266,9 @@ If change is zero: KOSPI: 2,650.31 (0.00, 0.00%)`,
       if (overviewItems?.length) {
         const overviewSymbols = overviewItems.map(i => `${i.title_en} (${i.symbol})`).join(', ');
 
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
         const overviewResponse = await fetch('https://api.perplexity.ai/chat/completions', {
           method: 'POST',
           headers: {
@@ -277,24 +280,31 @@ If change is zero: KOSPI: 2,650.31 (0.00, 0.00%)`,
             messages: [
               {
                 role: 'system',
-                content: 'You are a financial data assistant. Return ONLY the requested data in the exact format specified. Every line must have a numeric value - never write N/A. No explanations.',
+                content: `You are a financial data assistant. Today is ${todayStr}. Return ONLY the requested data in the exact format specified. Every line must have a numeric value - never write N/A. No explanations. Search for the LATEST real-time or most recent closing price.`,
               },
               {
                 role: 'user',
-                content: `What are the most recent prices for these financial instruments? Search for each one individually on Yahoo Finance, Google Finance, or Investing.com.
+                content: `What are the LATEST prices as of today ${todayStr} for these financial instruments? 
 
+CRITICAL: Search Yahoo Finance, Google Finance, Bloomberg, Investing.com, and MarketWatch for REAL-TIME or most recent closing prices. Do NOT use cached or outdated data.
+
+For reference, as of early 2026:
+- Gold (TVC:GOLD) should be around $2,800-$3,000+ per ounce
+- Silver (TVC:SILVER) should be around $30-$35 per ounce  
+- WTI Oil (TVC:USOIL) should be around $70-$85 per barrel
+- US 10Y yield should be around 4.0-4.5%
+
+Items to look up:
 ${overviewItems.map(i => `- ${i.symbol} (${i.title_en})`).join('\n')}
-
-IMPORTANT: You MUST provide a numeric value for EVERY item.
 
 Format EXACTLY like this (one per line, use the full symbol including prefix):
 ${overviewItems.map(i => `${i.symbol}: [price] ([change], [change_pct]%)`).join('\n')}
 
-Example: TVC:GOLD: 2,875.30 (+12.50, +0.44%)
-If change is zero: TVC:GOLD: 2,875.30 (0.00, 0.00%)`,
+Example: TVC:GOLD: 2,950.30 (+12.50, +0.44%)
+If change is zero: TVC:GOLD: 2,950.30 (0.00, 0.00%)`,
               },
             ],
-            search_recency_filter: 'week',
+            search_recency_filter: 'day',
           }),
         });
 
