@@ -145,6 +145,14 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
             {language === 'ko' ? '주요 자산군별 시장 현황' : 'Market overview by asset class'}
+            {items.length > 0 && items[0].updated_at && (
+              <span className="ml-2 text-xs">
+                ({language === 'ko' ? '업데이트: ' : 'Updated: '}
+                {new Date(items[0].updated_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', {
+                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                })})
+              </span>
+            )}
           </p>
         </div>
         <Button
