@@ -30,7 +30,7 @@ const YAHOO_SYMBOL_MAP: Record<string, string> = {
   'FX:USDJPY': 'USDJPY=X',
   'FX:USDCNY': 'USDCNY=X',
   'TVC:US10Y': '^TNX',
-  // TVC:US02Y handled via US Treasury API fallback
+  // TVC:US02Y - no reliable Yahoo ticker; uses US Treasury API or FRED
   'TVC:GOLD': 'GC=F',
   'TVC:SILVER': 'SI=F',
   'TVC:USOIL': 'CL=F',
@@ -115,48 +115,69 @@ async function fetchAllYahooFinancePrices(symbols: string[]): Promise<Record<str
   return results;
 }
 
-// Fetch US Treasury yield from US Treasury's free XML API (no API key needed)
+// Fetch US Treasury yield from Treasury.gov OData API (no API key needed)
 async function fetchUSTreasuryYield(maturity: '2' | '5' | '10' | '30' = '2'): Promise<YahooQuote | null> {
-  try {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
-    const url = `https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE) eq ${month} and year(NEW_DATE) eq ${year}&$orderby=NEW_DATE desc&$top=2&$format=json`;
-    
-    const response = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-    });
-    
-    if (!response.ok) {
-      console.warn(`US Treasury API returned ${response.status}`);
-      return null;
-    }
-    
-    const data = await response.json();
-    const entries = data?.d?.results || data?.value || [];
-    
-    if (entries.length === 0) {
-      // Try previous month if current month has no data yet
-      const prevMonth = month === 1 ? 12 : month - 1;
-      const prevYear = month === 1 ? year - 1 : year;
-      const fallbackUrl = `https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE) eq ${prevMonth} and year(NEW_DATE) eq ${prevYear}&$orderby=NEW_DATE desc&$top=2&$format=json`;
-      
-      const fallbackResponse = await fetch(fallbackUrl, {
+  // Try multiple URL formats since Treasury APIs can change
+  const urls = [
+    `https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$orderby=NEW_DATE%20desc&$top=2&$format=json`,
+    `https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$top=2&$orderby=NEW_DATE%20desc&$select=NEW_DATE,BC_2YEAR,BC_5YEAR,BC_10YEAR,BC_30YEAR&$format=json`,
+  ];
+
+  for (const url of urls) {
+    try {
+      console.log(`Trying Treasury API: ${url.substring(0, 80)}...`);
+      const response = await fetch(url, {
         headers: { 'Accept': 'application/json' },
       });
       
-      if (!fallbackResponse.ok) return null;
-      const fallbackData = await fallbackResponse.json();
-      const fallbackEntries = fallbackData?.d?.results || fallbackData?.value || [];
-      if (fallbackEntries.length === 0) return null;
-      return extractYieldFromEntries(fallbackEntries, maturity);
+      if (!response.ok) {
+        console.warn(`US Treasury API returned ${response.status}`);
+        continue;
+      }
+      
+      const text = await response.text();
+      if (text.startsWith('<') || text.startsWith('<!')) {
+        console.warn('US Treasury API returned HTML/XML instead of JSON, trying next URL...');
+        continue;
+      }
+      
+      const data = JSON.parse(text);
+      const entries = data?.d?.results || data?.d || data?.value || [];
+      const entriesArr = Array.isArray(entries) ? entries : [entries];
+      
+      if (entriesArr.length === 0) continue;
+      
+      const result = extractYieldFromEntries(entriesArr, maturity);
+      if (result) return result;
+    } catch (err) {
+      console.warn('US Treasury API fetch error:', err);
     }
-    
-    return extractYieldFromEntries(entries, maturity);
-  } catch (err) {
-    console.warn('US Treasury API fetch error:', err);
-    return null;
   }
+
+  // Final fallback: try FRED-like public data via Alpha Vantage demo
+  try {
+    const avUrl = `https://www.alphavantage.co/query?function=TREASURY_YIELD&interval=daily&maturity=${maturity}year&apikey=demo&datatype=json`;
+    console.log('Trying Alpha Vantage Treasury Yield...');
+    const avResponse = await fetch(avUrl);
+    if (avResponse.ok) {
+      const avData = await avResponse.json();
+      const dataPoints = avData?.data;
+      if (dataPoints && dataPoints.length >= 2) {
+        const latest = parseFloat(dataPoints[0].value);
+        const prev = parseFloat(dataPoints[1].value);
+        if (!isNaN(latest) && latest > 0) {
+          const change = prev && !isNaN(prev) ? +(latest - prev).toFixed(3) : 0;
+          const percent = prev && prev > 0 ? +((change / prev) * 100).toFixed(2) : 0;
+          console.log(`Alpha Vantage: ${maturity}Y yield = ${latest} (${change >= 0 ? '+' : ''}${change}, ${percent}%)`);
+          return { value: latest, change, percent };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Alpha Vantage fetch error:', err);
+  }
+
+  return null;
 }
 
 function extractYieldFromEntries(entries: any[], maturity: string): YahooQuote | null {
@@ -428,9 +449,23 @@ Deno.serve(async (req) => {
         console.log(`Yahoo Finance returned data for ${yahooSuccessCount}/${overviewItems.length} items`);
 
         // Step 2: Find items that Yahoo didn't return data for
-        const missingItems = overviewItems.filter(i => !yahooResults[i.symbol]);
+        let missingItems = overviewItems.filter(i => !yahooResults[i.symbol]);
 
-        // Step 3: Fall back to Perplexity for missing items
+        // Step 2.5: US Treasury API for treasury yields (before Perplexity)
+        for (const item of missingItems) {
+          if (item.symbol === 'TVC:US02Y') {
+            const treasuryData = await fetchUSTreasuryYield('2');
+            if (treasuryData) {
+              yahooResults[item.symbol] = treasuryData;
+              console.log(`US Treasury API: US02Y = ${treasuryData.value}`);
+            }
+          }
+        }
+
+        // Recalculate missing after Treasury API
+        missingItems = overviewItems.filter(i => !yahooResults[i.symbol]);
+
+        // Step 3: Fall back to Perplexity for remaining missing items
         let perplexityResults: Record<string, { value: number; change: number; percent: number }> = {};
         if (missingItems.length > 0 && PERPLEXITY_API_KEY) {
           console.log(`Falling back to Perplexity for ${missingItems.length} missing items: ${missingItems.map(i => i.symbol).join(', ')}`);
@@ -472,20 +507,10 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Step 3.5: US Treasury API fallback for treasury yields
-        for (const item of overviewItems) {
-          if (item.symbol === 'TVC:US02Y' && !yahooResults[item.symbol] && !perplexityResults[item.symbol]) {
-            const treasuryData = await fetchUSTreasuryYield('2');
-            if (treasuryData) {
-              yahooResults[item.symbol] = treasuryData; // reuse the map
-            }
-          }
-        }
-
         // Step 4: Update DB with combined results
         for (const item of overviewItems) {
           const data = yahooResults[item.symbol] || perplexityResults[item.symbol];
-          const source = yahooResults[item.symbol] && !YAHOO_SYMBOL_MAP[item.symbol] ? 'US Treasury API' : yahooResults[item.symbol] ? 'Yahoo Finance' : perplexityResults[item.symbol] ? 'Perplexity' : 'none';
+          const source = yahooResults[item.symbol] ? (YAHOO_SYMBOL_MAP[item.symbol] ? 'Yahoo Finance' : 'US Treasury API') : perplexityResults[item.symbol] ? 'Perplexity' : 'none';
           
           if (data) {
             await supabase
