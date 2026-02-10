@@ -35,6 +35,10 @@ const YAHOO_SYMBOL_MAP: Record<string, string> = {
   'TVC:SILVER': 'SI=F',
   'TVC:USOIL': 'CL=F',
   'NYMEX:NG1!': 'NG=F',
+  // Crypto
+  'CRYPTO:BTC': 'BTC-USD',
+  'CRYPTO:ETH': 'ETH-USD',
+  'CRYPTO:XRP': 'XRP-USD',
   // Market indices card symbols
   'KOSPI': '^KS11',
   'KOSDAQ': '^KQ11',
