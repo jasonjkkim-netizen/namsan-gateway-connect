@@ -8,7 +8,9 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, Upload, Image } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { RichPasteEditor } from './RichPasteEditor';
 
@@ -196,43 +198,121 @@ export function AdminViewpoints() {
         {items.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">{language === 'ko' ? '등록된 뷰 포인트가 없습니다' : 'No viewpoints yet'}</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{language === 'ko' ? '제목' : 'Title'}</TableHead>
-                <TableHead>{language === 'ko' ? '이미지' : 'Image'}</TableHead>
-                <TableHead>{language === 'ko' ? '활성' : 'Active'}</TableHead>
-                <TableHead>{language === 'ko' ? '날짜' : 'Date'}</TableHead>
-                <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map(item => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="font-medium">{item.title_ko}</div>
-                    <div className="text-sm text-muted-foreground">{item.title_en}</div>
-                  </TableCell>
-                  <TableCell>
-                    {item.image_url ? <Image className="h-4 w-4 text-primary" /> : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell>
-                    <Switch checked={item.is_active} onCheckedChange={async () => {
-                      await supabase.from('namsan_viewpoints').update({ is_active: !item.is_active }).eq('id', item.id);
-                      fetchItems();
-                    }} />
-                  </TableCell>
-                  <TableCell className="text-sm">{new Date(item.created_at).toLocaleDateString('ko-KR')}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(item)}><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          <Tabs defaultValue="active" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="active" className="flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5" />
+                {language === 'ko' ? '활성' : 'Active'}
+                <Badge variant="secondary" className="ml-1 text-xs">{items.filter(i => i.is_active).length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="archived" className="flex items-center gap-1.5">
+                <Archive className="h-3.5 w-3.5" />
+                {language === 'ko' ? '보관함' : 'Archived'}
+                <Badge variant="secondary" className="ml-1 text-xs">{items.filter(i => !i.is_active).length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="all" className="flex items-center gap-1.5">
+                {language === 'ko' ? '전체' : 'All'}
+                <Badge variant="secondary" className="ml-1 text-xs">{items.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+
+            {['active', 'archived', 'all'].map(tab => {
+              const filtered = tab === 'all' ? items : items.filter(i => tab === 'active' ? i.is_active : !i.is_active);
+              
+              // Group by month
+              const grouped = filtered.reduce<Record<string, Viewpoint[]>>((acc, item) => {
+                const date = new Date(item.created_at);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(item);
+                return acc;
+              }, {});
+
+              const sortedMonths = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+              return (
+                <TabsContent key={tab} value={tab}>
+                  {filtered.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      {language === 'ko' ? '항목이 없습니다' : 'No items'}
+                    </p>
+                  ) : (
+                    <div className="space-y-6">
+                      {sortedMonths.map(month => {
+                        const [y, m] = month.split('-');
+                        const monthLabel = new Date(+y, +m - 1).toLocaleDateString(
+                          language === 'ko' ? 'ko-KR' : 'en-US',
+                          { year: 'numeric', month: 'long' }
+                        );
+
+                        return (
+                          <div key={month}>
+                            <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-2">
+                              <span className="h-1 w-1 rounded-full bg-primary" />
+                              {monthLabel}
+                              <span className="text-xs font-normal">({grouped[month].length})</span>
+                            </h4>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[40%]">{language === 'ko' ? '제목' : 'Title'}</TableHead>
+                                  <TableHead>{language === 'ko' ? '이미지' : 'Image'}</TableHead>
+                                  <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                                  <TableHead>{language === 'ko' ? '날짜/시간' : 'Date/Time'}</TableHead>
+                                  <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {grouped[month].map(item => (
+                                  <TableRow key={item.id} className={!item.is_active ? 'opacity-60' : ''}>
+                                    <TableCell>
+                                      <div className="font-medium">{item.title_ko}</div>
+                                      {item.title_en && <div className="text-sm text-muted-foreground">{item.title_en}</div>}
+                                      <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                        {item.content_ko?.replace(/!\[.*?\]\(.*?\)/g, '').slice(0, 60)}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      {item.image_url ? (
+                                        <img src={item.image_url} alt="" className="h-8 w-12 object-cover rounded" />
+                                      ) : (
+                                        <span className="text-muted-foreground">—</span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Switch checked={item.is_active} onCheckedChange={async () => {
+                                        await supabase.from('namsan_viewpoints').update({ is_active: !item.is_active }).eq('id', item.id);
+                                        fetchItems();
+                                        toast.success(item.is_active 
+                                          ? (language === 'ko' ? '보관함으로 이동' : 'Archived')
+                                          : (language === 'ko' ? '활성화됨' : 'Activated'));
+                                      }} />
+                                    </TableCell>
+                                    <TableCell className="text-xs whitespace-nowrap">
+                                      <div>{new Date(item.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+                                      <div className="text-muted-foreground">
+                                        {new Date(item.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex gap-1">
+                                        <Button variant="ghost" size="icon" onClick={() => openEdit(item)}><Pencil className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  )}
+                </TabsContent>
+              );
+            })}
+          </Tabs>
         )}
       </CardContent>
     </Card>
