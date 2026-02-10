@@ -53,7 +53,7 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
       <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
         <div className="p-4 border-b border-border">
           <h3 className="font-serif font-semibold">
-            {language === 'ko' ? '금주 관심 종목' : 'Weekly Stock Picks'}
+            {language === 'ko' ? '남산 관심 종목' : 'Namsan Stock Picks'}
           </h3>
         </div>
         <div className="h-[100px] flex items-center justify-center">
@@ -79,9 +79,8 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
     return lang === 'ko' ? `${month}/${day} 종가` : `${month}/${day} Close`;
   };
 
-  const today = new Date();
   const refDateHeader = formatDateHeader(priceReferenceDate, language);
-  const todayHeader = formatDateHeader(today, language);
+  const todayHeader = language === 'ko' ? '현재가' : 'Current';
   
   // Check if any stock was added on a different date (newly added stocks)
   const hasNewlyAddedStocks = stocks.some(stock => {
@@ -94,7 +93,7 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
       <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
         <div className="p-3 border-b border-border">
           <h3 className="font-serif font-medium text-sm">
-            {language === 'ko' ? '금주 관심 종목' : 'Weekly Stock Picks'}
+            {language === 'ko' ? '남산 관심 종목' : 'Namsan Stock Picks'}
           </h3>
         </div>
         <div className="overflow-x-auto">
