@@ -329,38 +329,9 @@ export type Database = {
         }
         Relationships: []
       }
-      research_memos: {
-        Row: {
-          author_name: string
-          content: string
-          created_at: string
-          created_by: string
-          id: string
-          is_pinned: boolean
-          updated_at: string
-        }
-        Insert: {
-          author_name?: string
-          content: string
-          created_at?: string
-          created_by: string
-          id?: string
-          is_pinned?: boolean
-          updated_at?: string
-        }
-        Update: {
-          author_name?: string
-          content?: string
-          created_at?: string
-          created_by?: string
-          id?: string
-          is_pinned?: boolean
-          updated_at?: string
-        }
-        Relationships: []
-      }
       research_reports: {
         Row: {
+          admin_note: string | null
           category: string
           created_at: string
           id: string
@@ -373,6 +344,7 @@ export type Database = {
           title_ko: string
         }
         Insert: {
+          admin_note?: string | null
           category: string
           created_at?: string
           id?: string
@@ -385,6 +357,7 @@ export type Database = {
           title_ko: string
         }
         Update: {
+          admin_note?: string | null
           category?: string
           created_at?: string
           id?: string
