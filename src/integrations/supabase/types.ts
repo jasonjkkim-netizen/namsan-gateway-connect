@@ -368,6 +368,36 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_pick_news: {
+        Row: {
+          citations: Json
+          created_at: string
+          fetched_at: string
+          id: string
+          news_bullets: Json
+          stock_code: string | null
+          stock_name: string
+        }
+        Insert: {
+          citations?: Json
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          news_bullets?: Json
+          stock_code?: string | null
+          stock_name: string
+        }
+        Update: {
+          citations?: Json
+          created_at?: string
+          fetched_at?: string
+          id?: string
+          news_bullets?: Json
+          stock_code?: string | null
+          stock_name?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
