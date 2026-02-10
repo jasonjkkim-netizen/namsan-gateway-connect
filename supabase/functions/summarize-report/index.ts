@@ -91,8 +91,35 @@ serve(async (req) => {
       );
     }
 
-    const { title, summary, category, language } = await req.json();
-    
+    const body = await req.json();
+    const { title, summary, category, language } = body;
+
+    // Validate inputs
+    if (!title || typeof title !== "string" || title.length > 500) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or missing title" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (summary && (typeof summary !== "string" || summary.length > 10000)) {
+      return new Response(
+        JSON.stringify({ error: "Summary too long" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (category && (typeof category !== "string" || category.length > 100)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid category" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (language && !["ko", "en"].includes(language)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid language" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
