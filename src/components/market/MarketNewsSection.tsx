@@ -51,7 +51,7 @@ export function MarketNewsSection({ language }: MarketNewsSectionProps) {
         <div className="flex items-center gap-2">
           <Newspaper className="h-4 w-4 text-primary" />
           <h3 className="font-serif font-medium text-sm">
-            {language === 'ko' ? '오늘 마감 주요 뉴스' : "Today's Market Closing News"}
+            {language === 'ko' ? '금융시장 뉴스' : 'Financial Market News'}
           </h3>
         </div>
         <Button
