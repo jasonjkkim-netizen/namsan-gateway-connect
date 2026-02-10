@@ -62,7 +62,7 @@ export default function Blog() {
             {language === 'ko' ? '남산 블로그' : 'Namsan Blog'}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            {language === 'ko' ? '남산 캐피탈의 인사이트와 소식' : 'Insights and news from Namsan Capital'}
+            {language === 'ko' ? '남산 파트너스의 인사이트와 소식' : 'Insights and news from Namsan Partners'}
           </p>
         </div>
 
