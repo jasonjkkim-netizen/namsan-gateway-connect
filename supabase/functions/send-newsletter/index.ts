@@ -66,13 +66,13 @@ serve(async (req: Request) => {
       for (const email of batch) {
         try {
           await resend.emails.send({
-            from: "Namsan Capital <onboarding@resend.dev>",
+            from: "Namsan Partners <onboarding@resend.dev>",
             to: [email],
             subject: subject,
             html: `
               <div style="max-width: 600px; margin: 0 auto; font-family: 'Georgia', serif; color: #1a1a1a;">
                 <div style="background: linear-gradient(135deg, #1a365d, #2d4a7c); padding: 24px 32px; text-align: center;">
-                  <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 600;">Namsan Capital</h1>
+                  <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 600;">Namsan Partners</h1>
                   <p style="color: #cbd5e0; margin: 4px 0 0; font-size: 13px;">Newsletter</p>
                 </div>
                 <div style="padding: 32px; background: #ffffff; border: 1px solid #e2e8f0; border-top: none;">
@@ -80,7 +80,7 @@ serve(async (req: Request) => {
                 </div>
                 <div style="padding: 16px 32px; background: #f7fafc; text-align: center; border: 1px solid #e2e8f0; border-top: none;">
                   <p style="color: #a0aec0; font-size: 11px; margin: 0;">
-                    © ${new Date().getFullYear()} Namsan Capital. All rights reserved.
+                    © ${new Date().getFullYear()} Namsan Partners. All rights reserved.
                   </p>
                 </div>
               </div>
