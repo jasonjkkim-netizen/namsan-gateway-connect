@@ -229,6 +229,14 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
       </div>
 
       <p className="text-xs text-muted-foreground text-center mt-4">
+        {items.length > 0 && items[0].updated_at && (
+          <span className="block mb-1">
+            {language === 'ko' ? '마지막 업데이트: ' : 'Last updated: '}
+            {new Date(items[0].updated_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', {
+              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+            })}
+          </span>
+        )}
         {language === 'ko'
           ? '* 데이터는 Perplexity AI를 통해 업데이트됩니다. 실시간 시세와 차이가 있을 수 있습니다.'
           : '* Data updated via Perplexity AI. May differ from real-time quotes.'}
