@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Calendar, DollarSign, ExternalLink } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, ExternalLink } from 'lucide-react';
 
 interface StockPick {
   id: string;
@@ -79,7 +79,7 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 rounded-lg border bg-card">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <DollarSign className="h-4 w-4" />
+                <span className="text-xs font-bold">₩</span>
                 {language === 'ko' ? '추천 시 종가' : 'Price at Recommendation'}
               </div>
               <div className="text-lg font-semibold">
@@ -89,7 +89,7 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
 
             <div className="p-4 rounded-lg border bg-card">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <DollarSign className="h-4 w-4" />
+                <span className="text-xs font-bold">₩</span>
                 {language === 'ko' ? '현재 종가' : 'Current Price'}
               </div>
               <div className="text-lg font-semibold">
