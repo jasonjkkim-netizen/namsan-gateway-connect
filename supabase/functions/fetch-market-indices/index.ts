@@ -19,6 +19,7 @@ const ADMIN_EMAIL = "jason.jk.kim@gmail.com";
 
 // Map internal symbols to Yahoo Finance ticker symbols
 const YAHOO_SYMBOL_MAP: Record<string, string> = {
+  // Market overview items
   'TVC:NI225': '^N225',
   'AMEX:SPY': 'SPY',
   'TVC:DJI': '^DJI',
@@ -37,6 +38,8 @@ const YAHOO_SYMBOL_MAP: Record<string, string> = {
   // Market indices card symbols
   'KOSPI': '^KS11',
   'KOSDAQ': '^KQ11',
+  'SPX': '^GSPC',
+  'NDX': '^NDX',
   'S&P500': '^GSPC',
   'NASDAQ': '^IXIC',
 };
@@ -221,12 +224,6 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
-    if (!PERPLEXITY_API_KEY) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'PERPLEXITY_API_KEY is not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Fetch active indices from database
     const { data: activeIndices, error: idxError } = await supabase
@@ -241,65 +238,54 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Build the prompt with all index symbols
-    const symbolList = activeIndices.map(i => `${i.symbol} (${i.name_en})`).join(', ');
-    const today = new Date();
-    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    console.log(`Fetching market indices via Yahoo Finance for: ${activeIndices.map(i => i.symbol).join(', ')}`);
 
-    console.log(`Fetching market data via Perplexity for: ${symbolList}`);
+    // Step 1: Try Yahoo Finance first
+    const indexSymbols = activeIndices.map(i => i.symbol);
+    const yahooIndexResults = await fetchAllYahooFinancePrices(indexSymbols);
+    const yahooSuccessCount = Object.keys(yahooIndexResults).length;
+    console.log(`Yahoo Finance returned data for ${yahooSuccessCount}/${activeIndices.length} indices`);
 
-    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'sonar-pro',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a financial data assistant. Return ONLY the requested data in the exact format specified. Every line must have a numeric value - never write N/A. No explanations.',
-          },
-          {
-            role: 'user',
-            content: `What are the most recent closing prices for these stock market indices? Search for each one individually.
+    // Step 2: Fallback to Perplexity for missing indices
+    const missingIndices = activeIndices.filter(i => !yahooIndexResults[i.symbol]);
+    let perplexityIndexResults: Record<string, { value: number; change: number; percent: number }> = {};
 
-${activeIndices.map(i => `- ${i.symbol} (${i.name_en})`).join('\n')}
+    if (missingIndices.length > 0 && PERPLEXITY_API_KEY) {
+      console.log(`Falling back to Perplexity for ${missingIndices.length} missing indices: ${missingIndices.map(i => i.symbol).join(', ')}`);
 
-IMPORTANT: You MUST provide a numeric value for EVERY index. Search finance sites like Yahoo Finance, Google Finance, Investing.com.
+      const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'sonar-pro',
+          messages: [
+            { role: 'system', content: 'You are a financial data assistant. Return ONLY the requested data. No explanations.' },
+            { role: 'user', content: `Latest closing prices:\n${missingIndices.map(i => `- ${i.symbol} (${i.name_en})`).join('\n')}\n\nFormat: SYMBOL: price (change, change_pct%)` },
+          ],
+          search_recency_filter: 'day',
+        }),
+      });
 
-Format EXACTLY like this (one per line):
-${activeIndices.map(i => `${i.symbol}: [price] ([change], [change_pct]%)`).join('\n')}
-
-Example: KOSPI: 2,650.31 (+15.23, +0.58%)
-If change is zero: KOSPI: 2,650.31 (0.00, 0.00%)`,
-          },
-        ],
-        search_recency_filter: 'week',
-      }),
-    });
-
-    if (!perplexityResponse.ok) {
-      const errText = await perplexityResponse.text();
-      console.error('Perplexity API error:', perplexityResponse.status, errText);
-      return new Response(
-        JSON.stringify({ success: false, error: `Perplexity API error [${perplexityResponse.status}]` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (perplexityResponse.ok) {
+        const perplexityData = await perplexityResponse.json();
+        const content = perplexityData.choices?.[0]?.message?.content || '';
+        console.log('Perplexity fallback for indices:', content);
+        perplexityIndexResults = parsePerplexityResponse(content, missingIndices.map(i => i.symbol));
+      } else {
+        const errText = await perplexityResponse.text();
+        console.error('Perplexity fallback failed:', errText);
+      }
     }
 
-    const perplexityData = await perplexityResponse.json();
-    const content = perplexityData.choices?.[0]?.message?.content || '';
-    console.log('Perplexity response:', content);
-
-    const symbols = activeIndices.map(i => i.symbol);
-    const parsed = parsePerplexityResponse(content, symbols);
-
+    // Step 3: Update DB with combined results
     const results: IndexResult[] = [];
-
     for (const index of activeIndices) {
-      const data = parsed[index.symbol];
+      const data = yahooIndexResults[index.symbol] || perplexityIndexResults[index.symbol];
+      const source = yahooIndexResults[index.symbol] ? 'Yahoo Finance' : perplexityIndexResults[index.symbol] ? 'Perplexity' : 'none';
+
       if (data) {
         results.push({
           symbol: index.symbol,
@@ -309,7 +295,6 @@ If change is zero: KOSPI: 2,650.31 (0.00, 0.00%)`,
           changePercent: data.percent,
         });
 
-        // Update DB
         const { error: updateError } = await supabase
           .from('market_indices')
           .update({
@@ -323,7 +308,7 @@ If change is zero: KOSPI: 2,650.31 (0.00, 0.00%)`,
         if (updateError) {
           console.error(`Failed to update ${index.symbol}:`, updateError);
         } else {
-          console.log(`Updated ${index.name_ko}: ${data.value}`);
+          console.log(`Updated ${index.name_ko}: ${data.value} (${source})`);
         }
       } else {
         results.push({
@@ -332,10 +317,12 @@ If change is zero: KOSPI: 2,650.31 (0.00, 0.00%)`,
           currentValue: null,
           changeValue: null,
           changePercent: null,
-          error: 'Could not parse data from Perplexity response',
+          error: 'No data from Yahoo or Perplexity',
         });
       }
     }
+    
+    console.log('Index update summary:', JSON.stringify(results.map(r => `${r.symbol}: ${r.currentValue ?? 'FAIL'}`)));
 
     // Also update market overview items if requested
     let overviewResults: any[] = [];
