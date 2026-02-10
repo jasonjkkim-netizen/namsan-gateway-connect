@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Play, ExternalLink, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle } from 'lucide-react';
+import { Play, ExternalLink, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Video {
@@ -46,6 +46,7 @@ export default function Videos() {
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText },
+    { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { path: '/videos', label: t('videos'), icon: PlayCircle, active: true },
   ];
 
