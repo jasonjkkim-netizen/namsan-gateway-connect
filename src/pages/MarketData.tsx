@@ -9,6 +9,7 @@ import { MarketOverviewSection } from '@/components/market/MarketOverviewSection
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
 import { MarketNewsSection } from '@/components/market/MarketNewsSection';
 import { StockPickNewsSection } from '@/components/market/StockPickNewsSection';
+import { NamsanViewpointSection } from '@/components/market/NamsanViewpointSection';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MarketIndex {
@@ -98,6 +99,9 @@ export default function MarketData() {
 
         {/* Weekly Stock Picks Table */}
         <WeeklyStockPicksTable language={language} />
+
+        {/* Namsan View Point */}
+        <NamsanViewpointSection language={language} />
 
         {/* Today's Market Closing News */}
         <MarketNewsSection language={language} />
