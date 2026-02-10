@@ -124,11 +124,8 @@ export default function MarketData() {
               const TrendIcon = isPositive ? TrendingUp : TrendingDown;
               
               return (
-                <a
+                <div
                   key={index.id}
-                  href={index.external_link || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="card-elevated overflow-hidden animate-fade-in group hover:shadow-lg transition-all duration-300"
                   style={{ animationDelay: `${100 + i * 50}ms` }}
                 >
@@ -138,7 +135,26 @@ export default function MarketData() {
                       <h3 className="font-serif font-semibold text-sm truncate">
                         {language === 'ko' ? index.name_ko : index.name_en}
                       </h3>
-                      <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <a
+                          href={`https://www.tradingview.com/symbols/${index.symbol}/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded hover:bg-muted transition-colors"
+                          title="TradingView"
+                        >
+                          <ExternalLink className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                        </a>
+                        <a
+                          href={index.external_link || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 rounded hover:bg-muted transition-colors text-[10px] font-medium text-muted-foreground hover:text-primary"
+                          title="Investing.com"
+                        >
+                          inv
+                        </a>
+                      </div>
                     </div>
                     
                     {/* Current Value */}
@@ -165,7 +181,7 @@ export default function MarketData() {
                       })}
                     </p>
                   </div>
-                </a>
+                </div>
               );
             })
           )}
