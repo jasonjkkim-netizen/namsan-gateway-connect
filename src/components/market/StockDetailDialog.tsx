@@ -117,11 +117,15 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
                   {language === 'ko' ? '차트 (네이버 금융)' : 'Chart (Naver Finance)'}
                 </span>
               </div>
-              <div className="h-[200px]">
-                <iframe
-                  src={`https://ssl.pstatic.net/imgfinance/chart/item/area/day/${stock.stock_code}.png?sidcode=${Date.now()}`}
-                  className="w-full h-full border-0 object-contain"
-                  scrolling="no"
+              <div className="h-[200px] flex items-center justify-center bg-muted/10">
+                <img
+                  src={`https://ssl.pstatic.net/imgfinance/chart/item/area/day/${stock.stock_code}.png`}
+                  alt={`${stock.stock_name} chart`}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement!.innerHTML = `<a href="https://finance.naver.com/item/main.naver?code=${stock.stock_code}" target="_blank" rel="noopener noreferrer" class="text-sm text-primary hover:underline">네이버 금융에서 차트 보기</a>`;
+                  }}
                 />
               </div>
             </div>
