@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, User, ArrowRight } from 'lucide-react';
+import { Calendar, User, ArrowRight, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -29,7 +30,8 @@ interface BlogPost {
 }
 
 export default function Blog() {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const navigate = useNavigate();
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
   const { data: posts, isLoading } = useQuery({
@@ -64,6 +66,33 @@ export default function Blog() {
           <p className="mt-1 text-muted-foreground">
             {language === 'ko' ? '남산 파트너스의 인사이트와 소식' : 'Insights and news from Namsan Partners'}
           </p>
+        </div>
+
+        {/* Section Navigation Buttons */}
+        <div className="mb-8 animate-fade-in" style={{ animationDelay: '50ms' }}>
+          <p className="text-sm text-muted-foreground mb-3">
+            {language === 'ko' ? '섹션으로 이동' : 'Navigate to section'}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {[
+              { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+              { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+              { path: '/products', label: t('products'), icon: Package },
+              { path: '/research', label: t('research'), icon: FileText },
+              { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen, active: true },
+              { path: '/videos', label: t('videos'), icon: PlayCircle },
+            ].map((section) => (
+              <Button
+                key={section.path}
+                variant={section.active ? "default" : "outline"}
+                onClick={() => !section.active && navigate(section.path)}
+                className={`flex items-center gap-2 ${section.active ? 'pointer-events-none' : ''}`}
+              >
+                <section.icon className="h-4 w-4" />
+                {section.label}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {isLoading ? (
