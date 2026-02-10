@@ -61,12 +61,6 @@ async function sendFailureNotification(failedStocks: StockPriceResult[], totalSt
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
             .content { background: #f9f9f9; padding: 30px; border: 1px solid #eee; }
-            .stats { display: flex; justify-content: space-around; margin: 20px 0; text-align: center; }
-            .stat-box { background: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .stat-number { font-size: 28px; font-weight: bold; }
-            .stat-label { font-size: 12px; color: #666; }
-            .success { color: #16a34a; }
-            .failure { color: #dc2626; }
             table { width: 100%; border-collapse: collapse; margin: 20px 0; background: white; }
             th { text-align: left; padding: 12px 8px; background: #f0f0f0; border-bottom: 2px solid #ddd; }
             .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
@@ -77,61 +71,99 @@ async function sendFailureNotification(failedStocks: StockPriceResult[], totalSt
           <div class="container">
             <div class="header">
               <h1 style="margin: 0;">⚠️ 주가 업데이트 실패</h1>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">Stock Price Update Failed</p>
             </div>
             <div class="content">
-              <p>안녕하세요,</p>
-              <p>자동 주가 업데이트 중 일부 종목의 가격을 가져오지 못했습니다.</p>
-              
-              <div class="stats">
-                <div class="stat-box">
-                  <div class="stat-number success">${totalStocks - failedStocks.length}</div>
-                  <div class="stat-label">성공</div>
-                </div>
-                <div class="stat-box">
-                  <div class="stat-number failure">${failedStocks.length}</div>
-                  <div class="stat-label">실패</div>
-                </div>
-              </div>
-              
-              <h3>실패한 종목 목록</h3>
+              <p>${koreaTime} (KST) 자동 주가 업데이트 중 ${failedStocks.length}/${totalStocks} 종목 실패</p>
               <table>
-                <thead>
-                  <tr>
-                    <th>종목명</th>
-                    <th>종목코드</th>
-                    <th>오류 내용</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${failedList}
-                </tbody>
+                <thead><tr><th>종목명</th><th>종목코드</th><th>오류</th></tr></thead>
+                <tbody>${failedList}</tbody>
               </table>
-              
-              <p style="color: #666; font-size: 14px;">
-                <strong>업데이트 시간:</strong> ${koreaTime} (KST)
-              </p>
-              
-              <p>Admin 대시보드에서 수동으로 주가를 업데이트하거나 종목 코드를 확인해주세요.</p>
-              
-              <center>
-                <a href="https://namsan-gateway-connect.lovable.app/admin" class="cta-button">
-                  관리자 패널로 이동 →
-                </a>
-              </center>
+              <center><a href="https://namsan-gateway-connect.lovable.app/admin" class="cta-button">관리자 패널 →</a></center>
             </div>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Namsan Korea. All rights reserved.</p>
-              <p>This is an automated notification from Namsan Korea Market Data System.</p>
-            </div>
+            <div class="footer">© ${new Date().getFullYear()} Namsan Korea</div>
           </div>
         </body>
         </html>
       `,
     });
-    console.log('Failure notification email sent to admin');
+    console.log('Failure notification email sent');
   } catch (emailError) {
     console.error('Failed to send notification email:', emailError);
+  }
+}
+
+async function fetchPricesViaPerplexity(stockCodes: StockInput[]): Promise<StockPriceResult[]> {
+  const apiKey = Deno.env.get('PERPLEXITY_API_KEY');
+  if (!apiKey) {
+    throw new Error('PERPLEXITY_API_KEY is not configured');
+  }
+
+  const stockList = stockCodes.map(s => `${s.name} (종목코드: ${s.code})`).join(', ');
+
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'sonar',
+      messages: [
+        {
+          role: 'system',
+          content: '당신은 한국 주식시장 데이터 전문가입니다. 요청된 종목의 가장 최근 주가(현재가 또는 최근 종가)를 정확하게 JSON 형식으로 반환하세요. 반드시 아래 형식을 따르세요:\n[{"code":"종목코드","price":숫자}]\n숫자는 원 단위 정수입니다. 다른 텍스트 없이 JSON만 반환하세요.'
+        },
+        {
+          role: 'user',
+          content: `다음 한국 주식 종목들의 가장 최근 주가(현재가)를 알려주세요: ${stockList}`
+        }
+      ],
+      search_recency_filter: 'day',
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Perplexity API error:', response.status, errorText);
+    throw new Error(`Perplexity API error [${response.status}]`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content || '';
+  console.log('Perplexity raw response:', content);
+
+  // Extract JSON from the response
+  const jsonMatch = content.match(/\[[\s\S]*?\]/);
+  if (!jsonMatch) {
+    console.error('Could not parse JSON from Perplexity response:', content);
+    return stockCodes.map(s => ({
+      stockCode: s.code,
+      stockName: s.name,
+      currentPrice: null,
+      error: 'Could not parse price from AI response'
+    }));
+  }
+
+  try {
+    const prices: Array<{ code: string; price: number }> = JSON.parse(jsonMatch[0]);
+    
+    return stockCodes.map(stock => {
+      const found = prices.find(p => p.code === stock.code);
+      return {
+        stockCode: stock.code,
+        stockName: stock.name,
+        currentPrice: found?.price || null,
+        error: found?.price ? undefined : 'Price not found in response'
+      };
+    });
+  } catch (parseError) {
+    console.error('JSON parse error:', parseError);
+    return stockCodes.map(s => ({
+      stockCode: s.code,
+      stockName: s.name,
+      currentPrice: null,
+      error: 'Failed to parse price data'
+    }));
   }
 }
 
@@ -141,7 +173,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Handle empty body gracefully
     let body: { stockCodes?: StockInput[]; autoUpdate?: boolean } = {};
     try {
       const text = await req.text();
@@ -149,14 +180,12 @@ Deno.serve(async (req) => {
         body = JSON.parse(text);
       }
     } catch {
-      // If parsing fails, treat as auto-update request
       body = { autoUpdate: true };
     }
 
     let stockCodes: StockInput[] = body.stockCodes || [];
     const isAutoUpdate = body.autoUpdate === true || stockCodes.length === 0;
 
-    // If this is an auto-update request, fetch active stocks from database
     if (isAutoUpdate) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -169,7 +198,6 @@ Deno.serve(async (req) => {
         .not('stock_code', 'is', null);
 
       if (error) {
-        console.error('Failed to fetch active stocks:', error);
         return new Response(
           JSON.stringify({ success: false, error: 'Failed to fetch active stocks' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -180,141 +208,22 @@ Deno.serve(async (req) => {
         code: s.stock_code!,
         name: s.stock_name
       }));
-
       console.log(`Auto-update: Found ${stockCodes.length} active stocks`);
     }
 
-    if (!stockCodes || !Array.isArray(stockCodes) || stockCodes.length === 0) {
+    if (!stockCodes || stockCodes.length === 0) {
       return new Response(
         JSON.stringify({ success: false, error: 'No stocks to update' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
-    if (!apiKey) {
-      console.error('FIRECRAWL_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Firecrawl connector not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const results: StockPriceResult[] = [];
-
-    // Process each stock code
-    for (const stock of stockCodes) {
-      const { code, name } = stock;
-      
-      if (!code) {
-        results.push({
-          stockCode: code || '',
-          stockName: name || '',
-          currentPrice: null,
-          error: 'No stock code provided'
-        });
-        continue;
-      }
-
-      try {
-        // Naver Finance stock page URL
-        const naverUrl = `https://finance.naver.com/item/main.naver?code=${code}`;
-        
-        console.log(`Scraping stock price for ${name} (${code}) from ${naverUrl}`);
-
-        const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: naverUrl,
-            formats: ['html'],
-            onlyMainContent: false,
-            waitFor: 2000, // Wait for dynamic content
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          console.error(`Firecrawl API error for ${code}:`, data);
-          results.push({
-            stockCode: code,
-            stockName: name,
-            currentPrice: null,
-            error: data.error || `Request failed with status ${response.status}`
-          });
-          continue;
-        }
-
-        // Extract current price from the HTML
-        const html = data.data?.html || data.html || '';
-        
-        // Naver Finance uses "현재가" class or specific elements for current price
-        // Try multiple patterns to extract the price
-        let currentPrice: number | null = null;
-
-        // Pattern 1: Look for the main price display (no_today class)
-        const pricePatterns = [
-          /<p class="no_today"[^>]*>[\s\S]*?<span class="blind">현재가<\/span>[\s\S]*?<span[^>]*>([0-9,]+)<\/span>/i,
-          /<dd class="stock_price"[^>]*>([0-9,]+)<\/dd>/i,
-          /<strong class="[^"]*"[^>]*>([0-9,]+)<\/strong>/i,
-          /현재가[\s\S]*?([0-9]{1,3}(?:,[0-9]{3})+)원?/i,
-          /class="no_today"[^>]*>[\s\S]*?([0-9]{1,3}(?:,[0-9]{3})+)/i,
-        ];
-
-        for (const pattern of pricePatterns) {
-          const match = html.match(pattern);
-          if (match && match[1]) {
-            const priceStr = match[1].replace(/,/g, '');
-            const parsedPrice = parseInt(priceStr, 10);
-            if (!isNaN(parsedPrice) && parsedPrice > 0) {
-              currentPrice = parsedPrice;
-              console.log(`Found price for ${code}: ${currentPrice} using pattern`);
-              break;
-            }
-          }
-        }
-
-        // Alternative: Look for meta tags or structured data
-        if (!currentPrice) {
-          const metaMatch = html.match(/<meta[^>]*property="og:description"[^>]*content="[^"]*현재가\s*([0-9,]+)/i);
-          if (metaMatch && metaMatch[1]) {
-            const priceStr = metaMatch[1].replace(/,/g, '');
-            const parsedPrice = parseInt(priceStr, 10);
-            if (!isNaN(parsedPrice) && parsedPrice > 0) {
-              currentPrice = parsedPrice;
-              console.log(`Found price for ${code} from meta: ${currentPrice}`);
-            }
-          }
-        }
-
-        results.push({
-          stockCode: code,
-          stockName: name,
-          currentPrice,
-          error: currentPrice ? undefined : 'Could not extract price from page'
-        });
-
-        // Add a small delay between requests to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-      } catch (stockError) {
-        console.error(`Error processing stock ${code}:`, stockError);
-        results.push({
-          stockCode: code,
-          stockName: name,
-          currentPrice: null,
-          error: stockError instanceof Error ? stockError.message : 'Unknown error'
-        });
-      }
-    }
+    // Use Perplexity to fetch prices
+    const results = await fetchPricesViaPerplexity(stockCodes);
 
     console.log('Stock price fetch completed:', results);
 
-    // If auto-update, also update the database directly
+    // If auto-update, update the database directly
     if (isAutoUpdate) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -338,7 +247,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Send failure notification if any stocks failed during auto-update
       const failedStocks = results.filter(r => !r.currentPrice || r.error);
       if (failedStocks.length > 0) {
         await sendFailureNotification(failedStocks, results.length);
