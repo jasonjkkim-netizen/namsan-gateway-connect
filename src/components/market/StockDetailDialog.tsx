@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,8 @@ interface StockDetailDialogProps {
 }
 
 export function StockDetailDialog({ stock, open, onOpenChange, language }: StockDetailDialogProps) {
+  const [chartError, setChartError] = useState(false);
+
   if (!stock) return null;
 
   const returnValue = stock.current_closing_price
@@ -41,7 +44,7 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => { setChartError(false); onOpenChange(isOpen); }}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-serif">
@@ -118,15 +121,23 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
                 </span>
               </div>
               <div className="h-[200px] flex items-center justify-center bg-muted/10">
-                <img
-                  src={`https://ssl.pstatic.net/imgfinance/chart/item/area/day/${stock.stock_code}.png`}
-                  alt={`${stock.stock_name} chart`}
-                  className="w-full h-full object-contain"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = `<a href="https://finance.naver.com/item/main.naver?code=${stock.stock_code}" target="_blank" rel="noopener noreferrer" class="text-sm text-primary hover:underline">네이버 금융에서 차트 보기</a>`;
-                  }}
-                />
+                {!chartError ? (
+                  <img
+                    src={`https://ssl.pstatic.net/imgfinance/chart/item/area/day/${encodeURIComponent(stock.stock_code)}.png`}
+                    alt={`${stock.stock_name} chart`}
+                    className="w-full h-full object-contain"
+                    onError={() => setChartError(true)}
+                  />
+                ) : (
+                  <a
+                    href={`https://finance.naver.com/item/main.naver?code=${encodeURIComponent(stock.stock_code)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {language === 'ko' ? '네이버 금융에서 차트 보기' : 'View chart on Naver Finance'}
+                  </a>
+                )}
               </div>
             </div>
           )}
@@ -136,7 +147,7 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${stock.stock_code}`, '_blank')}
+              onClick={() => window.open(`https://finance.naver.com/item/main.naver?code=${encodeURIComponent(stock.stock_code!)}`, '_blank')}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               {language === 'ko' ? '네이버 금융에서 보기' : 'View on Naver Finance'}

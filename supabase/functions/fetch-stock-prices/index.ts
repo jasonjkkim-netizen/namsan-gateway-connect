@@ -113,6 +113,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Verify authorization
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     let body: { stockCodes?: StockInput[]; autoUpdate?: boolean } = {};
     try {
       const text = await req.text();

@@ -215,6 +215,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Verify authorization
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const body = await req.json().catch(() => ({}));
     const isAutoUpdate = body.autoUpdate === true;
     const updateOverview = body.updateOverview === true;
