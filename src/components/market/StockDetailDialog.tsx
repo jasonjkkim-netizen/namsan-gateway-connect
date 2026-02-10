@@ -83,10 +83,7 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
                 {language === 'ko' ? '추천 시 종가' : 'Price at Recommendation'}
               </div>
               <div className="text-lg font-semibold">
-                {stock.closing_price_at_recommendation.toLocaleString()}
-                <span className="text-sm font-normal text-muted-foreground ml-1">
-                  {language === 'ko' ? '원' : 'KRW'}
-                </span>
+                ₩{stock.closing_price_at_recommendation.toLocaleString()}
               </div>
             </div>
 
@@ -96,10 +93,7 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
                 {language === 'ko' ? '현재 종가' : 'Current Price'}
               </div>
               <div className="text-lg font-semibold">
-                {stock.current_closing_price?.toLocaleString() || '-'}
-                <span className="text-sm font-normal text-muted-foreground ml-1">
-                  {language === 'ko' ? '원' : 'KRW'}
-                </span>
+                {stock.current_closing_price ? `₩${stock.current_closing_price.toLocaleString()}` : '-'}
               </div>
             </div>
           </div>
@@ -115,21 +109,19 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
             </div>
           </div>
 
-          {/* TradingView Chart - if stock code is available */}
+          {/* Naver Finance Chart - if stock code is available */}
           {stock.stock_code && (
             <div className="rounded-lg border overflow-hidden">
               <div className="p-2 border-b bg-muted/30">
                 <span className="text-xs text-muted-foreground">
-                  {language === 'ko' ? '차트' : 'Chart'}
+                  {language === 'ko' ? '차트 (네이버 금융)' : 'Chart (Naver Finance)'}
                 </span>
               </div>
               <div className="h-[200px]">
                 <iframe
-                  src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=${language === 'ko' ? 'kr' : 'en'}&symbol=KRX:${stock.stock_code}&width=100%25&height=100%25&dateRange=3M&colorTheme=light&isTransparent=true&autosize=true&largeChartUrl=`}
-                  className="w-full h-full border-0"
-                  allowTransparency={true}
+                  src={`https://ssl.pstatic.net/imgfinance/chart/item/area/day/${stock.stock_code}.png?sidcode=${Date.now()}`}
+                  className="w-full h-full border-0 object-contain"
                   scrolling="no"
-                  allow="encrypted-media"
                 />
               </div>
             </div>
