@@ -39,6 +39,7 @@ interface ResearchReport {
   category: string;
   summary_en: string | null;
   summary_ko: string | null;
+  admin_note: string | null;
   pdf_url: string | null;
   publication_date: string;
   is_active: boolean | null;
@@ -58,6 +59,7 @@ export function AdminResearch() {
     category: 'market_update',
     summary_en: '',
     summary_ko: '',
+    admin_note: '',
     pdf_url: '',
     publication_date: new Date().toISOString().split('T')[0],
     is_active: true,
@@ -89,6 +91,7 @@ export function AdminResearch() {
       category: report.category,
       summary_en: report.summary_en || '',
       summary_ko: report.summary_ko || '',
+      admin_note: report.admin_note || '',
       pdf_url: report.pdf_url || '',
       publication_date: report.publication_date,
       is_active: report.is_active ?? true,
@@ -104,6 +107,7 @@ export function AdminResearch() {
       category: 'market_update',
       summary_en: '',
       summary_ko: '',
+      admin_note: '',
       pdf_url: '',
       publication_date: new Date().toISOString().split('T')[0],
       is_active: true,
@@ -135,6 +139,7 @@ export function AdminResearch() {
       category: validationResult.data.category!,
       summary_en: validationResult.data.summary_en ?? null,
       summary_ko: validationResult.data.summary_ko ?? null,
+      admin_note: formData.admin_note.trim() || null,
       pdf_url: validationResult.data.pdf_url ?? null,
       publication_date: validationResult.data.publication_date!,
       is_active: validationResult.data.is_active!,
@@ -293,6 +298,15 @@ export function AdminResearch() {
             <div className="space-y-2">
               <Label>{language === 'ko' ? '요약 (한글)' : 'Summary (KO)'}</Label>
               <Textarea value={formData.summary_ko} onChange={(e) => setFormData({ ...formData, summary_ko: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '운용역 코멘트' : 'Manager Comment'}</Label>
+              <Textarea
+                value={formData.admin_note}
+                onChange={(e) => setFormData({ ...formData, admin_note: e.target.value })}
+                placeholder={language === 'ko' ? '리서치에 대한 코멘트를 작성하세요...' : 'Write a comment about this research...'}
+                className="min-h-[80px]"
+              />
             </div>
             <div className="space-y-2">
               <Label>{language === 'ko' ? 'PDF URL' : 'PDF URL'}</Label>

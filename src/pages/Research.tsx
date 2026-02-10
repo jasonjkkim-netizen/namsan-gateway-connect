@@ -5,10 +5,10 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Download, Calendar, Sparkles, TrendingUp, LayoutDashboard, Package, PlayCircle } from 'lucide-react';
+import { FileText, Download, Calendar, Sparkles, TrendingUp, LayoutDashboard, Package, PlayCircle, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SummaryDialog } from '@/components/research/SummaryDialog';
-import { ResearchMemosSection } from '@/components/research/ResearchMemosSection';
+
 
 interface Report {
   id: string;
@@ -17,6 +17,7 @@ interface Report {
   category: string;
   summary_en: string | null;
   summary_ko: string | null;
+  admin_note: string | null;
   pdf_url: string | null;
   publication_date: string;
 }
@@ -129,8 +130,6 @@ export default function Research() {
           ))}
         </div>
 
-        {/* Research Memos Section */}
-        <ResearchMemosSection language={language} />
 
         <div className="space-y-4">
           {loading ? (
@@ -176,6 +175,18 @@ export default function Research() {
                     <p className="text-sm text-muted-foreground mb-3">
                       {language === 'ko' ? report.summary_ko : report.summary_en}
                     </p>
+
+                    {report.admin_note && (
+                      <div className="mb-3 p-3 rounded-md bg-primary/5 border border-primary/10">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-xs font-medium text-primary">
+                            {language === 'ko' ? '운용역 코멘트' : 'Manager Comment'}
+                          </span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{report.admin_note}</p>
+                      </div>
+                    )}
                     
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
