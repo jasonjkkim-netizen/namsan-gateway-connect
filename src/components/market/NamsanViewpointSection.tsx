@@ -65,33 +65,36 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
         {viewpoints.map((vp) => (
           <div key={vp.id} className="card-elevated overflow-hidden">
             <div className="p-4">
-              <h4 className="font-serif font-semibold text-base mb-2">
+              <h4 className="font-serif font-semibold text-base mb-3">
                 {language === 'ko' ? vp.title_ko : vp.title_en}
               </h4>
 
-              {vp.image_url && (
-                <div className="mb-3 rounded-lg overflow-hidden">
-                  <img
-                    src={vp.image_url}
-                    alt={language === 'ko' ? vp.title_ko : vp.title_en}
-                    className="w-full max-h-[400px] object-cover"
-                    loading="lazy"
-                  />
-                </div>
-              )}
-
-              <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
-                <ReactMarkdown>
-                  {language === 'ko' ? vp.content_ko : vp.content_en}
-                </ReactMarkdown>
-              </div>
-
-              <p className="text-xs text-muted-foreground mt-3">
-                {new Date(vp.created_at).toLocaleDateString(
-                  language === 'ko' ? 'ko-KR' : 'en-US',
-                  { year: 'numeric', month: 'short', day: 'numeric' }
+              <div className={`flex gap-4 ${vp.image_url ? 'flex-col sm:flex-row' : ''}`}>
+                {vp.image_url && (
+                  <div className="flex-shrink-0 rounded-lg overflow-hidden sm:w-48 md:w-56">
+                    <img
+                      src={vp.image_url}
+                      alt={language === 'ko' ? vp.title_ko : vp.title_en}
+                      className="w-full h-auto max-h-48 sm:max-h-40 object-cover"
+                      loading="lazy"
+                    />
+                  </div>
                 )}
-              </p>
+
+                <div className="flex-1 min-w-0">
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+                    <ReactMarkdown>
+                      {language === 'ko' ? vp.content_ko : vp.content_en}
+                    </ReactMarkdown>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    {new Date(vp.created_at).toLocaleDateString(
+                      language === 'ko' ? 'ko-KR' : 'en-US',
+                      { year: 'numeric', month: 'short', day: 'numeric' }
+                    )}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         ))}
