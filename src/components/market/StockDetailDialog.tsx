@@ -90,7 +90,7 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
             <div className="p-4 rounded-lg border bg-card">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <span className="text-xs font-bold">₩</span>
-                {language === 'ko' ? '현재 종가' : 'Current Price'}
+                {language === 'ko' ? '현재 가격' : 'Current Price'}
               </div>
               <div className="text-lg font-semibold">
                 {stock.current_closing_price ? `₩${stock.current_closing_price.toLocaleString()}` : '-'}

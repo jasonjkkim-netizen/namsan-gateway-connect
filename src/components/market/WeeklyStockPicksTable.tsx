@@ -121,7 +121,7 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
   };
 
   const refDateHeader = formatDateHeader(priceReferenceDate, language);
-  const todayHeader = language === 'ko' ? '현재가' : 'Current';
+  const todayHeader = language === 'ko' ? '현재 가격' : 'Current';
   
   // Check if any stock was added on a different date (newly added stocks)
   const hasNewlyAddedStocks = stocks.some(stock => {
@@ -197,7 +197,19 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
                       {stock.closing_price_at_recommendation.toLocaleString()}원
                     </td>
                     <td className="px-3 py-2 text-right">
-                      {stock.current_closing_price?.toLocaleString() || '-'}원
+                      {naverUrl ? (
+                        <a
+                          href={naverUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-primary hover:underline"
+                        >
+                          {stock.current_closing_price?.toLocaleString() || '-'}원
+                        </a>
+                      ) : (
+                        <>{stock.current_closing_price?.toLocaleString() || '-'}원</>
+                      )}
                     </td>
                     <td className={`px-3 py-2 text-right font-medium ${
                       returnValue !== null && returnValue > 0
