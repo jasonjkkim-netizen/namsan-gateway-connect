@@ -371,6 +371,59 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletters: {
+        Row: {
+          blog_post_id: string | null
+          content_en: string
+          content_ko: string
+          created_at: string
+          id: string
+          recipient_count: number | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string
+          subject_en: string
+          subject_ko: string
+          updated_at: string
+        }
+        Insert: {
+          blog_post_id?: string | null
+          content_en?: string
+          content_ko?: string
+          created_at?: string
+          id?: string
+          recipient_count?: number | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          subject_en?: string
+          subject_ko?: string
+          updated_at?: string
+        }
+        Update: {
+          blog_post_id?: string | null
+          content_en?: string
+          content_ko?: string
+          created_at?: string
+          id?: string
+          recipient_count?: number | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string
+          subject_en?: string
+          subject_ko?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletters_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
