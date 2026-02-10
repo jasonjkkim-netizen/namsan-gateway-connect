@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
+import { MarketNewsSection } from '@/components/market/MarketNewsSection';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MarketIndex {
@@ -96,6 +97,9 @@ export default function MarketData() {
 
         {/* Weekly Stock Picks Table */}
         <WeeklyStockPicksTable language={language} />
+
+        {/* Today's Market Closing News */}
+        <MarketNewsSection language={language} />
 
         {/* Main Index Cards - 4 in a row */}
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
