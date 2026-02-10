@@ -18,7 +18,9 @@ import {
   Layers,
   Clock,
   Target,
-  Shield
+  Shield,
+  FileText,
+  Download
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -36,6 +38,15 @@ interface Product {
   created_at: string;
 }
 
+interface ProductDocument {
+  id: string;
+  name_ko: string;
+  name_en: string;
+  document_type: string;
+  file_url: string;
+  file_size: number | null;
+}
+
 const TYPE_CONFIG: Record<string, { icon: typeof Landmark; labelEn: string; labelKo: string; color: string }> = {
   bond: { icon: Landmark, labelEn: 'Bond', labelKo: '채권', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
   equity: { icon: LineChart, labelEn: 'Equity', labelKo: '주식', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
@@ -49,6 +60,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { language, formatCurrency, formatPercent, formatDate } = useLanguage();
   const [product, setProduct] = useState<Product | null>(null);
+  const [documents, setDocuments] = useState<ProductDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,6 +79,15 @@ export default function ProductDetail() {
       }
       
       setProduct(data as Product);
+      
+      // Fetch documents
+      const { data: docs } = await supabase
+        .from('product_documents')
+        .select('*')
+        .eq('product_id', id)
+        .order('display_order', { ascending: true });
+      if (docs) setDocuments(docs as ProductDocument[]);
+      
       setLoading(false);
     }
 
@@ -274,6 +295,58 @@ export default function ProductDetail() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Product Documents */}
+        {documents.length > 0 && (
+          <Card className="card-elevated animate-fade-in mb-8" style={{ animationDelay: '550ms' }}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-accent" />
+                {language === 'ko' ? '상품 관련 문서' : 'Product Documents'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {documents.map(doc => {
+                  const typeLabels: Record<string, { ko: string; en: string }> = {
+                    proposal: { ko: '제안서', en: 'Proposal' },
+                    contract: { ko: '계약서', en: 'Contract' },
+                    prospectus: { ko: '투자설명서', en: 'Prospectus' },
+                    report: { ko: '보고서', en: 'Report' },
+                    other: { ko: '기타', en: 'Other' },
+                  };
+                  const typeLabel = language === 'ko'
+                    ? typeLabels[doc.document_type]?.ko || doc.document_type
+                    : typeLabels[doc.document_type]?.en || doc.document_type;
+
+                  return (
+                    <a
+                      key={doc.id}
+                      href={doc.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileText className="h-5 w-5 text-destructive shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                            {language === 'ko' ? doc.name_ko : doc.name_en}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {typeLabel}
+                            {doc.file_size ? ` · ${doc.file_size < 1024 * 1024 ? `${(doc.file_size / 1024).toFixed(0)}KB` : `${(doc.file_size / (1024 * 1024)).toFixed(1)}MB`}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                    </a>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* CTA */}
         {product.status === 'open' && (

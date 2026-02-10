@@ -30,7 +30,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Search, Trash2 } from 'lucide-react';
+import { Plus, Edit, Search, Trash2, FileText } from 'lucide-react';
+import { ProductDocuments } from './ProductDocuments';
 
 interface Product {
   id: string;
@@ -364,6 +365,11 @@ export function AdminProducts() {
                 {language === 'ko' ? '저장' : 'Save'}
               </Button>
             </div>
+
+            {/* Document Management - only show when editing */}
+            {editingProduct && (
+              <ProductDocuments productId={editingProduct.id} />
+            )}
           </div>
         </DialogContent>
       </Dialog>

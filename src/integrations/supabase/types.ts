@@ -424,6 +424,56 @@ export type Database = {
           },
         ]
       }
+      product_documents: {
+        Row: {
+          created_at: string
+          display_order: number
+          document_type: string
+          file_size: number | null
+          file_url: string
+          id: string
+          name_en: string
+          name_ko: string
+          product_id: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          document_type?: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          name_en?: string
+          name_ko?: string
+          product_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          document_type?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          name_en?: string
+          name_ko?: string
+          product_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_documents_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "investment_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
