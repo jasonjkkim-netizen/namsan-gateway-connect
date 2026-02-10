@@ -15,5 +15,5 @@ verify_jwt = false
 [functions.fetch-market-indices]
 verify_jwt = false
 
-[functions.lookup-historical-price]
+[functions.stock-pick-news]
 verify_jwt = false

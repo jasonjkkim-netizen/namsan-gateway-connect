@@ -8,6 +8,7 @@ import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDow
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
 import { MarketNewsSection } from '@/components/market/MarketNewsSection';
+import { StockPickNewsSection } from '@/components/market/StockPickNewsSection';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MarketIndex {
@@ -100,6 +101,9 @@ export default function MarketData() {
 
         {/* Today's Market Closing News */}
         <MarketNewsSection language={language} />
+
+        {/* Stock Pick News */}
+        <StockPickNewsSection language={language} />
 
         {/* Main Index Cards - 4 in a row */}
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
