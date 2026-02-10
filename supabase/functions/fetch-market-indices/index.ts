@@ -30,7 +30,7 @@ const YAHOO_SYMBOL_MAP: Record<string, string> = {
   'FX:USDJPY': 'USDJPY=X',
   'FX:USDCNY': 'USDCNY=X',
   'TVC:US10Y': '^TNX',
-  // TVC:US02Y - no reliable Yahoo ticker; uses US Treasury API or FRED
+  'TVC:US05Y': '^FVX',
   'TVC:GOLD': 'GC=F',
   'TVC:SILVER': 'SI=F',
   'TVC:USOIL': 'CL=F',
@@ -453,11 +453,11 @@ Deno.serve(async (req) => {
 
         // Step 2.5: US Treasury API for treasury yields (before Perplexity)
         for (const item of missingItems) {
-          if (item.symbol === 'TVC:US02Y') {
-            const treasuryData = await fetchUSTreasuryYield('2');
+          if (item.symbol === 'TVC:US05Y') {
+            const treasuryData = await fetchUSTreasuryYield('5');
             if (treasuryData) {
               yahooResults[item.symbol] = treasuryData;
-              console.log(`US Treasury API: US02Y = ${treasuryData.value}`);
+              console.log(`US Treasury API: US05Y = ${treasuryData.value}`);
             }
           }
         }
