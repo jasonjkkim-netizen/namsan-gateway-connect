@@ -45,7 +45,7 @@ const getExternalUrl = (symbol: string) => {
     'FX:USDJPY': 'https://finance.yahoo.com/quote/USDJPY=X/',
     'FX:USDCNY': 'https://finance.yahoo.com/quote/USDCNY=X/',
     'TVC:US10Y': 'https://finance.yahoo.com/quote/%5ETNX/',
-    'TVC:US02Y': 'https://finance.yahoo.com/quote/2YY=F/',
+    'TVC:US02Y': 'https://finance.yahoo.com/quote/%5ETWOY/',
     'TVC:GOLD': 'https://finance.yahoo.com/quote/GC=F/',
     'TVC:SILVER': 'https://finance.yahoo.com/quote/SI=F/',
     'TVC:USOIL': 'https://finance.yahoo.com/quote/CL=F/',

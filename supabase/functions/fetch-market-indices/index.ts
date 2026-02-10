@@ -30,7 +30,7 @@ const YAHOO_SYMBOL_MAP: Record<string, string> = {
   'FX:USDJPY': 'USDJPY=X',
   'FX:USDCNY': 'USDCNY=X',
   'TVC:US10Y': '^TNX',
-  'TVC:US02Y': '2YY=F',
+  // TVC:US02Y handled via US Treasury API fallback
   'TVC:GOLD': 'GC=F',
   'TVC:SILVER': 'SI=F',
   'TVC:USOIL': 'CL=F',
@@ -113,6 +113,78 @@ async function fetchAllYahooFinancePrices(symbols: string[]): Promise<Record<str
   }
 
   return results;
+}
+
+// Fetch US Treasury yield from US Treasury's free XML API (no API key needed)
+async function fetchUSTreasuryYield(maturity: '2' | '5' | '10' | '30' = '2'): Promise<YahooQuote | null> {
+  try {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const url = `https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE) eq ${month} and year(NEW_DATE) eq ${year}&$orderby=NEW_DATE desc&$top=2&$format=json`;
+    
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json' },
+    });
+    
+    if (!response.ok) {
+      console.warn(`US Treasury API returned ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    const entries = data?.d?.results || data?.value || [];
+    
+    if (entries.length === 0) {
+      // Try previous month if current month has no data yet
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const prevYear = month === 1 ? year - 1 : year;
+      const fallbackUrl = `https://data.treasury.gov/feed.svc/DailyTreasuryYieldCurveRateData?$filter=month(NEW_DATE) eq ${prevMonth} and year(NEW_DATE) eq ${prevYear}&$orderby=NEW_DATE desc&$top=2&$format=json`;
+      
+      const fallbackResponse = await fetch(fallbackUrl, {
+        headers: { 'Accept': 'application/json' },
+      });
+      
+      if (!fallbackResponse.ok) return null;
+      const fallbackData = await fallbackResponse.json();
+      const fallbackEntries = fallbackData?.d?.results || fallbackData?.value || [];
+      if (fallbackEntries.length === 0) return null;
+      return extractYieldFromEntries(fallbackEntries, maturity);
+    }
+    
+    return extractYieldFromEntries(entries, maturity);
+  } catch (err) {
+    console.warn('US Treasury API fetch error:', err);
+    return null;
+  }
+}
+
+function extractYieldFromEntries(entries: any[], maturity: string): YahooQuote | null {
+  const fieldMap: Record<string, string> = {
+    '2': 'BC_2YEAR',
+    '5': 'BC_5YEAR', 
+    '10': 'BC_10YEAR',
+    '30': 'BC_30YEAR',
+  };
+  const field = fieldMap[maturity];
+  if (!field) return null;
+  
+  const latest = entries[0];
+  const value = parseFloat(latest[field]);
+  if (isNaN(value)) return null;
+  
+  let change = 0;
+  let percent = 0;
+  if (entries.length > 1) {
+    const prev = parseFloat(entries[1][field]);
+    if (!isNaN(prev) && prev > 0) {
+      change = +(value - prev).toFixed(3);
+      percent = +((change / prev) * 100).toFixed(2);
+    }
+  }
+  
+  console.log(`US Treasury API: ${maturity}Y yield = ${value} (${change >= 0 ? '+' : ''}${change}, ${percent}%)`);
+  return { value, change, percent };
 }
 
 async function sendFailureNotification(failedIndices: IndexResult[], totalIndices: number) {
@@ -400,10 +472,20 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Step 3.5: US Treasury API fallback for treasury yields
+        for (const item of overviewItems) {
+          if (item.symbol === 'TVC:US02Y' && !yahooResults[item.symbol] && !perplexityResults[item.symbol]) {
+            const treasuryData = await fetchUSTreasuryYield('2');
+            if (treasuryData) {
+              yahooResults[item.symbol] = treasuryData; // reuse the map
+            }
+          }
+        }
+
         // Step 4: Update DB with combined results
         for (const item of overviewItems) {
           const data = yahooResults[item.symbol] || perplexityResults[item.symbol];
-          const source = yahooResults[item.symbol] ? 'Yahoo Finance' : perplexityResults[item.symbol] ? 'Perplexity' : 'none';
+          const source = yahooResults[item.symbol] && !YAHOO_SYMBOL_MAP[item.symbol] ? 'US Treasury API' : yahooResults[item.symbol] ? 'Yahoo Finance' : perplexityResults[item.symbol] ? 'Perplexity' : 'none';
           
           if (data) {
             await supabase
