@@ -1,16 +1,18 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
 import { MarketNewsSection } from '@/components/market/MarketNewsSection';
 import { StockPickNewsSection } from '@/components/market/StockPickNewsSection';
 import { NamsanViewpointSection } from '@/components/market/NamsanViewpointSection';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface MarketIndex {
   id: string;
@@ -29,6 +31,8 @@ interface MarketIndex {
 export default function MarketData() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const { data: indices, isLoading } = useQuery({
     queryKey: ['market-indices'],
@@ -64,6 +68,30 @@ export default function MarketData() {
   const formatChange = (value: number) => {
     const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}`;
+  };
+
+  const handleUpdateIndices = async () => {
+    setIsUpdating(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        toast.error(language === 'ko' ? '로그인이 필요합니다' : 'Login required');
+        return;
+      }
+      const response = await supabase.functions.invoke('fetch-market-indices', {
+        body: { updateOverview: true },
+      });
+      if (response.error) throw response.error;
+      await queryClient.invalidateQueries({ queryKey: ['market-indices'] });
+      await queryClient.invalidateQueries({ queryKey: ['market-overview'] });
+      toast.success(language === 'ko' ? '시장 데이터가 업데이트되었습니다' : 'Market data updated');
+    } catch (err) {
+      console.error('Update failed:', err);
+      toast.error(language === 'ko' ? '업데이트 실패' : 'Update failed');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -110,7 +138,22 @@ export default function MarketData() {
         {/* Stock Pick News */}
         <StockPickNewsSection language={language} />
 
-        {/* Main Index Cards - 4 in a row */}
+        {/* Main Index Cards */}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-serif font-semibold text-lg">
+            {language === 'ko' ? '주요 지수' : 'Major Indices'}
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUpdateIndices}
+            disabled={isUpdating}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isUpdating ? 'animate-spin' : ''}`} />
+            {language === 'ko' ? '업데이트' : 'Update'}
+          </Button>
+        </div>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
