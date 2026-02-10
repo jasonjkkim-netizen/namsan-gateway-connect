@@ -16,6 +16,7 @@ import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Research from "./pages/Research";
 import Videos from "./pages/Videos";
+import Blog from "./pages/Blog";
 import MarketData from "./pages/MarketData";
 import Admin from "./pages/Admin";
 import PendingApproval from "./pages/PendingApproval";
@@ -64,6 +65,7 @@ const App = () => (
                     <Research />
                   </ProtectedRoute>
                 } />
+                <Route path="/blog" element={<Blog />} />
                 <Route path="/videos" element={
                   <ProtectedRoute>
                     <Videos />
