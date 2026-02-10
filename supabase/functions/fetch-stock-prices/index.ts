@@ -58,11 +58,11 @@ async function fetchSingleStockPrice(apiKey: string, stock: StockInput): Promise
         messages: [
           {
             role: 'system',
-            content: '한국 주식의 현재 주가를 숫자만 반환하세요. 원 단위 정수로, 쉼표 없이 숫자만 답하세요. 예: 167500'
+            content: '한국 주식의 현재 주가(원)를 숫자만 반환하세요. 종목코드가 아닌 주가만 답하세요. 쉼표 없이 숫자만. 예시: 55000'
           },
           {
             role: 'user',
-            content: `${stock.name} (종목코드: ${stock.code}) 현재 주가는 얼마입니까?`
+            content: `한국 주식 "${stock.name}"의 현재 주가(원)를 알려주세요. 숫자만 답해주세요.`
           }
         ],
         search_recency_filter: 'day',
@@ -79,14 +79,24 @@ async function fetchSingleStockPrice(apiKey: string, stock: StockInput): Promise
     const content = data.choices?.[0]?.message?.content || '';
     console.log(`Perplexity response for ${stock.name}: ${content}`);
 
-    // Extract number from response - look for patterns like 167500, 167,500, etc
-    const numberMatch = content.match(/([0-9]{1,3}(?:,?[0-9]{3})+|[0-9]{4,})/);
-    if (numberMatch) {
-      const price = parseInt(numberMatch[1].replace(/,/g, ''), 10);
-      if (price > 100) { // Sanity check: stock price should be > 100 won
-        console.log(`Price for ${stock.name} (${stock.code}): ${price}`);
-        return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
+    // Extract all numbers from the response
+    const allNumbers: number[] = [];
+    const regex = /([0-9]{1,3}(?:,?[0-9]{3})+|[0-9]{4,})/g;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      const num = parseInt(match[1].replace(/,/g, ''), 10);
+      // Filter out: stock code, numbers < 1000, and unreasonably large numbers
+      const codeNum = parseInt(stock.code, 10);
+      if (num > 1000 && num !== codeNum && num < 100000000) {
+        allNumbers.push(num);
       }
+    }
+
+    if (allNumbers.length > 0) {
+      // Use the first valid price found
+      const price = allNumbers[0];
+      console.log(`Price for ${stock.name} (${stock.code}): ${price}`);
+      return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
     }
 
     console.warn(`Could not parse price for ${stock.name} from: ${content}`);
