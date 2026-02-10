@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Download, Calendar, Sparkles, TrendingUp, LayoutDashboard, Package, PlayCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SummaryDialog } from '@/components/research/SummaryDialog';
+import { ResearchMemosSection } from '@/components/research/ResearchMemosSection';
 
 interface Report {
   id: string;
@@ -127,6 +128,9 @@ export default function Research() {
             </Button>
           ))}
         </div>
+
+        {/* Research Memos Section */}
+        <ResearchMemosSection language={language} />
 
         <div className="space-y-4">
           {loading ? (
