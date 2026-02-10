@@ -101,15 +101,34 @@ export function AdminViewpoints() {
 
   async function publishToBlog(data: typeof formData) {
     try {
-      await supabase.from('blog_posts').insert({
-        title_ko: data.title_ko,
-        title_en: data.title_en || data.title_ko,
-        content_ko: data.content_ko,
-        content_en: data.content_en || data.content_ko,
-        thumbnail_url: data.image_url,
-        is_active: data.is_active,
-        author: 'Namsan Partners',
-      });
+      // Check if a blog post with the same Korean title already exists
+      const { data: existing } = await supabase
+        .from('blog_posts')
+        .select('id')
+        .eq('title_ko', data.title_ko)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('blog_posts').update({
+          title_en: data.title_en || data.title_ko,
+          content_ko: data.content_ko,
+          content_en: data.content_en || data.content_ko,
+          thumbnail_url: data.image_url,
+          is_active: data.is_active,
+          author: 'Namsan Partners',
+          updated_at: new Date().toISOString(),
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('blog_posts').insert({
+          title_ko: data.title_ko,
+          title_en: data.title_en || data.title_ko,
+          content_ko: data.content_ko,
+          content_en: data.content_en || data.content_ko,
+          thumbnail_url: data.image_url,
+          is_active: data.is_active,
+          author: 'Namsan Partners',
+        });
+      }
     } catch (err) {
       console.error('Auto blog publish error:', err);
     }
@@ -128,7 +147,12 @@ export function AdminViewpoints() {
         .update({ ...formData, updated_at: new Date().toISOString() })
         .eq('id', editingItem.id);
       if (error) toast.error('Failed to update');
-      else { toast.success(language === 'ko' ? '수정되었습니다' : 'Updated'); setDialogOpen(false); fetchItems(); }
+      else {
+        await publishToBlog(formData);
+        toast.success(language === 'ko' ? '수정 및 블로그 동기화 완료' : 'Updated & synced to blog');
+        setDialogOpen(false);
+        fetchItems();
+      }
     } else {
       const maxOrder = items.length > 0 ? Math.max(...items.map(i => i.display_order)) : 0;
       const { error } = await supabase
