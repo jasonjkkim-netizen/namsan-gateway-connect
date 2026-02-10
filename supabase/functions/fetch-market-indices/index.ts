@@ -17,6 +17,97 @@ interface IndexResult {
 
 const ADMIN_EMAIL = "jason.jk.kim@gmail.com";
 
+// Map internal symbols to Yahoo Finance ticker symbols
+const YAHOO_SYMBOL_MAP: Record<string, string> = {
+  'TVC:NI225': '^N225',
+  'AMEX:SPY': 'SPY',
+  'TVC:DJI': '^DJI',
+  'FX:USDKRW': 'USDKRW=X',
+  'FX:JPYKRW': 'JPYKRW=X',
+  'FX:HKDKRW': 'HKDKRW=X',
+  'FX:EURUSD': 'EURUSD=X',
+  'FX:USDJPY': 'USDJPY=X',
+  'FX:USDCNY': 'USDCNY=X',
+  'TVC:US10Y': '^TNX',
+  'TVC:US02Y': '2YY=F',
+  'TVC:GOLD': 'GC=F',
+  'TVC:SILVER': 'SI=F',
+  'TVC:USOIL': 'CL=F',
+  'NYMEX:NG1!': 'NG=F',
+  // Market indices card symbols
+  'KOSPI': '^KS11',
+  'KOSDAQ': '^KQ11',
+  'S&P500': '^GSPC',
+  'NASDAQ': '^IXIC',
+};
+
+interface YahooQuote {
+  value: number;
+  change: number;
+  percent: number;
+}
+
+async function fetchYahooFinancePrice(yahooSymbol: string): Promise<YahooQuote | null> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1d`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+
+    if (!response.ok) {
+      console.warn(`Yahoo Finance returned ${response.status} for ${yahooSymbol}`);
+      await response.text(); // consume body
+      return null;
+    }
+
+    const data = await response.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta) return null;
+
+    const price = meta.regularMarketPrice;
+    const prevClose = meta.chartPreviousClose ?? meta.previousClose;
+
+    if (price == null || price <= 0) return null;
+
+    const change = prevClose ? +(price - prevClose).toFixed(4) : 0;
+    const percent = prevClose && prevClose > 0 ? +((change / prevClose) * 100).toFixed(2) : 0;
+
+    return { value: +price.toFixed(4), change, percent };
+  } catch (err) {
+    console.warn(`Yahoo Finance fetch error for ${yahooSymbol}:`, err);
+    return null;
+  }
+}
+
+async function fetchAllYahooFinancePrices(symbols: string[]): Promise<Record<string, YahooQuote>> {
+  const results: Record<string, YahooQuote> = {};
+
+  // Fetch in parallel batches of 5 to avoid rate limiting
+  const batchSize = 5;
+  for (let i = 0; i < symbols.length; i += batchSize) {
+    const batch = symbols.slice(i, i + batchSize);
+    const promises = batch.map(async (internalSymbol) => {
+      const yahooSymbol = YAHOO_SYMBOL_MAP[internalSymbol];
+      if (!yahooSymbol) {
+        console.warn(`No Yahoo symbol mapping for ${internalSymbol}`);
+        return;
+      }
+      const quote = await fetchYahooFinancePrice(yahooSymbol);
+      if (quote) {
+        results[internalSymbol] = quote;
+        console.log(`Yahoo Finance: ${internalSymbol} (${yahooSymbol}) = ${quote.value} (${quote.change >= 0 ? '+' : ''}${quote.change}, ${quote.percent}%)`);
+      } else {
+        console.warn(`Yahoo Finance: No data for ${internalSymbol} (${yahooSymbol})`);
+      }
+    });
+    await Promise.all(promises);
+  }
+
+  return results;
+}
+
 async function sendFailureNotification(failedIndices: IndexResult[], totalIndices: number) {
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
   if (!resendApiKey) {
@@ -71,13 +162,9 @@ async function sendFailureNotification(failedIndices: IndexResult[], totalIndice
 }
 
 function parsePerplexityLine(line: string, symbol: string): { value: number; change: number; percent: number } | null {
-  // Remove citation markers like [1], [3]
   const cleaned = line.replace(/\[\d+\]/g, '').trim();
-  
-  // Skip N/A lines
   if (cleaned.includes('N/A') || cleaned.includes('not available')) return null;
 
-  // Find the value after the symbol
   const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const lineMatch = cleaned.match(new RegExp(`${escapedSymbol}[:\\s]+([\\d,]+\\.?\\d*)`, 'i'));
   if (!lineMatch) return null;
@@ -85,16 +172,13 @@ function parsePerplexityLine(line: string, symbol: string): { value: number; cha
   const value = parseFloat(lineMatch[1].replace(/,/g, ''));
   if (isNaN(value) || value <= 0) return null;
 
-  // Try to extract change and percent
   let change = 0;
   let percent = 0;
 
-  // Handle "flat" or "0%" cases
   if (cleaned.includes('flat') || cleaned.match(/\(0[,\s]*0%\)/)) {
     return { value, change: 0, percent: 0 };
   }
 
-  // Pattern: (+/-VALUE, +/-PERCENT%) or just numbers after the value
   const changeMatch = cleaned.match(/([+-]?\d[\d,]*\.?\d*)[,\s]+([+-]?\d[\d,]*\.?\d*)%/);
   if (changeMatch) {
     change = parseFloat(changeMatch[1].replace(/,/g, ''));
@@ -109,7 +193,6 @@ function parsePerplexityResponse(content: string, symbols: string[]): Record<str
   const lines = content.split('\n');
 
   for (const symbol of symbols) {
-    // Find the line containing this symbol
     const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const matchingLine = lines.find(line => new RegExp(escapedSymbol, 'i').test(line));
     if (matchingLine) {
@@ -264,77 +347,83 @@ If change is zero: KOSPI: 2,650.31 (0.00, 0.00%)`,
         .order('display_order');
 
       if (overviewItems?.length) {
-        const overviewSymbols = overviewItems.map(i => `${i.title_en} (${i.symbol})`).join(', ');
+        console.log(`Fetching overview prices via Yahoo Finance for ${overviewItems.length} items...`);
+        
+        // Step 1: Try Yahoo Finance first
+        const overviewSymbols = overviewItems.map(i => i.symbol);
+        const yahooResults = await fetchAllYahooFinancePrices(overviewSymbols);
 
-        const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const yahooSuccessCount = Object.keys(yahooResults).length;
+        console.log(`Yahoo Finance returned data for ${yahooSuccessCount}/${overviewItems.length} items`);
 
-        const overviewResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'sonar-pro',
-            messages: [
-              {
-                role: 'system',
-                content: `You are a financial data assistant. Today is ${todayStr}. Return ONLY the requested data in the exact format specified. Every line must have a numeric value - never write N/A. No explanations. Search for the LATEST real-time or most recent closing price.`,
-              },
-              {
-                role: 'user',
-                content: `What are the LATEST prices as of today ${todayStr} for these financial instruments? 
+        // Step 2: Find items that Yahoo didn't return data for
+        const missingItems = overviewItems.filter(i => !yahooResults[i.symbol]);
 
-CRITICAL: Search Yahoo Finance, Google Finance, Bloomberg, Investing.com, and MarketWatch for REAL-TIME or most recent closing prices. Do NOT use cached or outdated data.
+        // Step 3: Fall back to Perplexity for missing items
+        let perplexityResults: Record<string, { value: number; change: number; percent: number }> = {};
+        if (missingItems.length > 0 && PERPLEXITY_API_KEY) {
+          console.log(`Falling back to Perplexity for ${missingItems.length} missing items: ${missingItems.map(i => i.symbol).join(', ')}`);
+          
+          const todayStr = new Date().toISOString().split('T')[0];
+          const overviewResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'sonar-pro',
+              messages: [
+                { role: 'system', content: `You are a financial data assistant. Today is ${todayStr}. Return ONLY the requested data. No explanations.` },
+                { role: 'user', content: `Latest prices for:\n${missingItems.map(i => `- ${i.symbol} (${i.title_en})`).join('\n')}\n\nFormat: SYMBOL: price (change, change_pct%)` },
+              ],
+              search_recency_filter: 'day',
+            }),
+          });
 
-For reference, as of early 2026:
-- Gold (TVC:GOLD) should be around $2,800-$3,000+ per ounce
-- Silver (TVC:SILVER) should be around $30-$35 per ounce  
-- WTI Oil (TVC:USOIL) should be around $70-$85 per barrel
-- US 10Y yield should be around 4.0-4.5%
+          if (overviewResponse.ok) {
+            const overviewData = await overviewResponse.json();
+            const overviewContent = overviewData.choices?.[0]?.message?.content || '';
+            console.log('Perplexity fallback response:', overviewContent);
 
-Items to look up:
-${overviewItems.map(i => `- ${i.symbol} (${i.title_en})`).join('\n')}
-
-Format EXACTLY like this (one per line, use the full symbol including prefix):
-${overviewItems.map(i => `${i.symbol}: [price] ([change], [change_pct]%)`).join('\n')}
-
-Example: TVC:GOLD: 2,950.30 (+12.50, +0.44%)
-If change is zero: TVC:GOLD: 2,950.30 (0.00, 0.00%)`,
-              },
-            ],
-            search_recency_filter: 'day',
-          }),
-        });
-
-        if (overviewResponse.ok) {
-          const overviewData = await overviewResponse.json();
-          const overviewContent = overviewData.choices?.[0]?.message?.content || '';
-          console.log('Overview Perplexity response:', overviewContent);
-
-          for (const item of overviewItems) {
-            const parsed = parsePerplexityLine(
-              overviewContent.split('\n').find(line => line.includes(item.symbol)) || '',
-              item.symbol
-            );
-            if (parsed) {
-              await supabase
-                .from('market_overview_items')
-                .update({
-                  current_value: parsed.value,
-                  change_value: parsed.change,
-                  change_percent: parsed.percent,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', item.id);
-
-              overviewResults.push({ symbol: item.symbol, title: item.title_en, ...parsed });
-            } else {
-              overviewResults.push({ symbol: item.symbol, title: item.title_en, error: 'Could not parse' });
+            for (const item of missingItems) {
+              const parsed = parsePerplexityLine(
+                overviewContent.split('\n').find(line => line.includes(item.symbol)) || '',
+                item.symbol
+              );
+              if (parsed) {
+                perplexityResults[item.symbol] = parsed;
+              }
             }
+          } else {
+            const errText = await overviewResponse.text();
+            console.error('Perplexity fallback failed:', errText);
           }
         }
+
+        // Step 4: Update DB with combined results
+        for (const item of overviewItems) {
+          const data = yahooResults[item.symbol] || perplexityResults[item.symbol];
+          const source = yahooResults[item.symbol] ? 'Yahoo Finance' : perplexityResults[item.symbol] ? 'Perplexity' : 'none';
+          
+          if (data) {
+            await supabase
+              .from('market_overview_items')
+              .update({
+                current_value: data.value,
+                change_value: data.change,
+                change_percent: data.percent,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', item.id);
+
+            overviewResults.push({ symbol: item.symbol, title: item.title_en, source, ...data });
+          } else {
+            overviewResults.push({ symbol: item.symbol, title: item.title_en, source: 'none', error: 'No data from Yahoo or Perplexity' });
+          }
+        }
+        
+        console.log('Overview update summary:', JSON.stringify(overviewResults.map(r => `${r.symbol}: ${r.value ?? 'FAIL'} (${r.source})`)));
       }
     }
 
