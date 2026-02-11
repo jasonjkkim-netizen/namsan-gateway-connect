@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type ContentType = 'viewpoint' | 'blog' | 'stock_pick' | 'video';
 type ActionType = 'added' | 'updated' | 'deleted';
@@ -58,19 +59,30 @@ export async function sendContentNotification({
       </div>
     `;
 
+    console.log(`[Notification] Sending ${contentType} ${action} notification...`);
+
     const { data, error } = await supabase.functions.invoke('send-newsletter', {
       body: { subject, htmlContent },
     });
 
     if (error) {
-      console.error('Notification email error:', error);
+      console.error('[Notification] Edge function error:', error);
+      toast.error(`알림 이메일 발송 실패 / Notification email failed: ${error.message || 'Unknown error'}`);
       return { success: false, error };
     }
 
-    console.log(`Notification sent: ${contentType} ${action}, ${data?.sentCount} recipients`);
+    if (data?.error) {
+      console.error('[Notification] Server error:', data.error);
+      toast.error(`알림 이메일 발송 실패 / Notification email failed: ${data.error}`);
+      return { success: false, error: data.error };
+    }
+
+    console.log(`[Notification] Sent: ${contentType} ${action}, ${data?.sentCount} recipients`);
+    toast.success(`알림 이메일 발송 완료 (${data?.sentCount}명) / Notification sent to ${data?.sentCount} recipients`);
     return { success: true, sentCount: data?.sentCount };
-  } catch (err) {
-    console.error('Failed to send content notification:', err);
+  } catch (err: any) {
+    console.error('[Notification] Failed to send:', err);
+    toast.error(`알림 이메일 발송 실패 / Notification email failed: ${err?.message || 'Unknown error'}`);
     return { success: false, error: err };
   }
 }
