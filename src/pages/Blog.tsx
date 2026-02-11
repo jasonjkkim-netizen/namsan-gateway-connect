@@ -118,7 +118,7 @@ export default function Blog() {
                 onClick={() => setSelectedPost(post)}
               >
                 {post.thumbnail_url && (
-                  <div className="h-48 overflow-hidden">
+                  <div className="h-24 overflow-hidden">
                     <img
                       src={post.thumbnail_url}
                       alt={language === 'ko' ? post.title_ko : post.title_en}
@@ -185,7 +185,7 @@ export default function Blog() {
               <img
                 src={selectedPost.thumbnail_url}
                 alt=""
-                className="w-full h-auto max-h-[300px] object-cover"
+                className="w-full h-auto max-h-[150px] object-cover"
               />
             </div>
           )}
