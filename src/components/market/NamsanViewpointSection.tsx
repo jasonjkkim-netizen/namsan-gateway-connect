@@ -72,11 +72,11 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
 
               <div className={`flex gap-4 ${vp.image_url ? 'flex-col sm:flex-row' : ''}`}>
                 {vp.image_url && (
-                  <div className="flex-shrink-0 rounded-lg overflow-hidden sm:w-28 md:w-32">
+                  <div className="flex-shrink-0 rounded-lg overflow-hidden sm:w-20 md:w-24">
                     <img
                       src={vp.image_url}
                       alt={language === 'ko' ? vp.title_ko : vp.title_en}
-                      className="w-full h-auto max-h-24 sm:max-h-20 object-cover"
+                      className="w-full h-auto max-h-16 sm:max-h-14 object-cover"
                       loading="lazy"
                     />
                   </div>
