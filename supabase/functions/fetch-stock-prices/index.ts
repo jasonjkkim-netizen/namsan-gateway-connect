@@ -83,10 +83,21 @@ async function fetchSingleStockPrice(apiKey: string, stock: StockInput, market: 
 
     if (isUS) {
       // Parse US price (decimal number like 142.53)
-      const priceMatch = content.match(/([0-9]{1,6}(?:\.[0-9]{1,4})?)/);
-      if (priceMatch) {
-        const price = parseFloat(priceMatch[1]);
-        if (price > 0 && price < 100000) {
+      // Look for numbers with decimal points first (most likely a price)
+      const decimalMatches = [...content.matchAll(/\$?\b([0-9]{1,5}\.[0-9]{1,4})\b/g)];
+      if (decimalMatches.length > 0) {
+        const price = parseFloat(decimalMatches[0][1]);
+        if (price > 0.5 && price < 50000) {
+          console.log(`Price for ${stock.name} (${stock.code}): $${price}`);
+          return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
+        }
+      }
+      // Fallback: integer price
+      const intMatch = content.match(/\$?\b([0-9]{1,5})\b/);
+      if (intMatch) {
+        const price = parseFloat(intMatch[1]);
+        // Exclude years (2020-2030) and very small numbers
+        if (price > 0.5 && price < 50000 && !(price >= 2020 && price <= 2030)) {
           console.log(`Price for ${stock.name} (${stock.code}): $${price}`);
           return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
         }
