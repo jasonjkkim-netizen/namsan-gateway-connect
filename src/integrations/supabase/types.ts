@@ -487,8 +487,11 @@ export type Database = {
           id: string
           is_admin: boolean | null
           is_approved: boolean | null
+          is_rejected: boolean | null
           phone: string | null
           preferred_language: string | null
+          rejected_at: string | null
+          rejected_by: string | null
           updated_at: string
           user_id: string
         }
@@ -504,8 +507,11 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           is_approved?: boolean | null
+          is_rejected?: boolean | null
           phone?: string | null
           preferred_language?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
           updated_at?: string
           user_id: string
         }
@@ -521,8 +527,11 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           is_approved?: boolean | null
+          is_rejected?: boolean | null
           phone?: string | null
           preferred_language?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
           updated_at?: string
           user_id?: string
         }

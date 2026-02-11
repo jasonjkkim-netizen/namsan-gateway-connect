@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Check, X, Search, Clock, UserCheck } from 'lucide-react';
+import { Check, X, Search, Clock, UserCheck, UserX, RotateCcw } from 'lucide-react';
 
 interface PendingProfile {
   id: string;
@@ -37,21 +37,26 @@ interface PendingProfile {
   address: string | null;
   birthday: string | null;
   is_approved: boolean;
+  is_rejected: boolean | null;
+  rejected_at: string | null;
   created_at: string;
 }
+
+type ViewMode = 'pending' | 'approved' | 'rejected';
 
 export function AdminApprovals() {
   const { language, formatDate } = useLanguage();
   const { user } = useAuth();
   const [pendingProfiles, setPendingProfiles] = useState<PendingProfile[]>([]);
   const [approvedProfiles, setApprovedProfiles] = useState<PendingProfile[]>([]);
+  const [rejectedProfiles, setRejectedProfiles] = useState<PendingProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showPending, setShowPending] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('pending');
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     profile: PendingProfile | null;
-    action: 'approve' | 'reject';
+    action: 'approve' | 'reject' | 'restore';
   }>({ open: false, profile: null, action: 'approve' });
 
   useEffect(() => {
@@ -61,11 +66,12 @@ export function AdminApprovals() {
   async function fetchProfiles() {
     setLoading(true);
     
-    const [pendingRes, approvedRes] = await Promise.all([
+    const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('*')
         .eq('is_approved', false)
+        .or('is_rejected.is.null,is_rejected.eq.false')
         .order('created_at', { ascending: false }),
       supabase
         .from('profiles')
@@ -73,10 +79,16 @@ export function AdminApprovals() {
         .eq('is_approved', true)
         .order('created_at', { ascending: false })
         .limit(50),
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_rejected', true)
+        .order('rejected_at', { ascending: false }),
     ]);
 
     if (pendingRes.data) setPendingProfiles(pendingRes.data as PendingProfile[]);
     if (approvedRes.data) setApprovedProfiles(approvedRes.data as PendingProfile[]);
+    if (rejectedRes.data) setRejectedProfiles(rejectedRes.data as PendingProfile[]);
     setLoading(false);
   }
 
@@ -85,6 +97,9 @@ export function AdminApprovals() {
       .from('profiles')
       .update({
         is_approved: true,
+        is_rejected: false,
+        rejected_at: null,
+        rejected_by: null,
         approved_at: new Date().toISOString(),
         approved_by: user?.id,
       })
@@ -105,16 +120,18 @@ export function AdminApprovals() {
   };
 
   const handleReject = async (profile: PendingProfile) => {
-    // Delete the profile and the auth user
-    // Note: In production, you might want to just mark as rejected instead of deleting
-    const { error: profileError } = await supabase
+    const { error } = await supabase
       .from('profiles')
-      .delete()
+      .update({
+        is_rejected: true,
+        rejected_at: new Date().toISOString(),
+        rejected_by: user?.id,
+      })
       .eq('id', profile.id);
 
-    if (profileError) {
+    if (error) {
       toast.error(language === 'ko' ? '거절 실패' : 'Rejection failed');
-      console.error(profileError);
+      console.error(error);
     } else {
       toast.success(
         language === 'ko'
@@ -126,7 +143,31 @@ export function AdminApprovals() {
     setConfirmDialog({ open: false, profile: null, action: 'reject' });
   };
 
-  const currentProfiles = showPending ? pendingProfiles : approvedProfiles;
+  const handleRestore = async (profile: PendingProfile) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        is_rejected: false,
+        rejected_at: null,
+        rejected_by: null,
+      })
+      .eq('id', profile.id);
+
+    if (error) {
+      toast.error(language === 'ko' ? '복원 실패' : 'Restore failed');
+      console.error(error);
+    } else {
+      toast.success(
+        language === 'ko'
+          ? `${profile.full_name} 님이 대기 목록으로 복원되었습니다`
+          : `${profile.full_name} has been restored to pending`
+      );
+      fetchProfiles();
+    }
+    setConfirmDialog({ open: false, profile: null, action: 'restore' });
+  };
+
+  const currentProfiles = viewMode === 'pending' ? pendingProfiles : viewMode === 'approved' ? approvedProfiles : rejectedProfiles;
   
   const filteredProfiles = currentProfiles.filter(
     (p) =>
@@ -152,21 +193,30 @@ export function AdminApprovals() {
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex gap-2">
               <Button
-                variant={showPending ? 'default' : 'outline'}
+                variant={viewMode === 'pending' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setShowPending(true)}
+                onClick={() => setViewMode('pending')}
               >
                 <Clock className="h-4 w-4 mr-2" />
                 {language === 'ko' ? '대기 중' : 'Pending'}
                 {pendingProfiles.length > 0 && ` (${pendingProfiles.length})`}
               </Button>
               <Button
-                variant={!showPending ? 'default' : 'outline'}
+                variant={viewMode === 'approved' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setShowPending(false)}
+                onClick={() => setViewMode('approved')}
               >
                 <UserCheck className="h-4 w-4 mr-2" />
                 {language === 'ko' ? '승인됨' : 'Approved'}
+              </Button>
+              <Button
+                variant={viewMode === 'rejected' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('rejected')}
+              >
+                <UserX className="h-4 w-4 mr-2" />
+                {language === 'ko' ? '거절됨' : 'Rejected'}
+                {rejectedProfiles.length > 0 && ` (${rejectedProfiles.length})`}
               </Button>
             </div>
             <div className="relative w-64">
@@ -190,15 +240,15 @@ export function AdminApprovals() {
               <TableHead>{language === 'ko' ? '이름' : 'Name'}</TableHead>
               <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
               <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
-              <TableHead>{language === 'ko' ? '가입일' : 'Registered'}</TableHead>
-              {showPending && <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>}
+              <TableHead>{language === 'ko' ? (viewMode === 'rejected' ? '거절일' : '가입일') : (viewMode === 'rejected' ? 'Rejected' : 'Registered')}</TableHead>
+              {viewMode !== 'approved' && <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: showPending ? 6 : 5 }).map((_, j) => (
+                  {Array.from({ length: viewMode !== 'approved' ? 6 : 5 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-5 w-24" />
                     </TableCell>
@@ -207,12 +257,17 @@ export function AdminApprovals() {
               ))
             ) : filteredProfiles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={showPending ? 6 : 5} className="text-center py-12">
+                <TableCell colSpan={viewMode !== 'approved' ? 6 : 5} className="text-center py-12">
                   <div className="text-muted-foreground">
-                    {showPending ? (
+                    {viewMode === 'pending' ? (
                       <>
                         <UserCheck className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>{language === 'ko' ? '대기 중인 가입 요청이 없습니다' : 'No pending registrations'}</p>
+                      </>
+                    ) : viewMode === 'rejected' ? (
+                      <>
+                        <UserX className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>{language === 'ko' ? '거절된 가입자가 없습니다' : 'No rejected registrations'}</p>
                       </>
                     ) : (
                       <p>{language === 'ko' ? '승인된 사용자가 없습니다' : 'No approved users found'}</p>
@@ -234,8 +289,8 @@ export function AdminApprovals() {
                   </TableCell>
                   <TableCell>{profile.phone || '-'}</TableCell>
                   <TableCell>{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
-                  <TableCell>{formatDate(profile.created_at)}</TableCell>
-                  {showPending && (
+                  <TableCell>{viewMode === 'rejected' && profile.rejected_at ? formatDate(profile.rejected_at) : formatDate(profile.created_at)}</TableCell>
+                  {viewMode === 'pending' && (
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
@@ -257,6 +312,18 @@ export function AdminApprovals() {
                       </div>
                     </TableCell>
                   )}
+                  {viewMode === 'rejected' && (
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setConfirmDialog({ open: true, profile, action: 'restore' })}
+                      >
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        {language === 'ko' ? '복원' : 'Restore'}
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
@@ -271,16 +338,22 @@ export function AdminApprovals() {
             <AlertDialogTitle>
               {confirmDialog.action === 'approve'
                 ? (language === 'ko' ? '가입 승인' : 'Approve Registration')
-                : (language === 'ko' ? '가입 거절' : 'Reject Registration')}
+                : confirmDialog.action === 'reject'
+                ? (language === 'ko' ? '가입 거절' : 'Reject Registration')
+                : (language === 'ko' ? '대기 목록 복원' : 'Restore to Pending')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDialog.action === 'approve'
                 ? (language === 'ko'
                     ? `${confirmDialog.profile?.full_name} 님의 가입을 승인하시겠습니까? 승인 후 해당 사용자는 서비스에 접근할 수 있습니다.`
                     : `Are you sure you want to approve ${confirmDialog.profile?.full_name}? They will be able to access the service after approval.`)
+                : confirmDialog.action === 'reject'
+                ? (language === 'ko'
+                    ? `${confirmDialog.profile?.full_name} 님의 가입을 거절하시겠습니까? 거절된 사용자는 별도 목록에 보관됩니다.`
+                    : `Are you sure you want to reject ${confirmDialog.profile?.full_name}? They will be moved to the rejected list.`)
                 : (language === 'ko'
-                    ? `${confirmDialog.profile?.full_name} 님의 가입을 거절하시겠습니까? 이 작업은 되돌릴 수 없습니다.`
-                    : `Are you sure you want to reject ${confirmDialog.profile?.full_name}? This action cannot be undone.`)}
+                    ? `${confirmDialog.profile?.full_name} 님을 대기 목록으로 복원하시겠습니까?`
+                    : `Are you sure you want to restore ${confirmDialog.profile?.full_name} to the pending list?`)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -288,20 +361,24 @@ export function AdminApprovals() {
               {language === 'ko' ? '취소' : 'Cancel'}
             </AlertDialogCancel>
             <AlertDialogAction
-              className={confirmDialog.action === 'approve' ? 'btn-gold' : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'}
+              className={confirmDialog.action === 'approve' ? 'btn-gold' : confirmDialog.action === 'reject' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
               onClick={() => {
                 if (confirmDialog.profile) {
                   if (confirmDialog.action === 'approve') {
                     handleApprove(confirmDialog.profile);
-                  } else {
+                  } else if (confirmDialog.action === 'reject') {
                     handleReject(confirmDialog.profile);
+                  } else {
+                    handleRestore(confirmDialog.profile);
                   }
                 }
               }}
             >
               {confirmDialog.action === 'approve'
                 ? (language === 'ko' ? '승인' : 'Approve')
-                : (language === 'ko' ? '거절' : 'Reject')}
+                : confirmDialog.action === 'reject'
+                ? (language === 'ko' ? '거절' : 'Reject')
+                : (language === 'ko' ? '복원' : 'Restore')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
