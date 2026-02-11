@@ -83,7 +83,7 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&_img]:max-w-[50%] [&_img]:h-auto [&_img]:rounded-md">
                     <ReactMarkdown>
                       {language === 'ko' ? vp.content_ko : vp.content_en}
                     </ReactMarkdown>

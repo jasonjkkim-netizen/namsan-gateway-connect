@@ -190,7 +190,7 @@ export default function Blog() {
             </div>
           )}
           {selectedPost && (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div className="prose prose-sm dark:prose-invert max-w-none [&_img]:max-w-[50%] [&_img]:h-auto [&_img]:rounded-md">
               <ReactMarkdown>
                 {language === 'ko' ? selectedPost.content_ko : selectedPost.content_en}
               </ReactMarkdown>
