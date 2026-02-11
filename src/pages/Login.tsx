@@ -96,15 +96,26 @@ export default function Login() {
           toast.error(error.message);
         } else {
           // Update profile with phone, address, and birthday
+          // Retry logic: profile may not exist yet (created by DB trigger)
           if (data?.user) {
-            await supabase
-              .from('profiles')
-              .update({ 
-                phone,
-                address,
-                birthday,
-              })
-              .eq('user_id', data.user.id);
+            let profileUpdated = false;
+            for (let attempt = 0; attempt < 5; attempt++) {
+              const { error: updateError, count } = await supabase
+                .from('profiles')
+                .update({ 
+                  phone,
+                  address,
+                  birthday,
+                })
+                .eq('user_id', data.user.id);
+              
+              if (!updateError) {
+                profileUpdated = true;
+                break;
+              }
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
 
             // Send notification to admin about new signup
             try {
