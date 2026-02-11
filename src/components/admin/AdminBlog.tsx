@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { sendContentNotification } from '@/lib/send-content-notification';
 import { Plus, Edit, Trash2, Image, Send, Mail, Clock } from 'lucide-react';
 import { RichPasteEditor } from './RichPasteEditor';
 
@@ -251,6 +252,17 @@ export function AdminBlog() {
     }
 
     toast.success(language === 'ko' ? '저장 완료' : 'Saved');
+
+    // Send notification email (unless newsletter is being sent separately)
+    if (!sendAsNewsletter) {
+      sendContentNotification({
+        contentType: 'blog',
+        action: editingId ? 'updated' : 'added',
+        titleKo: formData.title_ko,
+        titleEn: formData.title_en,
+        summaryKo: formData.summary_ko || formData.content_ko?.slice(0, 200),
+      });
+    }
     
     // Auto-send as newsletter if checked
     if (sendAsNewsletter && formData.is_active) {
@@ -312,12 +324,21 @@ export function AdminBlog() {
 
   async function handleDelete(id: string) {
     if (!confirm(language === 'ko' ? '삭제하시겠습니까?' : 'Delete this post?')) return;
+    const post = posts.find(p => p.id === id);
     const { error } = await supabase.from('blog_posts').delete().eq('id', id);
     if (error) {
       toast.error(error.message);
       return;
     }
     toast.success(language === 'ko' ? '삭제 완료' : 'Deleted');
+    if (post) {
+      sendContentNotification({
+        contentType: 'blog',
+        action: 'deleted',
+        titleKo: post.title_ko,
+        titleEn: post.title_en,
+      });
+    }
     fetchPosts();
   }
 
