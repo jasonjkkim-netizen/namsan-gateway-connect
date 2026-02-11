@@ -65,7 +65,7 @@ serve(async (req: Request) => {
       // Send individually to avoid exposing email addresses
       for (const email of batch) {
         try {
-          await resend.emails.send({
+          const result = await resend.emails.send({
             from: "Namsan Partners <newsletter@namsan-partners.com>",
             to: [email],
             subject: subject,
@@ -86,9 +86,10 @@ serve(async (req: Request) => {
               </div>
             `,
           });
+          console.log(`Resend response for ${email}:`, JSON.stringify(result));
           sentCount++;
         } catch (emailError) {
-          console.error(`Failed to send to ${email}:`, emailError);
+          console.error(`Failed to send to ${email}:`, JSON.stringify(emailError));
         }
       }
     }
