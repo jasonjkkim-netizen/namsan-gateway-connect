@@ -175,14 +175,6 @@ export function AdminVideos() {
       toast.error(language === 'ko' ? '삭제 실패' : 'Delete failed');
     } else {
       toast.success(language === 'ko' ? '삭제 완료' : 'Deleted');
-      if (video) {
-        sendContentNotification({
-          contentType: 'video',
-          action: 'deleted',
-          titleKo: video.title_ko,
-          titleEn: video.title_en,
-        });
-      }
       fetchVideos();
     }
   };

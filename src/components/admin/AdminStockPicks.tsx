@@ -200,14 +200,6 @@ export function AdminStockPicks() {
       toast.error(language === 'ko' ? '삭제에 실패했습니다' : 'Failed to delete');
     } else {
       toast.success(language === 'ko' ? '삭제되었습니다' : 'Deleted successfully');
-      if (item) {
-        sendContentNotification({
-          contentType: 'stock_pick',
-          action: 'deleted',
-          titleKo: item.stock_name,
-          titleEn: `${item.stock_name} (${item.stock_code || ''})`,
-        });
-      }
       fetchItems();
     }
   }

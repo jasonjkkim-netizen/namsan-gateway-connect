@@ -189,14 +189,6 @@ export function AdminViewpoints() {
     const { error } = await supabase.from('namsan_viewpoints').delete().eq('id', id);
     if (!error) {
       toast.success(language === 'ko' ? '삭제되었습니다' : 'Deleted');
-      if (item) {
-        sendContentNotification({
-          contentType: 'viewpoint',
-          action: 'deleted',
-          titleKo: item.title_ko,
-          titleEn: item.title_en,
-        });
-      }
       fetchItems();
     }
   }
