@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import { sendContentNotification } from '@/lib/send-content-notification';
 import { RichPasteEditor } from './RichPasteEditor';
 
 interface Viewpoint {
@@ -150,6 +151,13 @@ export function AdminViewpoints() {
       else {
         await publishToBlog(formData);
         toast.success(language === 'ko' ? '수정 및 블로그 동기화 완료' : 'Updated & synced to blog');
+        sendContentNotification({
+          contentType: 'viewpoint',
+          action: 'updated',
+          titleKo: formData.title_ko,
+          titleEn: formData.title_en,
+          summaryKo: formData.content_ko?.replace(/!\[.*?\]\(.*?\)/g, '').slice(0, 200),
+        });
         setDialogOpen(false);
         fetchItems();
       }
@@ -162,6 +170,13 @@ export function AdminViewpoints() {
       else {
         await publishToBlog(formData);
         toast.success(language === 'ko' ? '추가 및 블로그 자동 발행 완료' : 'Added & auto-published to blog');
+        sendContentNotification({
+          contentType: 'viewpoint',
+          action: 'added',
+          titleKo: formData.title_ko,
+          titleEn: formData.title_en,
+          summaryKo: formData.content_ko?.replace(/!\[.*?\]\(.*?\)/g, '').slice(0, 200),
+        });
         setDialogOpen(false);
         fetchItems();
       }
@@ -169,9 +184,21 @@ export function AdminViewpoints() {
   }
 
   async function handleDelete(id: string) {
+    const item = items.find(i => i.id === id);
     if (!confirm(language === 'ko' ? '정말 삭제하시겠습니까?' : 'Delete this item?')) return;
     const { error } = await supabase.from('namsan_viewpoints').delete().eq('id', id);
-    if (!error) { toast.success(language === 'ko' ? '삭제되었습니다' : 'Deleted'); fetchItems(); }
+    if (!error) {
+      toast.success(language === 'ko' ? '삭제되었습니다' : 'Deleted');
+      if (item) {
+        sendContentNotification({
+          contentType: 'viewpoint',
+          action: 'deleted',
+          titleKo: item.title_ko,
+          titleEn: item.title_en,
+        });
+      }
+      fetchItems();
+    }
   }
 
   if (loading) return <div className="text-center py-8">Loading...</div>;

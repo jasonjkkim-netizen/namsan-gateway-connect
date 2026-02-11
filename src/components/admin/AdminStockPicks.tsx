@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { sendContentNotification } from '@/lib/send-content-notification';
 
 interface StockPick {
   id: string;
@@ -152,6 +153,12 @@ export function AdminStockPicks() {
         toast.error(language === 'ko' ? '수정에 실패했습니다' : 'Failed to update');
       } else {
         toast.success(language === 'ko' ? '수정되었습니다' : 'Updated successfully');
+        sendContentNotification({
+          contentType: 'stock_pick',
+          action: 'updated',
+          titleKo: formData.stock_name,
+          titleEn: `${formData.stock_name} (${formData.stock_code || ''})`,
+        });
         setDialogOpen(false);
         fetchItems();
       }
@@ -165,6 +172,13 @@ export function AdminStockPicks() {
         toast.error(language === 'ko' ? '추가에 실패했습니다' : 'Failed to add');
       } else {
         toast.success(language === 'ko' ? '추가되었습니다' : 'Added successfully');
+        sendContentNotification({
+          contentType: 'stock_pick',
+          action: 'added',
+          titleKo: formData.stock_name,
+          titleEn: `${formData.stock_name} (${formData.stock_code || ''})`,
+          summaryKo: `${formData.market === 'KR' ? '🇰🇷 국장' : '🇺🇸 미장'} | 추천가: ${formData.market === 'US' ? '$' : '₩'}${Number(formData.closing_price_at_recommendation).toLocaleString()}`,
+        });
         setDialogOpen(false);
         fetchItems();
       }
@@ -176,6 +190,7 @@ export function AdminStockPicks() {
       return;
     }
 
+    const item = items.find(i => i.id === id);
     const { error } = await supabase
       .from('weekly_stock_picks')
       .delete()
@@ -185,6 +200,14 @@ export function AdminStockPicks() {
       toast.error(language === 'ko' ? '삭제에 실패했습니다' : 'Failed to delete');
     } else {
       toast.success(language === 'ko' ? '삭제되었습니다' : 'Deleted successfully');
+      if (item) {
+        sendContentNotification({
+          contentType: 'stock_pick',
+          action: 'deleted',
+          titleKo: item.stock_name,
+          titleEn: `${item.stock_name} (${item.stock_code || ''})`,
+        });
+      }
       fetchItems();
     }
   }

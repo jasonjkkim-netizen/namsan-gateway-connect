@@ -30,6 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { sendContentNotification } from '@/lib/send-content-notification';
 import { Plus, Edit, Search, Trash2 } from 'lucide-react';
 
 interface Video {
@@ -152,6 +153,13 @@ export function AdminVideos() {
       console.error(error);
     } else {
       toast.success(language === 'ko' ? '저장 완료' : 'Saved successfully');
+      sendContentNotification({
+        contentType: 'video',
+        action: editingVideo ? 'updated' : 'added',
+        titleKo: formData.title_ko,
+        titleEn: formData.title_en,
+        summaryKo: formData.description_ko || undefined,
+      });
       setDialogOpen(false);
       fetchVideos();
     }
@@ -160,12 +168,21 @@ export function AdminVideos() {
   const handleDelete = async (id: string) => {
     if (!confirm(language === 'ko' ? '삭제하시겠습니까?' : 'Are you sure?')) return;
 
+    const video = videos.find(v => v.id === id);
     const { error } = await supabase.from('videos').delete().eq('id', id);
 
     if (error) {
       toast.error(language === 'ko' ? '삭제 실패' : 'Delete failed');
     } else {
       toast.success(language === 'ko' ? '삭제 완료' : 'Deleted');
+      if (video) {
+        sendContentNotification({
+          contentType: 'video',
+          action: 'deleted',
+          titleKo: video.title_ko,
+          titleEn: video.title_en,
+        });
+      }
       fetchVideos();
     }
   };
