@@ -331,14 +331,6 @@ export function AdminBlog() {
       return;
     }
     toast.success(language === 'ko' ? '삭제 완료' : 'Deleted');
-    if (post) {
-      sendContentNotification({
-        contentType: 'blog',
-        action: 'deleted',
-        titleKo: post.title_ko,
-        titleEn: post.title_en,
-      });
-    }
     fetchPosts();
   }
 
