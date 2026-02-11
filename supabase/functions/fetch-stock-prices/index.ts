@@ -45,8 +45,16 @@ async function sendFailureNotification(failedStocks: StockPriceResult[], totalSt
   }
 }
 
-async function fetchSingleStockPrice(apiKey: string, stock: StockInput): Promise<StockPriceResult> {
+async function fetchSingleStockPrice(apiKey: string, stock: StockInput, market: string = 'KR'): Promise<StockPriceResult> {
   try {
+    const isUS = market === 'US';
+    const systemPrompt = isUS
+      ? 'Return ONLY the current US stock price in USD as a plain number. No currency symbol, no commas. Example: 142.53'
+      : '한국 주식의 현재 주가(원)를 숫자만 반환하세요. 종목코드가 아닌 주가만 답하세요. 쉼표 없이 숫자만. 예시: 55000';
+    const userPrompt = isUS
+      ? `What is the current stock price of "${stock.name}" (ticker: ${stock.code}) in USD? Reply with just the number.`
+      : `한국 주식 "${stock.name}"의 현재 주가(원)를 알려주세요. 숫자만 답해주세요.`;
+
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -56,14 +64,8 @@ async function fetchSingleStockPrice(apiKey: string, stock: StockInput): Promise
       body: JSON.stringify({
         model: 'sonar',
         messages: [
-          {
-            role: 'system',
-            content: '한국 주식의 현재 주가(원)를 숫자만 반환하세요. 종목코드가 아닌 주가만 답하세요. 쉼표 없이 숫자만. 예시: 55000'
-          },
-          {
-            role: 'user',
-            content: `한국 주식 "${stock.name}"의 현재 주가(원)를 알려주세요. 숫자만 답해주세요.`
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
         ],
         search_recency_filter: 'day',
       }),
@@ -79,24 +81,33 @@ async function fetchSingleStockPrice(apiKey: string, stock: StockInput): Promise
     const content = data.choices?.[0]?.message?.content || '';
     console.log(`Perplexity response for ${stock.name}: ${content}`);
 
-    // Extract all numbers from the response
-    const allNumbers: number[] = [];
-    const regex = /([0-9]{1,3}(?:,?[0-9]{3})+|[0-9]{4,})/g;
-    let match;
-    while ((match = regex.exec(content)) !== null) {
-      const num = parseInt(match[1].replace(/,/g, ''), 10);
-      // Filter out: stock code, numbers < 1000, and unreasonably large numbers
-      const codeNum = parseInt(stock.code, 10);
-      if (num > 1000 && num !== codeNum && num < 100000000) {
-        allNumbers.push(num);
+    if (isUS) {
+      // Parse US price (decimal number like 142.53)
+      const priceMatch = content.match(/([0-9]{1,6}(?:\.[0-9]{1,4})?)/);
+      if (priceMatch) {
+        const price = parseFloat(priceMatch[1]);
+        if (price > 0 && price < 100000) {
+          console.log(`Price for ${stock.name} (${stock.code}): $${price}`);
+          return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
+        }
       }
-    }
-
-    if (allNumbers.length > 0) {
-      // Use the first valid price found
-      const price = allNumbers[0];
-      console.log(`Price for ${stock.name} (${stock.code}): ${price}`);
-      return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
+    } else {
+      // Parse KR price (integer like 55000)
+      const allNumbers: number[] = [];
+      const regex = /([0-9]{1,3}(?:,?[0-9]{3})+|[0-9]{4,})/g;
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        const num = parseInt(match[1].replace(/,/g, ''), 10);
+        const codeNum = parseInt(stock.code, 10);
+        if (num > 1000 && num !== codeNum && num < 100000000) {
+          allNumbers.push(num);
+        }
+      }
+      if (allNumbers.length > 0) {
+        const price = allNumbers[0];
+        console.log(`Price for ${stock.name} (${stock.code}): ${price}`);
+        return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
+      }
     }
 
     console.warn(`Could not parse price for ${stock.name} from: ${content}`);
@@ -135,13 +146,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    let body: { stockCodes?: StockInput[]; autoUpdate?: boolean } = {};
+    let body: { stockCodes?: StockInput[]; autoUpdate?: boolean; market?: string } = {};
     try {
       const text = await req.text();
       if (text && text.trim()) body = JSON.parse(text);
     } catch {
       body = { autoUpdate: true };
     }
+    const market = body.market || 'KR';
 
     let stockCodes: StockInput[] = body.stockCodes || [];
     const isAutoUpdate = body.autoUpdate === true || stockCodes.length === 0;
@@ -175,7 +187,7 @@ Deno.serve(async (req) => {
     // Fetch each stock individually for accuracy
     const results: StockPriceResult[] = [];
     for (const stock of stockCodes) {
-      const result = await fetchSingleStockPrice(apiKey, stock);
+      const result = await fetchSingleStockPrice(apiKey, stock, market);
       results.push(result);
       // Small delay between requests
       if (stockCodes.indexOf(stock) < stockCodes.length - 1) {
