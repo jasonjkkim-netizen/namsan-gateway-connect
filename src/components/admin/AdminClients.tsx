@@ -52,6 +52,7 @@ export function AdminClients() {
     full_name_ko: '',
     phone: '',
     address: '',
+    birthday: '',
     preferred_language: 'en',
   });
 
@@ -137,6 +138,7 @@ export function AdminClients() {
       full_name_ko: profile.full_name_ko || '',
       phone: profile.phone || '',
       address: profile.address || '',
+      birthday: profile.birthday || '',
       preferred_language: profile.preferred_language || 'en',
     });
     setDialogOpen(true);
@@ -166,6 +168,7 @@ export function AdminClients() {
         full_name_ko: validationResult.data.full_name_ko ?? null,
         phone: validationResult.data.phone ?? null,
         address: validationResult.data.address ?? null,
+        birthday: formData.birthday || null,
         preferred_language: validationResult.data.preferred_language!,
       })
       .eq('id', editingProfile.id);
@@ -302,6 +305,14 @@ export function AdminClients() {
               <Input
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '생년월일' : 'Birthday'}</Label>
+              <Input
+                type="date"
+                value={formData.birthday}
+                onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">
