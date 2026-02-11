@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.stock-pick-news]
 verify_jwt = false
+
+[functions.send-newsletter]
+verify_jwt = false
