@@ -325,6 +325,18 @@ export default function Login() {
               >
                 {loading ? t('loading') : (isSignUp ? t('signUp') : t('signIn'))}
               </Button>
+
+              {!isSignUp && (
+                <div className="text-center mt-3">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-sm text-accent hover:text-accent/80 transition-colors"
+                  >
+                    {t('forgotPassword')}
+                  </button>
+                </div>
+              )}
             </form>
 
             <div className="mt-6 text-center">
