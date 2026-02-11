@@ -20,6 +20,7 @@ interface StockPick {
   current_closing_price: number | null;
   display_order: number;
   is_active: boolean;
+  market?: string;
 }
 
 export function AdminStockPicks() {
@@ -35,7 +36,8 @@ export function AdminStockPicks() {
     recommendation_date: '',
     closing_price_at_recommendation: '',
     current_closing_price: '',
-    is_active: true
+    is_active: true,
+    market: 'KR' as 'KR' | 'US'
   });
 
   useEffect(() => {
@@ -64,7 +66,8 @@ export function AdminStockPicks() {
       recommendation_date: new Date().toISOString().split('T')[0],
       closing_price_at_recommendation: '',
       current_closing_price: '',
-      is_active: true
+      is_active: true,
+      market: 'KR'
     });
     setDialogOpen(true);
   }
@@ -77,7 +80,8 @@ export function AdminStockPicks() {
       recommendation_date: item.recommendation_date,
       closing_price_at_recommendation: item.closing_price_at_recommendation.toString(),
       current_closing_price: item.current_closing_price?.toString() || '',
-      is_active: item.is_active
+      is_active: item.is_active,
+      market: (item.market as 'KR' | 'US') || 'KR'
     });
     setDialogOpen(true);
   }
@@ -88,7 +92,8 @@ export function AdminStockPicks() {
     try {
       const { data, error } = await supabase.functions.invoke('fetch-stock-prices', {
         body: {
-          stockCodes: [{ code: stockCode, name: stockName }]
+          stockCodes: [{ code: stockCode, name: stockName }],
+          market: formData.market
         }
       });
 
@@ -121,7 +126,8 @@ export function AdminStockPicks() {
       const fetchedPrice = await fetchSingleStockPrice(formData.stock_code, formData.stock_name);
       if (fetchedPrice) {
         currentPrice = fetchedPrice;
-        toast.success(language === 'ko' ? `현재가: ${fetchedPrice.toLocaleString()}원` : `Current price: ₩${fetchedPrice.toLocaleString()}`);
+        const priceStr = formData.market === 'US' ? `$${fetchedPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : `₩${fetchedPrice.toLocaleString()}`;
+        toast.success(language === 'ko' ? `현재가: ${priceStr}` : `Current price: ${priceStr}`);
       }
     }
 
@@ -132,6 +138,7 @@ export function AdminStockPicks() {
       closing_price_at_recommendation: parseFloat(formData.closing_price_at_recommendation),
       current_closing_price: currentPrice,
       is_active: formData.is_active,
+      market: formData.market,
       updated_at: new Date().toISOString()
     };
 
@@ -337,11 +344,32 @@ export function AdminStockPicks() {
                 />
               </div>
               <div className="space-y-2">
+                <Label>{language === 'ko' ? '시장' : 'Market'}</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.market === 'KR' ? 'default' : 'outline'}
+                    onClick={() => setFormData({ ...formData, market: 'KR' })}
+                  >
+                    🇰🇷 {language === 'ko' ? '국장' : 'KR'}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.market === 'US' ? 'default' : 'outline'}
+                    onClick={() => setFormData({ ...formData, market: 'US' })}
+                  >
+                    🇺🇸 {language === 'ko' ? '미장' : 'US'}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label>{language === 'ko' ? '종목 코드' : 'Stock Code'}</Label>
                 <Input
                   value={formData.stock_code}
                   onChange={(e) => setFormData({ ...formData, stock_code: e.target.value })}
-                  placeholder="005930"
+                  placeholder={formData.market === 'KR' ? '005930' : 'NVDA'}
                 />
               </div>
               <div className="space-y-2">
@@ -398,6 +426,7 @@ export function AdminStockPicks() {
           <TableHeader>
             <TableRow>
               <TableHead>{language === 'ko' ? '순서' : 'Order'}</TableHead>
+              <TableHead>{language === 'ko' ? '시장' : 'Market'}</TableHead>
               <TableHead>{language === 'ko' ? '종목명' : 'Stock'}</TableHead>
               <TableHead>{language === 'ko' ? '추천일' : 'Date'}</TableHead>
               <TableHead>{language === 'ko' ? '추천일 종가' : 'Rec. Price'}</TableHead>
@@ -430,10 +459,25 @@ export function AdminStockPicks() {
                     </Button>
                   </div>
                 </TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    (item.market || 'KR') === 'US' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                  }`}>
+                    {(item.market || 'KR') === 'US' ? '🇺🇸 미장' : '🇰🇷 국장'}
+                  </span>
+                </TableCell>
                 <TableCell className="font-medium">{item.stock_name}</TableCell>
                 <TableCell>{item.recommendation_date}</TableCell>
-                <TableCell>{item.closing_price_at_recommendation.toLocaleString()}원</TableCell>
-                <TableCell>{item.current_closing_price?.toLocaleString() || '-'}원</TableCell>
+                <TableCell>
+                  {(item.market || 'KR') === 'US'
+                    ? `$${item.closing_price_at_recommendation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : `${item.closing_price_at_recommendation.toLocaleString()}원`}
+                </TableCell>
+                <TableCell>
+                  {(item.market || 'KR') === 'US'
+                    ? `$${item.current_closing_price?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '-'}`
+                    : `${item.current_closing_price?.toLocaleString() || '-'}원`}
+                </TableCell>
                 <TableCell className={
                   item.current_closing_price && item.current_closing_price > item.closing_price_at_recommendation
                     ? 'text-green-600 font-medium'
