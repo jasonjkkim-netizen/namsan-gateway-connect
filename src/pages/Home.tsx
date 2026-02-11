@@ -256,8 +256,8 @@ export default function Home() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                 {language === 'ko' ? '이메일' : 'Email'}
               </h3>
-              <a href="mailto:info@namsankorea.com" className="text-foreground hover:text-accent transition-colors">
-                info@namsankorea.com
+              <a href="mailto:info@namsan-partners.com" className="text-foreground hover:text-accent transition-colors">
+                info@namsan-partners.com
               </a>
             </div>
             
@@ -265,7 +265,7 @@ export default function Home() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                 {language === 'ko' ? '전화' : 'Phone'}
               </h3>
-              <p className="text-foreground">+82 2 1234 5678</p>
+              <p className="text-foreground">+82 10 9169 9335</p>
             </div>
           </div>
         </div>
