@@ -183,6 +183,32 @@ function StockTable({
               );
             })}
           </tbody>
+          {(() => {
+            const validStocks = stocks.filter(
+              s => s.current_closing_price && s.closing_price_at_recommendation > 0
+            );
+            if (validStocks.length === 0) return null;
+            const totalWeight = validStocks.reduce((sum, s) => sum + s.closing_price_at_recommendation, 0);
+            const weightedReturn = validStocks.reduce((sum, s) => {
+              const ret = ((s.current_closing_price! - s.closing_price_at_recommendation) / s.closing_price_at_recommendation) * 100;
+              return sum + ret * (s.closing_price_at_recommendation / totalWeight);
+            }, 0);
+            return (
+              <tfoot className="border-t-2 border-border bg-muted/30">
+                <tr>
+                  <td colSpan={4} className="px-3 py-2 text-right font-semibold text-xs">
+                    {language === 'ko' ? '가중 평균 수익률' : 'Weighted Avg Return'}
+                  </td>
+                  <td className={`px-3 py-2 text-right font-bold text-xs ${
+                    weightedReturn > 0 ? 'text-green-600' : weightedReturn < 0 ? 'text-red-600' : ''
+                  }`}>
+                    {weightedReturn >= 0 ? '+' : ''}{weightedReturn.toFixed(2)}%
+                  </td>
+                  <td className="px-3 py-2" />
+                </tr>
+              </tfoot>
+            );
+          })()}
         </table>
       </div>
     </div>
