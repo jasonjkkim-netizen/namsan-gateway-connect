@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { ProductPopup } from "@/components/ProductPopup";
 import { useAuthLanguageSync } from "@/hooks/useAuthLanguageSync";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -88,8 +89,9 @@ const App = () => (
                 } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <ProductPopup />
               <ChatWidget />
-              <WhatsAppButton 
+              <WhatsAppButton
                 phoneNumber={WHATSAPP_PHONE} 
                 message="안녕하세요, 남산 코리아에 문의드립니다."
               />

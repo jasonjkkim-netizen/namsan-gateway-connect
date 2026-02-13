@@ -424,6 +424,83 @@ export type Database = {
           },
         ]
       }
+      popup_ads: {
+        Row: {
+          button_link: string | null
+          button_text_en: string | null
+          button_text_ko: string | null
+          created_at: string
+          description_en: string | null
+          description_ko: string | null
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          title_en: string
+          title_ko: string
+          updated_at: string
+        }
+        Insert: {
+          button_link?: string | null
+          button_text_en?: string | null
+          button_text_ko?: string | null
+          created_at?: string
+          description_en?: string | null
+          description_ko?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          title_en?: string
+          title_ko?: string
+          updated_at?: string
+        }
+        Update: {
+          button_link?: string | null
+          button_text_en?: string | null
+          button_text_ko?: string | null
+          created_at?: string
+          description_en?: string | null
+          description_ko?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          title_en?: string
+          title_ko?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      popup_dismissals: {
+        Row: {
+          dismissed_at: string
+          id: string
+          popup_id: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          id?: string
+          popup_id: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          id?: string
+          popup_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "popup_dismissals_popup_id_fkey"
+            columns: ["popup_id"]
+            isOneToOne: false
+            referencedRelation: "popup_ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_documents: {
         Row: {
           created_at: string
