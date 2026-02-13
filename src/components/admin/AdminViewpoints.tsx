@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendContentNotification } from '@/lib/send-content-notification';
 import { RichPasteEditor } from './RichPasteEditor';
@@ -49,9 +49,25 @@ export function AdminViewpoints() {
     const { data, error } = await supabase
       .from('namsan_viewpoints')
       .select('*')
-      .order('display_order', { ascending: false });
+      .order('display_order', { ascending: true });
     if (!error && data) setItems(data as Viewpoint[]);
     setLoading(false);
+  }
+
+  async function handleMoveOrder(item: Viewpoint, direction: 'up' | 'down') {
+    const activeItems = items.filter(i => i.is_active).sort((a, b) => a.display_order - b.display_order);
+    const currentIndex = activeItems.findIndex(i => i.id === item.id);
+    const swapIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (swapIndex < 0 || swapIndex >= activeItems.length) return;
+
+    const swapItem = activeItems[swapIndex];
+    const tempOrder = item.display_order;
+
+    await supabase.from('namsan_viewpoints').update({ display_order: swapItem.display_order }).eq('id', item.id);
+    await supabase.from('namsan_viewpoints').update({ display_order: tempOrder }).eq('id', swapItem.id);
+    
+    toast.success(language === 'ko' ? '순서가 변경되었습니다' : 'Order changed');
+    fetchItems();
   }
 
   function openAdd() {
@@ -319,6 +335,7 @@ export function AdminViewpoints() {
                             <Table>
                               <TableHeader>
                                 <TableRow>
+                                  <TableHead className="w-[60px]">{language === 'ko' ? '순서' : 'Order'}</TableHead>
                                   <TableHead className="w-[40%]">{language === 'ko' ? '제목' : 'Title'}</TableHead>
                                   <TableHead>{language === 'ko' ? '이미지' : 'Image'}</TableHead>
                                   <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
@@ -328,7 +345,20 @@ export function AdminViewpoints() {
                               </TableHeader>
                               <TableBody>
                                 {grouped[month].map(item => (
-                                  <TableRow key={item.id} className={!item.is_active ? 'opacity-60' : ''}>
+                                  <TableRow key={item.id} className={`${!item.is_active ? 'opacity-60' : ''} ${item.is_active && grouped[month].filter(i => i.is_active).indexOf(item) === 0 && month === sortedMonths[0] ? 'bg-primary/5' : ''}`}>
+                                    <TableCell>
+                                      {item.is_active && (
+                                        <div className="flex flex-col items-center gap-0.5">
+                                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleMoveOrder(item, 'up')} disabled={items.filter(i => i.is_active).sort((a, b) => a.display_order - b.display_order).indexOf(item) === 0}>
+                                            <ArrowUp className="h-3 w-3" />
+                                          </Button>
+                                          <span className="text-xs text-muted-foreground">{item.display_order}</span>
+                                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleMoveOrder(item, 'down')} disabled={items.filter(i => i.is_active).sort((a, b) => a.display_order - b.display_order).indexOf(item) === items.filter(i => i.is_active).length - 1}>
+                                            <ArrowDown className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </TableCell>
                                     <TableCell>
                                       <div className="font-medium">{item.title_ko}</div>
                                       {item.title_en && <div className="text-sm text-muted-foreground">{item.title_en}</div>}

@@ -5,8 +5,16 @@ import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, User, ArrowRight, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen } from 'lucide-react';
+import { Calendar, User, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -97,62 +105,63 @@ export default function Blog() {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="card-elevated overflow-hidden">
-                <Skeleton className="h-48 w-full" />
-                <div className="p-4 space-y-3">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-1/2" />
-                </div>
-              </div>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
         ) : posts && posts.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {posts.map((post, i) => (
-              <div
-                key={post.id}
-                className="card-elevated overflow-hidden animate-fade-in cursor-pointer group hover:shadow-lg transition-all duration-300"
-                style={{ animationDelay: `${i * 50}ms` }}
-                onClick={() => setSelectedPost(post)}
-              >
-                {post.thumbnail_url && (
-                  <div className="h-24 overflow-hidden">
-                    <img
-                      src={post.thumbnail_url}
-                      alt={language === 'ko' ? post.title_ko : post.title_en}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                )}
-                <div className="p-4">
-                  <h3 className="font-serif font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                    {language === 'ko' ? post.title_ko : post.title_en}
-                  </h3>
-                  {(language === 'ko' ? post.summary_ko : post.summary_en) && (
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-3">
-                      {language === 'ko' ? post.summary_ko : post.summary_en}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {formatDate(post.published_at)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
+          <div className="card-elevated overflow-hidden animate-fade-in">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50px] text-center">#</TableHead>
+                  <TableHead>{language === 'ko' ? '제목' : 'Title'}</TableHead>
+                  <TableHead className="hidden md:table-cell">{language === 'ko' ? '작성자' : 'Author'}</TableHead>
+                  <TableHead>{language === 'ko' ? '게시일' : 'Published'}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {posts.map((post, i) => (
+                  <TableRow
+                    key={post.id}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => setSelectedPost(post)}
+                  >
+                    <TableCell className="text-center text-muted-foreground text-sm font-medium">
+                      {i + 1}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {post.thumbnail_url && (
+                          <img
+                            src={post.thumbnail_url}
+                            alt=""
+                            className="h-8 w-12 object-cover rounded flex-shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">
+                            {language === 'ko' ? post.title_ko : post.title_en}
+                          </div>
+                          {(language === 'ko' ? post.summary_ko : post.summary_en) && (
+                            <div className="text-xs text-muted-foreground truncate">
+                              {language === 'ko' ? post.summary_ko : post.summary_en}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {post.author}
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center gap-1 text-xs text-primary font-medium">
-                    {language === 'ko' ? '자세히 보기' : 'Read more'}
-                    <ArrowRight className="h-3 w-3" />
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      {formatDate(post.published_at)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="text-center py-16 text-muted-foreground">
