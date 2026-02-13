@@ -1,0 +1,4 @@
+
+ALTER TABLE public.popup_ads
+ADD COLUMN start_date DATE DEFAULT NULL,
+ADD COLUMN end_date DATE DEFAULT NULL;
