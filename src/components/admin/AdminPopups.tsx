@@ -22,6 +22,8 @@ interface PopupAd {
   button_link: string | null;
   is_active: boolean;
   display_order: number;
+  start_date: string | null;
+  end_date: string | null;
   created_at: string;
 }
 
@@ -36,6 +38,8 @@ const emptyForm = {
   button_link: '/products',
   is_active: true,
   display_order: 0,
+  start_date: '',
+  end_date: '',
 };
 
 export function AdminPopups() {
@@ -77,7 +81,9 @@ export function AdminPopups() {
           button_link: form.button_link || '/products',
           is_active: form.is_active,
           display_order: form.display_order,
-        })
+          start_date: form.start_date || null,
+          end_date: form.end_date || null,
+        } as any)
         .eq('id', editing);
 
       if (error) {
@@ -97,7 +103,9 @@ export function AdminPopups() {
         button_link: form.button_link || '/products',
         is_active: form.is_active,
         display_order: form.display_order,
-      });
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+      } as any);
 
       if (error) {
         toast.error(error.message);
@@ -126,6 +134,8 @@ export function AdminPopups() {
       button_link: popup.button_link || '/products',
       is_active: popup.is_active,
       display_order: popup.display_order,
+      start_date: popup.start_date || '',
+      end_date: popup.end_date || '',
     });
   };
 
@@ -204,10 +214,18 @@ export function AdminPopups() {
                 <Input value={form.button_link} onChange={(e) => setForm({ ...form, button_link: e.target.value })} placeholder="/products" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div>
                 <label className="text-sm font-medium">{language === 'ko' ? '표시 순서' : 'Display Order'}</label>
                 <Input type="number" value={form.display_order} onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })} />
+              </div>
+              <div>
+                <label className="text-sm font-medium">{language === 'ko' ? '시작일' : 'Start Date'}</label>
+                <Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-sm font-medium">{language === 'ko' ? '종료일' : 'End Date'}</label>
+                <Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
               </div>
               <div className="flex items-center gap-3 pt-6">
                 <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
@@ -234,6 +252,7 @@ export function AdminPopups() {
             <TableHead>{language === 'ko' ? '순서' : 'Order'}</TableHead>
             <TableHead>{language === 'ko' ? '제목' : 'Title'}</TableHead>
             <TableHead>{language === 'ko' ? '링크' : 'Link'}</TableHead>
+            <TableHead>{language === 'ko' ? '기간' : 'Period'}</TableHead>
             <TableHead>{language === 'ko' ? '활성' : 'Active'}</TableHead>
             <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
           </TableRow>
@@ -244,6 +263,9 @@ export function AdminPopups() {
               <TableCell>{popup.display_order}</TableCell>
               <TableCell>{language === 'ko' ? popup.title_ko : popup.title_en}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{popup.button_link}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {(popup as any).start_date || '–'} ~ {(popup as any).end_date || '–'}
+              </TableCell>
               <TableCell>
                 <span className={`text-xs px-2 py-1 rounded-full ${popup.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
                   {popup.is_active ? (language === 'ko' ? '활성' : 'Active') : (language === 'ko' ? '비활성' : 'Inactive')}
@@ -263,7 +285,7 @@ export function AdminPopups() {
           ))}
           {popups.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                 {language === 'ko' ? '등록된 팝업이 없습니다' : 'No popups yet'}
               </TableCell>
             </TableRow>

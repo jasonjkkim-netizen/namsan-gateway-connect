@@ -23,6 +23,8 @@ interface PopupAd {
   button_text_en: string | null;
   button_text_ko: string | null;
   button_link: string | null;
+  start_date: string | null;
+  end_date: string | null;
 }
 
 export function ProductPopup() {
@@ -36,17 +38,25 @@ export function ProductPopup() {
     if (!user) return;
 
     async function checkAndShowPopup() {
-      // Fetch the first active popup
+      // Fetch active popups (get several to filter by date)
       const { data: popups } = await supabase
         .from('popup_ads')
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true })
-        .limit(1);
+        .limit(10);
 
       if (!popups || popups.length === 0) return;
 
-      const activePopup = popups[0];
+      const today = new Date().toISOString().split('T')[0];
+      // Filter by date range
+      const activePopup = popups.find((p: any) => {
+        if (p.start_date && today < p.start_date) return false;
+        if (p.end_date && today > p.end_date) return false;
+        return true;
+      }) as PopupAd | undefined;
+
+      if (!activePopup) return;
 
       // Check if user dismissed today
       const { data: dismissal } = await supabase

@@ -433,9 +433,11 @@ export type Database = {
           description_en: string | null
           description_ko: string | null
           display_order: number
+          end_date: string | null
           id: string
           image_url: string | null
           is_active: boolean
+          start_date: string | null
           title_en: string
           title_ko: string
           updated_at: string
@@ -448,9 +450,11 @@ export type Database = {
           description_en?: string | null
           description_ko?: string | null
           display_order?: number
+          end_date?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          start_date?: string | null
           title_en?: string
           title_ko?: string
           updated_at?: string
@@ -463,9 +467,11 @@ export type Database = {
           description_en?: string | null
           description_ko?: string | null
           display_order?: number
+          end_date?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
+          start_date?: string | null
           title_en?: string
           title_ko?: string
           updated_at?: string
