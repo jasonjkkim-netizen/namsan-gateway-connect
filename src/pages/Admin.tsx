@@ -15,8 +15,9 @@ import { AdminMarketIndices } from '@/components/admin/AdminMarketIndices';
 import { AdminStockPicks } from '@/components/admin/AdminStockPicks';
 import { AdminViewpoints } from '@/components/admin/AdminViewpoints';
 import { AdminBlog } from '@/components/admin/AdminBlog';
+import { AdminPopups } from '@/components/admin/AdminPopups';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen } from 'lucide-react';
+import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -74,6 +75,7 @@ export default function Admin() {
     { id: 'stocks', label: language === 'ko' ? '관심 종목' : 'Stocks', icon: Star },
     { id: 'indices', label: language === 'ko' ? '지수 관리' : 'Indices', icon: BarChart3 },
     { id: 'market', label: language === 'ko' ? '시장 개요' : 'Market', icon: TrendingUp },
+    { id: 'popups', label: language === 'ko' ? '팝업 광고' : 'Popups', icon: Megaphone },
   ];
 
   return (
@@ -91,7 +93,7 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="approvals" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-12 h-auto">
+          <TabsList className="flex flex-wrap h-auto gap-1">
             {tabs.map(({ id, label, icon: Icon }) => (
               <TabsTrigger
                 key={id}
@@ -146,6 +148,10 @@ export default function Admin() {
 
           <TabsContent value="market">
             <AdminMarketOverview />
+          </TabsContent>
+
+          <TabsContent value="popups">
+            <AdminPopups />
           </TabsContent>
         </Tabs>
       </main>
