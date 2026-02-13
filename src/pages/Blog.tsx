@@ -49,9 +49,10 @@ export default function Blog() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return language === 'ko'
-      ? `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
-      : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (language === 'ko') {
+      return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   return (

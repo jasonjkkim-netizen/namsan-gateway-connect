@@ -27,7 +27,7 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
         .from('namsan_viewpoints')
         .select('*')
         .eq('is_active', true)
-        .order('display_order', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1);
       if (data) setViewpoints(data as Viewpoint[]);
       setLoading(false);
@@ -91,7 +91,7 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
                   <p className="text-xs text-muted-foreground mt-3">
                     {new Date(vp.created_at).toLocaleDateString(
                       language === 'ko' ? 'ko-KR' : 'en-US',
-                      { year: 'numeric', month: 'short', day: 'numeric' }
+                      { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
                     )}
                   </p>
                 </div>
