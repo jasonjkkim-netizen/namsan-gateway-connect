@@ -353,7 +353,7 @@ export function AdminBlog() {
           </TabsTrigger>
           <TabsTrigger value="interest-news" className="flex items-center gap-2">
             <ExternalLink className="h-4 w-4" />
-            {language === 'ko' ? '관심 뉴스' : 'Interest News'}
+            {language === 'ko' ? '최근 업데이트 (뉴스)' : 'Recent Updates (News)'}
           </TabsTrigger>
           <TabsTrigger value="newsletters" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
