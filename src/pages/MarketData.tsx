@@ -11,6 +11,7 @@ import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable
 import { MarketNewsSection } from '@/components/market/MarketNewsSection';
 import { StockPickNewsSection } from '@/components/market/StockPickNewsSection';
 import { NamsanViewpointSection } from '@/components/market/NamsanViewpointSection';
+import { ProductShowcaseSection } from '@/components/market/ProductShowcaseSection';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -126,7 +127,10 @@ export default function MarketData() {
           </div>
         </div>
 
-        {/* Namsan View Point - moved to top */}
+        {/* Product Showcase - first section */}
+        <ProductShowcaseSection language={language} />
+
+        {/* Namsan View Point */}
         <NamsanViewpointSection language={language} />
 
         {/* Weekly Stock Picks Table */}
