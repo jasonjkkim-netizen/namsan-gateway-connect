@@ -226,6 +226,7 @@ export function AdminProducts() {
             <TableRow>
               <TableHead>{language === 'ko' ? '상품명' : 'Name'}</TableHead>
               <TableHead>{language === 'ko' ? '유형' : 'Type'}</TableHead>
+              <TableHead>{language === 'ko' ? '통화' : 'Currency'}</TableHead>
               <TableHead>{language === 'ko' ? '목표수익률' : 'Target Return'}</TableHead>
               <TableHead>{language === 'ko' ? '최소투자금' : 'Min Investment'}</TableHead>
               <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
@@ -237,7 +238,7 @@ export function AdminProducts() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 8 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-5 w-24" />
                     </TableCell>
@@ -246,7 +247,7 @@ export function AdminProducts() {
               ))
             ) : filteredProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
                 </TableCell>
               </TableRow>
@@ -257,6 +258,7 @@ export function AdminProducts() {
                     {language === 'ko' ? product.name_ko : product.name_en}
                   </TableCell>
                   <TableCell>{product.type}</TableCell>
+                  <TableCell>{(product as any).currency || 'KRW'}</TableCell>
                   <TableCell>
                     {product.target_return ? formatPercent(product.target_return) : '-'}
                   </TableCell>
