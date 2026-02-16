@@ -127,7 +127,7 @@ export function AdminInterestNews() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">
-          {language === 'ko' ? '최근 업데이트 (뉴스 링크)' : 'Recent Updates (News Links)'}
+          {language === 'ko' ? '최신 관심 뉴스' : 'Latest Interest News'}
         </h3>
         <Button onClick={openNew} size="sm" className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
