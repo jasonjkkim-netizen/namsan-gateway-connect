@@ -267,9 +267,21 @@ export function AdminPopups() {
                 {(popup as any).start_date || '–'} ~ {(popup as any).end_date || '–'}
               </TableCell>
               <TableCell>
-                <span className={`text-xs px-2 py-1 rounded-full ${popup.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
-                  {popup.is_active ? (language === 'ko' ? '활성' : 'Active') : (language === 'ko' ? '비활성' : 'Inactive')}
-                </span>
+                <Switch
+                  checked={popup.is_active}
+                  onCheckedChange={async (checked) => {
+                    const { error } = await supabase
+                      .from('popup_ads')
+                      .update({ is_active: checked } as any)
+                      .eq('id', popup.id);
+                    if (error) {
+                      toast.error(error.message);
+                      return;
+                    }
+                    toast.success(language === 'ko' ? (checked ? '활성화됨' : '비활성화됨') : (checked ? 'Activated' : 'Deactivated'));
+                    fetchPopups();
+                  }}
+                />
               </TableCell>
               <TableCell>
                 <div className="flex gap-2">
