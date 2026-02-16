@@ -31,6 +31,7 @@ interface ProductDocumentsProps {
 }
 
 const DOC_TYPES = [
+  { value: 'termsheet', ko: '텀시트', en: 'Termsheet' },
   { value: 'proposal', ko: '제안서', en: 'Proposal' },
   { value: 'contract', ko: '계약서', en: 'Contract' },
   { value: 'prospectus', ko: '투자설명서', en: 'Prospectus' },
@@ -45,7 +46,7 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
   const [uploading, setUploading] = useState(false);
   const [nameKo, setNameKo] = useState('');
   const [nameEn, setNameEn] = useState('');
-  const [docType, setDocType] = useState('proposal');
+  const [docType, setDocType] = useState('termsheet');
 
   async function fetchDocuments() {
     const { data } = await supabase
@@ -105,7 +106,7 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
       toast.success(language === 'ko' ? '문서 업로드 완료' : 'Document uploaded');
       setNameKo('');
       setNameEn('');
-      setDocType('proposal');
+      setDocType('termsheet');
       fetchDocuments();
     } catch (err: any) {
       console.error('Upload error:', err);
