@@ -95,8 +95,8 @@ export function InterestNewsSection({ language }: Props) {
                   {research && research.length > 0 && (
                     <TableRow>
                       <TableCell>
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">
-                          <FileText className="h-3 w-3 mr-1" />
+                        <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs flex items-center gap-1 w-fit">
+                          <FileText className="h-3 w-3" />
                           {language === 'ko' ? '리서치' : 'Research'}
                         </Badge>
                       </TableCell>
@@ -115,8 +115,8 @@ export function InterestNewsSection({ language }: Props) {
                   {news && news.length > 0 && (
                     <TableRow>
                       <TableCell>
-                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs">
-                          <ExternalLink className="h-3 w-3 mr-1" />
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 text-xs flex items-center gap-1 w-fit">
+                          <ExternalLink className="h-3 w-3" />
                           {language === 'ko' ? '뉴스' : 'News'}
                         </Badge>
                       </TableCell>
