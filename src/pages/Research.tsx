@@ -210,6 +210,11 @@ export default function Research() {
                   <Button 
                     variant="outline" 
                     disabled={!report.pdf_url}
+                    onClick={() => {
+                      if (report.pdf_url) {
+                        window.open(report.pdf_url, '_blank');
+                      }
+                    }}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     {t('downloadPdf')}
