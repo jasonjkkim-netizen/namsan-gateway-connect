@@ -59,6 +59,7 @@ export function AdminProducts() {
     name_en: '',
     name_ko: '',
     type: 'fund',
+    currency: 'KRW',
     description_en: '',
     description_ko: '',
     target_return: '',
@@ -92,6 +93,7 @@ export function AdminProducts() {
       name_en: product.name_en,
       name_ko: product.name_ko,
       type: product.type,
+      currency: (product as any).currency || 'KRW',
       description_en: product.description_en || '',
       description_ko: product.description_ko || '',
       target_return: product.target_return ? String(product.target_return) : '',
@@ -109,6 +111,7 @@ export function AdminProducts() {
       name_en: '',
       name_ko: '',
       type: 'fund',
+      currency: 'KRW',
       description_en: '',
       description_ko: '',
       target_return: '',
@@ -148,6 +151,7 @@ export function AdminProducts() {
       name_en: validationResult.data.name_en!,
       name_ko: validationResult.data.name_ko!,
       type: validationResult.data.type!,
+      currency: formData.currency,
       description_en: validationResult.data.description_en ?? null,
       description_ko: validationResult.data.description_ko ?? null,
       target_return: validationResult.data.target_return ?? null,
@@ -298,20 +302,38 @@ export function AdminProducts() {
                 <Input value={formData.name_ko} onChange={(e) => setFormData({ ...formData, name_ko: e.target.value })} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>{language === 'ko' ? '유형' : 'Type'}</Label>
-              <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bond">{language === 'ko' ? '채권' : 'Bond'}</SelectItem>
-                  <SelectItem value="equity">{language === 'ko' ? '주식' : 'Equity'}</SelectItem>
-                  <SelectItem value="fund">{language === 'ko' ? '펀드' : 'Fund'}</SelectItem>
-                  <SelectItem value="real_estate">{language === 'ko' ? '부동산' : 'Real Estate'}</SelectItem>
-                  <SelectItem value="alternative">{language === 'ko' ? '대안투자' : 'Alternative'}</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '유형' : 'Type'}</Label>
+                <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bond">{language === 'ko' ? '채권' : 'Bond'}</SelectItem>
+                    <SelectItem value="equity">{language === 'ko' ? '주식' : 'Equity'}</SelectItem>
+                    <SelectItem value="fund">{language === 'ko' ? '펀드' : 'Fund'}</SelectItem>
+                    <SelectItem value="real_estate">{language === 'ko' ? '부동산' : 'Real Estate'}</SelectItem>
+                    <SelectItem value="alternative">{language === 'ko' ? '대안투자' : 'Alternative'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '통화' : 'Currency'}</Label>
+                <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="KRW">₩ KRW</SelectItem>
+                    <SelectItem value="USD">$ USD</SelectItem>
+                    <SelectItem value="EUR">€ EUR</SelectItem>
+                    <SelectItem value="JPY">¥ JPY</SelectItem>
+                    <SelectItem value="GBP">£ GBP</SelectItem>
+                    <SelectItem value="CNY">¥ CNY</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>{language === 'ko' ? '설명 (영문)' : 'Description (EN)'}</Label>
