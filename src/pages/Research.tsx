@@ -169,7 +169,7 @@ export default function Research() {
                       </Badge>
                     </div>
                     
-                    <h3 className="text-lg font-serif font-semibold mb-2">
+                    <h3 className="text-sm font-medium mb-2">
                       {language === 'ko' ? report.title_ko : report.title_en}
                     </h3>
                     
