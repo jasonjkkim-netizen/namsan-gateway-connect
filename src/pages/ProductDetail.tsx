@@ -297,57 +297,69 @@ export default function ProductDetail() {
           </Card>
         </div>
 
-        {/* Product Documents */}
-        {documents.length > 0 && (
-          <Card className="card-elevated animate-fade-in mb-8" style={{ animationDelay: '550ms' }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-accent" />
-                {language === 'ko' ? '상품 관련 문서' : 'Product Documents'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {documents.map(doc => {
-                  const typeLabels: Record<string, { ko: string; en: string }> = {
-                    proposal: { ko: '제안서', en: 'Proposal' },
-                    contract: { ko: '계약서', en: 'Contract' },
-                    prospectus: { ko: '투자설명서', en: 'Prospectus' },
-                    report: { ko: '보고서', en: 'Report' },
-                    other: { ko: '기타', en: 'Other' },
-                  };
-                  const typeLabel = language === 'ko'
-                    ? typeLabels[doc.document_type]?.ko || doc.document_type
-                    : typeLabels[doc.document_type]?.en || doc.document_type;
+        {/* Product Documents - grouped by type */}
+        {documents.length > 0 && (() => {
+          const DOC_SECTIONS = [
+            { type: 'termsheet', ko: '텀시트', en: 'Termsheet' },
+            { type: 'proposal', ko: '제안서', en: 'Proposal' },
+            { type: 'contract', ko: '계약서', en: 'Contract' },
+            { type: 'prospectus', ko: '투자설명서', en: 'Prospectus' },
+            { type: 'report', ko: '보고서', en: 'Report' },
+            { type: 'other', ko: '기타', en: 'Other' },
+          ];
+          const groupedDocs = DOC_SECTIONS
+            .map(section => ({
+              ...section,
+              docs: documents.filter(d => d.document_type === section.type),
+            }))
+            .filter(section => section.docs.length > 0);
 
-                  return (
-                    <a
-                      key={doc.id}
-                      href={doc.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <FileText className="h-5 w-5 text-destructive shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                            {language === 'ko' ? doc.name_ko : doc.name_en}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {typeLabel}
-                            {doc.file_size ? ` · ${doc.file_size < 1024 * 1024 ? `${(doc.file_size / 1024).toFixed(0)}KB` : `${(doc.file_size / (1024 * 1024)).toFixed(1)}MB`}` : ''}
-                          </p>
-                        </div>
-                      </div>
-                      <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
-                    </a>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          return (
+            <Card className="card-elevated animate-fade-in mb-8" style={{ animationDelay: '550ms' }}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-accent" />
+                  {language === 'ko' ? '상품 관련 문서' : 'Product Documents'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {groupedDocs.map(section => (
+                  <div key={section.type}>
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+                      {language === 'ko' ? section.ko : section.en}
+                    </h4>
+                    <div className="space-y-2">
+                      {section.docs.map(doc => (
+                        <a
+                          key={doc.id}
+                          href={doc.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <FileText className="h-5 w-5 text-destructive shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                                {language === 'ko' ? doc.name_ko : doc.name_en}
+                              </p>
+                              {doc.file_size && (
+                                <p className="text-xs text-muted-foreground">
+                                  {doc.file_size < 1024 * 1024 ? `${(doc.file_size / 1024).toFixed(0)}KB` : `${(doc.file_size / (1024 * 1024)).toFixed(1)}MB`}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* CTA */}
         {product.status === 'open' && (
