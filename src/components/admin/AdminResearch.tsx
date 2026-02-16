@@ -30,7 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Search, Trash2 } from 'lucide-react';
+import { Plus, Edit, Search, Trash2, Upload, FileText } from 'lucide-react';
 
 interface ResearchReport {
   id: string;
@@ -64,6 +64,7 @@ export function AdminResearch() {
     publication_date: new Date().toISOString().split('T')[0],
     is_active: true,
   });
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchReports();
@@ -309,8 +310,46 @@ export function AdminResearch() {
               />
             </div>
             <div className="space-y-2">
-              <Label>{language === 'ko' ? 'PDF URL' : 'PDF URL'}</Label>
-              <Input value={formData.pdf_url} onChange={(e) => setFormData({ ...formData, pdf_url: e.target.value })} placeholder="https://..." />
+              <Label>{language === 'ko' ? 'PDF 파일' : 'PDF File'}</Label>
+              {formData.pdf_url && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="truncate flex-1">{formData.pdf_url.split('/').pop()}</span>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  type="file"
+                  accept=".pdf"
+                  disabled={uploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 20 * 1024 * 1024) {
+                      toast.error(language === 'ko' ? '파일 크기는 20MB 이하여야 합니다' : 'File must be under 20MB');
+                      return;
+                    }
+                    setUploading(true);
+                    const ext = file.name.split('.').pop();
+                    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+                    const { error: uploadError } = await supabase.storage
+                      .from('research-documents')
+                      .upload(fileName, file, { contentType: 'application/pdf' });
+                    if (uploadError) {
+                      toast.error(language === 'ko' ? '업로드 실패' : 'Upload failed');
+                      console.error(uploadError);
+                    } else {
+                      const { data: urlData } = supabase.storage
+                        .from('research-documents')
+                        .getPublicUrl(fileName);
+                      setFormData({ ...formData, pdf_url: urlData.publicUrl });
+                      toast.success(language === 'ko' ? '업로드 완료' : 'Upload complete');
+                    }
+                    setUploading(false);
+                  }}
+                />
+              </div>
+              {uploading && <p className="text-xs text-muted-foreground">{language === 'ko' ? '업로드 중...' : 'Uploading...'}</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
