@@ -26,8 +26,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { sendContentNotification } from '@/lib/send-content-notification';
-import { Plus, Edit, Trash2, Image, Send, Mail, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, Image, Send, Mail, Clock, ExternalLink } from 'lucide-react';
 import { RichPasteEditor } from './RichPasteEditor';
+import { AdminInterestNews } from './AdminInterestNews';
 
 interface BlogPost {
   id: string;
@@ -350,6 +351,10 @@ export function AdminBlog() {
             <Edit className="h-4 w-4" />
             {language === 'ko' ? '블로그 글' : 'Blog Posts'}
           </TabsTrigger>
+          <TabsTrigger value="interest-news" className="flex items-center gap-2">
+            <ExternalLink className="h-4 w-4" />
+            {language === 'ko' ? '관심 뉴스' : 'Interest News'}
+          </TabsTrigger>
           <TabsTrigger value="newsletters" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             {language === 'ko' ? '뉴스레터 발송 기록' : 'Newsletter History'}
@@ -470,6 +475,10 @@ export function AdminBlog() {
               )}
             </TableBody>
           </Table>
+        </TabsContent>
+
+        <TabsContent value="interest-news">
+          <AdminInterestNews />
         </TabsContent>
       </Tabs>
 

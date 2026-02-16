@@ -194,6 +194,39 @@ export type Database = {
           },
         ]
       }
+      interest_news: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          title_en: string
+          title_ko: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          title_en?: string
+          title_ko?: string
+          updated_at?: string
+          url?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          title_en?: string
+          title_ko?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       investment_products: {
         Row: {
           created_at: string
