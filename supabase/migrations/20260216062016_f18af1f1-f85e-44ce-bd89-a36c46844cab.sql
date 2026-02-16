@@ -1,0 +1,1 @@
+ALTER TABLE public.investment_products ADD COLUMN currency text DEFAULT 'KRW';

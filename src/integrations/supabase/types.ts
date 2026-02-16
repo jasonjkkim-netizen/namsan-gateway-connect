@@ -197,6 +197,7 @@ export type Database = {
       investment_products: {
         Row: {
           created_at: string
+          currency: string | null
           description_en: string | null
           description_ko: string | null
           id: string
@@ -212,6 +213,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          currency?: string | null
           description_en?: string | null
           description_ko?: string | null
           id?: string
@@ -227,6 +229,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          currency?: string | null
           description_en?: string | null
           description_ko?: string | null
           id?: string
