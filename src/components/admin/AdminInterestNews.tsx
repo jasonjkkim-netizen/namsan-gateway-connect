@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -22,8 +23,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, ExternalLink } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, Edit, Trash2, ExternalLink, Archive } from 'lucide-react';
+import { format, subDays } from 'date-fns';
 
 interface InterestNews {
   id: string;
@@ -55,6 +56,9 @@ export function AdminInterestNews() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(defaultForm);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const oneWeekAgo = subDays(new Date(), 7);
 
   async function fetchItems() {
     const { data } = await supabase
@@ -66,6 +70,16 @@ export function AdminInterestNews() {
   }
 
   useEffect(() => { fetchItems(); }, []);
+
+  // Split into recent (within 1 week, max 20) and archived
+  const recentItems = items.filter(item => new Date(item.created_at) >= oneWeekAgo).slice(0, 20);
+  const archivedItems = items.filter(item => {
+    const isOld = new Date(item.created_at) < oneWeekAgo;
+    const isBeyond20 = !isOld && items.filter(i => new Date(i.created_at) >= oneWeekAgo).indexOf(item) >= 20;
+    return isOld || isBeyond20;
+  });
+
+  const displayItems = showArchived ? archivedItems : recentItems;
 
   function openNew() {
     setEditingId(null);
@@ -138,12 +152,35 @@ export function AdminInterestNews() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">
-          {language === 'ko' ? '최신 관심 뉴스' : 'Latest Interest News'}
+          {language === 'ko' ? '날짜별 주요 관심 뉴스' : 'Daily Key Interest News'}
         </h3>
-        <Button onClick={openNew} size="sm" className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          {language === 'ko' ? '추가' : 'Add'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showArchived ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowArchived(!showArchived)}
+            className="flex items-center gap-1"
+          >
+            <Archive className="h-3.5 w-3.5" />
+            {language === 'ko' ? `저장됨 (${archivedItems.length})` : `Archived (${archivedItems.length})`}
+          </Button>
+          <Button onClick={openNew} size="sm" className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            {language === 'ko' ? '추가' : 'Add'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        {showArchived ? (
+          <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+            {language === 'ko' ? '저장된 뉴스 (1주일 이후 또는 20개 초과)' : 'Archived news (older than 1 week or beyond 20)'}
+          </Badge>
+        ) : (
+          <Badge variant="secondary">
+            {language === 'ko' ? `최근 뉴스 (${recentItems.length}건, 최대 1주일/20개)` : `Recent news (${recentItems.length} items, max 1 week/20)`}
+          </Badge>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -160,7 +197,7 @@ export function AdminInterestNews() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map(item => {
+            {displayItems.map(item => {
               const createdDate = new Date(item.created_at);
               return (
                 <TableRow key={item.id}>
@@ -204,10 +241,12 @@ export function AdminInterestNews() {
                 </TableRow>
               );
             })}
-            {items.length === 0 && (
+            {displayItems.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  {language === 'ko' ? '관심 뉴스가 없습니다.' : 'No interest news.'}
+                  {showArchived
+                    ? (language === 'ko' ? '저장된 뉴스가 없습니다.' : 'No archived news.')
+                    : (language === 'ko' ? '관심 뉴스가 없습니다.' : 'No interest news.')}
                 </TableCell>
               </TableRow>
             )}

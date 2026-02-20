@@ -5,7 +5,6 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bell, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, ExternalLink, Newspaper } from 'lucide-react';
-import { InterestNewsSection } from '@/components/market/InterestNewsSection';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
@@ -15,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { format } from 'date-fns';
+import { format, subDays, isAfter } from 'date-fns';
 
 interface InterestNews {
   id: string;
@@ -37,11 +36,14 @@ export default function News() {
   const { data: news, isLoading } = useQuery({
     queryKey: ['interest-news-all'],
     queryFn: async () => {
+      const oneWeekAgo = subDays(new Date(), 7).toISOString();
       const { data, error } = await supabase
         .from('interest_news')
         .select('*')
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .gte('created_at', oneWeekAgo)
+        .order('created_at', { ascending: false })
+        .limit(20);
       if (error) throw error;
       return (data || []) as InterestNews[];
     },
@@ -57,6 +59,16 @@ export default function News() {
     { path: '/videos', label: t('videos'), icon: PlayCircle },
   ];
 
+  // Group news by date
+  const groupedByDate = (news || []).reduce<Record<string, InterestNews[]>>((acc, item) => {
+    const dateKey = format(new Date(item.created_at), 'yyyy-MM-dd');
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(item);
+    return acc;
+  }, {});
+
+  const sortedDates = Object.keys(groupedByDate).sort((a, b) => b.localeCompare(a));
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -64,10 +76,10 @@ export default function News() {
       <main className="container py-8">
         <div className="mb-8 animate-fade-in">
           <h1 className="text-3xl font-serif font-semibold text-foreground">
-            {language === 'ko' ? '관심 뉴스' : 'Interest News'}
+            {language === 'ko' ? '날짜별 주요 관심 뉴스' : 'Daily Key Interest News'}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            {language === 'ko' ? '최신 관심 뉴스 및 업데이트' : 'Latest interest news and updates'}
+            {language === 'ko' ? '최근 1주일간 주요 관심 뉴스' : 'Key interest news from the past week'}
           </p>
         </div>
 
@@ -90,90 +102,84 @@ export default function News() {
             ))}
           </div>
         </div>
-        {/* Recent Updates (Research + News) */}
-        <InterestNewsSection language={language} />
 
-        {/* Full News Table */}
-        <div className="card-elevated overflow-hidden animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <div className="p-3 border-b border-border flex items-center gap-2">
-            <Bell className="h-4 w-4 text-primary" />
-            <h2 className="font-serif font-medium text-sm">
-              {language === 'ko' ? '관심 뉴스' : 'Interest News'}
-            </h2>
+        {/* Date-grouped News */}
+        {isLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="card-elevated p-4">
+                <Skeleton className="h-6 w-32 mb-3" />
+                <Skeleton className="h-5 w-full mb-2" />
+                <Skeleton className="h-5 w-3/4" />
+              </div>
+            ))}
           </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-sm font-medium w-[100px]">
-                    {language === 'ko' ? '날짜' : 'Date'}
-                  </TableHead>
-                  <TableHead className="text-sm font-medium w-[70px]">
-                    {language === 'ko' ? '시간' : 'Time'}
-                  </TableHead>
-                  <TableHead className="text-sm font-medium w-[200px]">
-                    {language === 'ko' ? '제목' : 'Title'}
-                  </TableHead>
-                  <TableHead className="text-sm font-medium">
-                    {language === 'ko' ? '본문' : 'Content'}
-                  </TableHead>
-                  <TableHead className="text-sm font-medium text-right w-[60px]">
-                    {language === 'ko' ? '링크' : 'Link'}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-14" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-60" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-8" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : news && news.length > 0 ? (
-                  news.map((item) => {
-                    const date = new Date(item.created_at);
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {format(date, 'yyyy-MM-dd')}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {format(date, 'HH:mm')}
-                        </TableCell>
-                        <TableCell className="text-sm font-medium">
-                          {language === 'ko' ? item.title_ko : item.title_en}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground line-clamp-2 max-w-[400px]">
-                          {language === 'ko' ? item.content_ko : item.content_en}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center text-primary hover:underline"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </TableCell>
+        ) : sortedDates.length > 0 ? (
+          <div className="space-y-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            {sortedDates.map((dateKey) => (
+              <div key={dateKey} className="card-elevated overflow-hidden">
+                <div className="p-3 border-b border-border bg-muted/30 flex items-center gap-2">
+                  <Bell className="h-4 w-4 text-primary" />
+                  <h2 className="font-serif font-medium text-sm">
+                    {format(new Date(dateKey), language === 'ko' ? 'yyyy년 M월 d일' : 'MMM d, yyyy')}
+                  </h2>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {groupedByDate[dateKey].length}{language === 'ko' ? '건' : ' items'}
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-sm font-medium w-[70px]">
+                          {language === 'ko' ? '시간' : 'Time'}
+                        </TableHead>
+                        <TableHead className="text-sm font-medium w-[200px]">
+                          {language === 'ko' ? '제목' : 'Title'}
+                        </TableHead>
+                        <TableHead className="text-sm font-medium">
+                          {language === 'ko' ? '본문' : 'Content'}
+                        </TableHead>
+                        <TableHead className="text-sm font-medium text-right w-[60px]">
+                          {language === 'ko' ? '링크' : 'Link'}
+                        </TableHead>
                       </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-sm">
-                      {language === 'ko' ? '등록된 뉴스가 없습니다' : 'No news available'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {groupedByDate[dateKey].map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                            {format(new Date(item.created_at), 'HH:mm')}
+                          </TableCell>
+                          <TableCell className="text-sm font-medium">
+                            {language === 'ko' ? item.title_ko : item.title_en}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground line-clamp-2 max-w-[400px]">
+                            {language === 'ko' ? item.content_ko : item.content_en}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-primary hover:underline"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="card-elevated p-8 text-center text-muted-foreground text-sm">
+            {language === 'ko' ? '최근 1주일간 등록된 뉴스가 없습니다' : 'No news from the past week'}
+          </div>
+        )}
       </main>
     </div>
   );

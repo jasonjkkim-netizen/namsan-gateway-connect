@@ -12,7 +12,7 @@ import { MarketNewsSection } from '@/components/market/MarketNewsSection';
 import { StockPickNewsSection } from '@/components/market/StockPickNewsSection';
 import { NamsanViewpointSection } from '@/components/market/NamsanViewpointSection';
 import { ProductShowcaseSection } from '@/components/market/ProductShowcaseSection';
-
+import { InterestNewsSection } from '@/components/market/InterestNewsSection';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -132,7 +132,8 @@ export default function MarketData() {
         {/* Product Showcase - first section */}
         <ProductShowcaseSection language={language} />
 
-        {/* Interest News moved to /news page */}
+        {/* Interest News */}
+        <InterestNewsSection language={language} />
 
         {/* Namsan View Point */}
         <NamsanViewpointSection language={language} />
