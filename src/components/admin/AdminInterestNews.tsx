@@ -210,10 +210,14 @@ export function AdminInterestNews() {
                     {language === 'ko' ? item.content_ko : (item.content_en || item.content_ko) || '-'}
                   </TableCell>
                   <TableCell>
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1 text-sm">
-                      <ExternalLink className="h-3 w-3" />
-                      {language === 'ko' ? '링크' : 'Link'}
-                    </a>
+                    {item.url ? (
+                      <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1 text-sm">
+                        <ExternalLink className="h-3 w-3" />
+                        {language === 'ko' ? '링크' : 'Link'}
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Switch
