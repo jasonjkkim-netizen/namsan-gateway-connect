@@ -44,7 +44,7 @@ export function InterestNewsSection({ language }: Props) {
     <div className="mb-8 animate-fade-in" style={{ animationDelay: '150ms' }}>
       <div className="flex items-center gap-2 mb-3">
         <Bell className="h-5 w-5 text-accent" />
-        <h2 className="text-lg font-semibold">
+        <h2 className="font-serif font-medium text-sm">
           {language === 'ko' ? '최근 업데이트' : 'Recent Updates'}
         </h2>
       </div>

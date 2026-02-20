@@ -103,7 +103,7 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
     <div className="mb-8 animate-fade-in" style={{ animationDelay: '100ms' }}>
       <div className="flex items-center gap-2 mb-3">
         <Package className="h-5 w-5 text-accent" />
-        <h2 className="text-lg font-semibold">
+        <h2 className="font-serif font-medium text-sm">
           {language === 'ko' ? '신규 투자 상품' : 'New Investment Products'}
         </h2>
       </div>

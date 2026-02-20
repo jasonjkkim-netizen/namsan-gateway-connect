@@ -40,7 +40,7 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
       <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
         <div className="p-3 border-b border-border flex items-center gap-2">
           <Eye className="h-4 w-4 text-primary" />
-          <h3 className="font-serif font-medium text-sm">
+           <h3 className="font-serif font-medium text-sm">
             {language === 'ko' ? '남산 뷰 포인트' : 'Namsan View Point'}
           </h3>
         </div>
@@ -57,7 +57,7 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
     <div className="mb-8 animate-fade-in">
       <div className="mb-4 flex items-center gap-2">
         <Eye className="h-5 w-5 text-primary" />
-        <h3 className="font-serif font-semibold text-lg">
+        <h3 className="font-serif font-medium text-sm">
           {language === 'ko' ? '남산 뷰 포인트' : 'Namsan View Point'}
         </h3>
       </div>
