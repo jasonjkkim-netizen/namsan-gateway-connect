@@ -113,13 +113,13 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs font-medium">{language === 'ko' ? '상품명' : 'Product'}</TableHead>
-                <TableHead className="text-xs font-medium">{language === 'ko' ? '종류' : 'Type'}</TableHead>
-                <TableHead className="text-xs font-medium">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
-                <TableHead className="text-xs font-medium text-center">{language === 'ko' ? '기간' : 'Period'}</TableHead>
-                <TableHead className="text-xs font-medium text-right">{language === 'ko' ? '목표 수익률 (년)' : 'Target Return (yr)'}</TableHead>
-                <TableHead className="text-xs font-medium text-right">{language === 'ko' ? '최소 금액 (원)' : 'Min. Amount'}</TableHead>
-                <TableHead className="text-xs font-medium text-center">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '상품명' : 'Product'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '종류' : 'Type'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap text-center">{language === 'ko' ? '기간' : 'Period'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '목표 수익률 (년)' : 'Target Return (yr)'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '최소 금액 (원)' : 'Min. Amount'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap text-center">{language === 'ko' ? '상태' : 'Status'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -144,25 +144,25 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate(`/products/${product.id}`)}
                   >
-                    <TableCell className="text-xs font-medium">
+                    <TableCell className="text-xs font-medium whitespace-nowrap">
                       {language === 'ko' ? product.name_ko : product.name_en}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="text-xs whitespace-nowrap">
 ...
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="text-xs whitespace-nowrap">
                       {CURRENCY_LABELS[product.currency || 'KRW'] || product.currency || 'KRW'}
                     </TableCell>
-                    <TableCell className="text-xs text-center">
+                    <TableCell className="text-xs text-center whitespace-nowrap">
                       {calculateTerm(product.募集_deadline)}
                     </TableCell>
-                    <TableCell className="text-xs text-right font-semibold text-accent">
+                    <TableCell className="text-xs text-right font-semibold text-accent whitespace-nowrap">
                       {product.target_return ? formatPercent(product.target_return) : '-'}
                     </TableCell>
-                    <TableCell className="text-xs text-right">
+                    <TableCell className="text-xs text-right whitespace-nowrap">
                       {product.minimum_investment ? formatCurrency(product.minimum_investment) : '-'}
                     </TableCell>
-                    <TableCell className="text-xs text-center">
+                    <TableCell className="text-xs text-center whitespace-nowrap">
                       <Badge className={getStatusColor(product.status)} variant="secondary">
                         {getStatusLabel(product.status)}
                       </Badge>
