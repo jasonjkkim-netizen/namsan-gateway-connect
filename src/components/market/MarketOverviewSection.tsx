@@ -123,7 +123,7 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
     return (
       <div className="mt-8 card-elevated overflow-hidden animate-fade-in" style={{ animationDelay: '500ms' }}>
         <div className="p-4 border-b border-border">
-          <h3 className="font-serif font-semibold">
+          <h3 className="font-serif font-medium text-sm">
             {language === 'ko' ? '한눈에 보는 시장' : 'Market at a Glance'}
           </h3>
         </div>
@@ -140,7 +140,7 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
     <div className="mt-8 animate-fade-in" style={{ animationDelay: '500ms' }}>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h3 className="font-serif font-semibold text-lg">
+          <h3 className="font-serif font-medium text-sm">
             {language === 'ko' ? '한눈에 보는 시장' : 'Market at a Glance'}
           </h3>
           <p className="text-sm text-muted-foreground mt-1">

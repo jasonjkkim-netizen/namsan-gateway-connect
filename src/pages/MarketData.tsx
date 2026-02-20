@@ -149,7 +149,7 @@ export default function MarketData() {
 
         {/* Main Index Cards */}
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-serif font-semibold text-lg">
+          <h2 className="font-serif font-medium text-sm">
             {language === 'ko' ? '주요 지수' : 'Major Indices'}
           </h2>
           <Button
