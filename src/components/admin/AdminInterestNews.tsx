@@ -106,10 +106,6 @@ export function AdminInterestNews() {
       toast.error(language === 'ko' ? '제목을 입력해주세요' : 'Title is required');
       return;
     }
-    if (!formData.url) {
-      toast.error(language === 'ko' ? 'URL을 입력해주세요' : 'URL is required');
-      return;
-    }
 
     const payload = {
       title_ko: formData.title_ko,
