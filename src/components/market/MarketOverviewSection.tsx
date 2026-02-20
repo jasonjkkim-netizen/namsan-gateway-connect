@@ -203,10 +203,10 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
                     const hasData = item.current_value !== null && item.current_value !== undefined;
                     return (
                       <TableRow key={item.id} className="hover:bg-muted/50">
-                        <TableCell className="py-2 font-medium text-sm">
+                        <TableCell className="py-2 font-medium text-xs">
                           {language === 'ko' ? item.title_ko : item.title_en}
                         </TableCell>
-                        <TableCell className="py-2 text-right text-sm font-medium">
+                        <TableCell className="py-2 text-right text-xs font-medium">
                           {formatValue(item.current_value)}
                         </TableCell>
                         <TableCell className="py-2 text-right">

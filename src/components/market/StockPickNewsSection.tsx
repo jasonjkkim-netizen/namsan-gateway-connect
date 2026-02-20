@@ -128,7 +128,7 @@ export function StockPickNewsSection({ language }: StockPickNewsSectionProps) {
           <div className="space-y-4">
             {news.map((item) => (
               <div key={item.id} className="space-y-1.5">
-                <h4 className="font-serif font-semibold text-sm text-foreground flex items-center gap-2">
+                <h4 className="font-semibold text-xs text-foreground flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
                   {item.stock_name}
                   {item.stock_code && (

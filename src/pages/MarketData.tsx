@@ -189,7 +189,7 @@ export default function MarketData() {
                   <div className={`h-2 bg-gradient-to-r ${index.color_class || 'from-blue-500 to-blue-600'}`} />
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-serif font-semibold text-sm truncate">
+                      <h3 className="font-medium text-xs truncate">
                         {language === 'ko' ? index.name_ko : index.name_en}
                       </h3>
                       <div className="flex items-center gap-1 flex-shrink-0">
@@ -206,14 +206,14 @@ export default function MarketData() {
                     </div>
                     
                     {/* Current Value */}
-                    <div className="text-2xl font-bold text-foreground mb-2">
+                    <div className="text-lg font-bold text-foreground mb-2">
                       {formatNumber(index.current_value, index.symbol)}
                     </div>
                     
                     {/* Change Value and Percent */}
                     <div className={`flex items-center gap-2 ${isPositive ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
                       <TrendIcon className="h-4 w-4" />
-                      <span className="text-sm font-medium">
+                      <span className="text-xs font-medium">
                         {formatChange(index.change_value)} ({formatChange(index.change_percent)}%)
                       </span>
                     </div>
