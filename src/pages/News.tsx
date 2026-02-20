@@ -131,16 +131,16 @@ export default function News() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-xs font-medium w-[60px] whitespace-nowrap">
+                        <TableHead className="text-xs font-medium w-[50px] whitespace-nowrap">
                           {language === 'ko' ? '시간' : 'Time'}
                         </TableHead>
-                        <TableHead className="text-xs font-medium w-[180px] whitespace-nowrap">
+                        <TableHead className="text-xs font-medium w-[100px] md:w-[160px]">
                           {language === 'ko' ? '제목' : 'Title'}
                         </TableHead>
                         <TableHead className="text-xs font-medium">
                           {language === 'ko' ? '본문' : 'Content'}
                         </TableHead>
-                        <TableHead className="text-xs font-medium text-right w-[50px] whitespace-nowrap">
+                        <TableHead className="text-xs font-medium text-right w-[40px] whitespace-nowrap">
                           {language === 'ko' ? '링크' : 'Link'}
                         </TableHead>
                       </TableRow>
@@ -151,8 +151,8 @@ export default function News() {
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap align-top">
                             {format(new Date(item.created_at), 'HH:mm')}
                           </TableCell>
-                          <TableCell className="text-xs font-medium align-top">
-                            {language === 'ko' ? item.title_ko : item.title_en}
+                          <TableCell className="text-xs font-medium align-top break-words">
+                            <span className="line-clamp-2 md:line-clamp-none">{language === 'ko' ? item.title_ko : item.title_en}</span>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground align-top">
                             <div className="max-h-[120px] overflow-y-auto leading-relaxed">
