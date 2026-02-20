@@ -340,10 +340,8 @@ export function AdminResearch() {
                       toast.error(language === 'ko' ? '업로드 실패' : 'Upload failed');
                       console.error(uploadError);
                     } else {
-                      const { data: urlData } = supabase.storage
-                        .from('research-documents')
-                        .getPublicUrl(fileName);
-                      setFormData({ ...formData, pdf_url: urlData.publicUrl });
+                      // Store the file path, not a public URL (bucket is private)
+                      setFormData({ ...formData, pdf_url: fileName });
                       toast.success(language === 'ko' ? '업로드 완료' : 'Upload complete');
                     }
                     setUploading(false);

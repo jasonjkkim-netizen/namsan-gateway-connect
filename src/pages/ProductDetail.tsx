@@ -330,12 +330,19 @@ export default function ProductDetail() {
                     </h4>
                     <div className="space-y-2">
                       {section.docs.map(doc => (
-                        <a
+                        <button
                           key={doc.id}
-                          href={doc.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                          onClick={async () => {
+                            if (doc.file_url.startsWith('http')) {
+                              window.open(doc.file_url, '_blank');
+                            } else {
+                              const { data } = await supabase.storage
+                                .from('product-documents')
+                                .createSignedUrl(doc.file_url, 300);
+                              if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                            }
+                          }}
+                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group w-full text-left"
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <FileText className="h-5 w-5 text-destructive shrink-0" />
@@ -351,7 +358,7 @@ export default function ProductDetail() {
                             </div>
                           </div>
                           <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
-                        </a>
+                        </button>
                       ))}
                     </div>
                   </div>
