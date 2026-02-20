@@ -196,6 +196,8 @@ export type Database = {
       }
       interest_news: {
         Row: {
+          content_en: string
+          content_ko: string
           created_at: string
           display_order: number
           id: string
@@ -206,6 +208,8 @@ export type Database = {
           url: string
         }
         Insert: {
+          content_en?: string
+          content_ko?: string
           created_at?: string
           display_order?: number
           id?: string
@@ -216,6 +220,8 @@ export type Database = {
           url?: string
         }
         Update: {
+          content_en?: string
+          content_ko?: string
           created_at?: string
           display_order?: number
           id?: string
