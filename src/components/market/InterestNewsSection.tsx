@@ -34,7 +34,7 @@ export function InterestNewsSection({ language }: Props) {
         .select('id, title_ko, title_en, content_ko, content_en, url, created_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
       if (error) throw error;
       return (data || []) as InterestNews[];
     },
