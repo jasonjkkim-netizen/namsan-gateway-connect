@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminClients } from '@/components/admin/AdminClients';
 import { AdminInvestments } from '@/components/admin/AdminInvestments';
 import { AdminProducts } from '@/components/admin/AdminProducts';
-import { AdminResearch } from '@/components/admin/AdminResearch';
+
 import { AdminVideos } from '@/components/admin/AdminVideos';
 import { AdminApprovals } from '@/components/admin/AdminApprovals';
 import { AdminMarketOverview } from '@/components/admin/AdminMarketOverview';
@@ -18,7 +18,7 @@ import { AdminBlog } from '@/components/admin/AdminBlog';
 import { AdminInterestNews } from '@/components/admin/AdminInterestNews';
 import { AdminPopups } from '@/components/admin/AdminPopups';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper } from 'lucide-react';
+import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -69,7 +69,7 @@ export default function Admin() {
     { id: 'clients', label: language === 'ko' ? '고객 관리' : 'Clients', icon: Users },
     { id: 'investments', label: language === 'ko' ? '투자 관리' : 'Investments', icon: Briefcase },
     { id: 'products', label: language === 'ko' ? '상품 관리' : 'Products', icon: Package },
-    { id: 'research', label: language === 'ko' ? '리서치 관리' : 'Research', icon: FileText },
+    
     { id: 'blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { id: 'videos', label: language === 'ko' ? '비디오 관리' : 'Videos', icon: PlayCircle },
     { id: 'viewpoints', label: language === 'ko' ? '뷰 포인트' : 'Viewpoints', icon: Eye },
@@ -124,9 +124,6 @@ export default function Admin() {
             <AdminProducts />
           </TabsContent>
 
-          <TabsContent value="research">
-            <AdminResearch />
-          </TabsContent>
 
           <TabsContent value="blog">
             <AdminBlog />
