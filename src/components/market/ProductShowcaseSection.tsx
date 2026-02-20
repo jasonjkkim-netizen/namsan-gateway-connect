@@ -113,13 +113,13 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-sm font-medium">{language === 'ko' ? '상품명' : 'Product'}</TableHead>
-                <TableHead className="text-sm font-medium">{language === 'ko' ? '종류' : 'Type'}</TableHead>
-                <TableHead className="text-sm font-medium">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
-                <TableHead className="text-sm font-medium text-center">{language === 'ko' ? '기간' : 'Period'}</TableHead>
-                <TableHead className="text-sm font-medium text-right">{language === 'ko' ? '목표 수익률 (년)' : 'Target Return (yr)'}</TableHead>
-                <TableHead className="text-sm font-medium text-right">{language === 'ko' ? '최소 금액 (원)' : 'Min. Amount'}</TableHead>
-                <TableHead className="text-sm font-medium text-center">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                <TableHead className="text-xs font-medium">{language === 'ko' ? '상품명' : 'Product'}</TableHead>
+                <TableHead className="text-xs font-medium">{language === 'ko' ? '종류' : 'Type'}</TableHead>
+                <TableHead className="text-xs font-medium">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
+                <TableHead className="text-xs font-medium text-center">{language === 'ko' ? '기간' : 'Period'}</TableHead>
+                <TableHead className="text-xs font-medium text-right">{language === 'ko' ? '목표 수익률 (년)' : 'Target Return (yr)'}</TableHead>
+                <TableHead className="text-xs font-medium text-right">{language === 'ko' ? '최소 금액 (원)' : 'Min. Amount'}</TableHead>
+                <TableHead className="text-xs font-medium text-center">{language === 'ko' ? '상태' : 'Status'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -133,7 +133,7 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                 ))
               ) : !products || products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
                     {language === 'ko' ? '등록된 상품이 없습니다' : 'No products available'}
                   </TableCell>
                 </TableRow>
@@ -144,29 +144,25 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate(`/products/${product.id}`)}
                   >
-                    <TableCell className="text-sm font-medium">
+                    <TableCell className="text-xs font-medium">
                       {language === 'ko' ? product.name_ko : product.name_en}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      <Badge className={TYPE_COLORS[product.type] || 'bg-muted text-muted-foreground'} variant="secondary">
-                        {language === 'ko'
-                          ? TYPE_LABELS[product.type]?.ko || product.type
-                          : TYPE_LABELS[product.type]?.en || product.type}
-                      </Badge>
+                    <TableCell className="text-xs">
+...
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-xs">
                       {CURRENCY_LABELS[product.currency || 'KRW'] || product.currency || 'KRW'}
                     </TableCell>
-                    <TableCell className="text-sm text-center">
+                    <TableCell className="text-xs text-center">
                       {calculateTerm(product.募集_deadline)}
                     </TableCell>
-                    <TableCell className="text-sm text-right font-semibold text-accent">
+                    <TableCell className="text-xs text-right font-semibold text-accent">
                       {product.target_return ? formatPercent(product.target_return) : '-'}
                     </TableCell>
-                    <TableCell className="text-sm text-right">
+                    <TableCell className="text-xs text-right">
                       {product.minimum_investment ? formatCurrency(product.minimum_investment) : '-'}
                     </TableCell>
-                    <TableCell className="text-sm text-center">
+                    <TableCell className="text-xs text-center">
                       <Badge className={getStatusColor(product.status)} variant="secondary">
                         {getStatusLabel(product.status)}
                       </Badge>

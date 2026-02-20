@@ -66,7 +66,7 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
         {viewpoints.map((vp) => (
           <div key={vp.id} className="card-elevated overflow-hidden">
             <div className="p-4">
-              <h4 className="font-serif font-semibold text-base mb-3">
+              <h4 className="font-medium text-xs mb-3">
                 {language === 'ko' ? vp.title_ko : vp.title_en}
               </h4>
 
@@ -83,7 +83,7 @@ export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed [&_img]:max-w-[50%] [&_img]:h-auto [&_img]:rounded-md">
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed [&_img]:max-w-[50%] [&_img]:h-auto [&_img]:rounded-md">
                     <ReactMarkdown>
                       {language === 'ko' ? vp.content_ko : vp.content_en}
                     </ReactMarkdown>

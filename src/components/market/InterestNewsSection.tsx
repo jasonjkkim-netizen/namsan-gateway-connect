@@ -54,11 +54,11 @@ export function InterestNewsSection({ language }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-sm font-medium whitespace-nowrap">{language === 'ko' ? '날짜' : 'Date'}</TableHead>
-                <TableHead className="text-sm font-medium whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '시간' : 'Time'}</TableHead>
-                <TableHead className="text-sm font-medium">{language === 'ko' ? '제목' : 'Title'}</TableHead>
-                <TableHead className="text-sm font-medium hidden md:table-cell">{language === 'ko' ? '본문' : 'Content'}</TableHead>
-                <TableHead className="text-sm font-medium text-right whitespace-nowrap">{language === 'ko' ? '링크' : 'Link'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '날짜' : 'Date'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '시간' : 'Time'}</TableHead>
+                <TableHead className="text-xs font-medium">{language === 'ko' ? '제목' : 'Title'}</TableHead>
+                <TableHead className="text-xs font-medium hidden md:table-cell">{language === 'ko' ? '본문' : 'Content'}</TableHead>
+                <TableHead className="text-xs font-medium text-right whitespace-nowrap">{language === 'ko' ? '링크' : 'Link'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -77,13 +77,13 @@ export function InterestNewsSection({ language }: Props) {
                   const date = new Date(item.created_at);
                   return (
                     <TableRow key={item.id}>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { month: '2-digit', day: '2-digit' })}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap hidden sm:table-cell">
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                         {date.toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                       </TableCell>
-                      <TableCell className="text-sm font-medium max-w-[150px] sm:max-w-[200px] truncate">
+                      <TableCell className="text-xs font-medium max-w-[150px] sm:max-w-[200px] truncate">
                         {language === 'ko' ? item.title_ko : (item.title_en || item.title_ko)}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate hidden md:table-cell">
@@ -101,7 +101,7 @@ export function InterestNewsSection({ language }: Props) {
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
+                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs">
                     {language === 'ko' ? '최근 업데이트가 없습니다' : 'No recent updates'}
                   </TableCell>
                 </TableRow>
