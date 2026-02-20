@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bell, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, ExternalLink, Newspaper } from 'lucide-react';
+import { InterestNewsSection } from '@/components/market/InterestNewsSection';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
@@ -89,8 +90,10 @@ export default function News() {
             ))}
           </div>
         </div>
+        {/* Recent Updates (Research + News) */}
+        <InterestNewsSection language={language} />
 
-        {/* News Table */}
+        {/* Full News Table */}
         <div className="card-elevated overflow-hidden animate-fade-in" style={{ animationDelay: '100ms' }}>
           <div className="p-3 border-b border-border flex items-center gap-2">
             <Bell className="h-4 w-4 text-primary" />
