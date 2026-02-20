@@ -105,11 +105,13 @@ export function InterestNewsSection({ language }: Props) {
   });
 
   const handleRowClick = (item: UpdateItem) => {
-    if (item.url) {
-      window.open(item.url, '_blank', 'noopener,noreferrer');
-    } else if (item.link) {
-      navigate(item.link);
-    }
+    const typeRoutes: Record<string, string> = {
+      news: '/news',
+      product: item.link || '/products',
+      research: '/research',
+      blog: '/blog',
+    };
+    navigate(typeRoutes[item.type] || '/');
   };
 
   return (
@@ -148,13 +150,12 @@ export function InterestNewsSection({ language }: Props) {
                 updates.map((item) => {
                   const date = new Date(item.created_at);
                   const config = TYPE_CONFIG[item.type];
-                  const hasLink = !!(item.url || item.link);
                   const isToday = new Date().toDateString() === date.toDateString();
                   return (
                     <TableRow
                       key={`${item.type}-${item.id}`}
-                      className={hasLink ? 'cursor-pointer hover:bg-muted/50 transition-colors' : ''}
-                      onClick={() => hasLink && handleRowClick(item)}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleRowClick(item)}
                     >
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         <span className="flex items-center gap-1.5">
