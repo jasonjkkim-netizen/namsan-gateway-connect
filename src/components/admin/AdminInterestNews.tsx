@@ -207,7 +207,7 @@ export function AdminInterestNews() {
                     {language === 'ko' ? item.title_ko : (item.title_en || item.title_ko)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground max-w-[250px] truncate">
-                    {language === 'ko' ? item.content_ko : (item.content_en || item.content_ko) || '-'}
+                    {(language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)) || ''}
                   </TableCell>
                   <TableCell>
                     {item.url ? (
