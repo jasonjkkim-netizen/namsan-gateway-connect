@@ -148,14 +148,14 @@ export default function News() {
                     <TableBody>
                       {groupedByDate[dateKey].map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap align-top">
+                          <TableCell className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap align-top">
                             {format(new Date(item.created_at), 'HH:mm')}
                           </TableCell>
-                          <TableCell className="text-xs font-medium align-top break-words">
+                          <TableCell className="text-[10px] md:text-xs font-medium align-top break-words">
                             <span className="line-clamp-2 md:line-clamp-none">{language === 'ko' ? item.title_ko : item.title_en}</span>
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground align-top">
-                            <div className="max-h-[120px] overflow-y-auto leading-relaxed">
+                          <TableCell className="text-[10px] md:text-xs text-muted-foreground align-top">
+                            <div className="max-h-[80px] md:max-h-[120px] overflow-y-auto leading-relaxed">
                               {language === 'ko' ? item.content_ko : item.content_en}
                             </div>
                           </TableCell>
@@ -165,7 +165,7 @@ export default function News() {
                                 href={item.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center text-primary hover:underline"
+                                className="inline-flex items-center gap-1 text-primary hover:underline bg-primary/10 rounded px-1.5 py-1 md:bg-transparent md:px-0 md:py-0"
                               >
                                 <ExternalLink className="h-3.5 w-3.5" />
                               </a>
