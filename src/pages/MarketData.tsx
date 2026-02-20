@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw, Newspaper } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
 import { MarketNewsSection } from '@/components/market/MarketNewsSection';
@@ -52,6 +52,7 @@ export default function MarketData() {
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp, active: true },
+    { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText },

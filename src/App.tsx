@@ -21,6 +21,7 @@ import Research from "./pages/Research";
 import Videos from "./pages/Videos";
 import Blog from "./pages/Blog";
 import MarketData from "./pages/MarketData";
+import News from "./pages/News";
 import Admin from "./pages/Admin";
 import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
@@ -77,6 +78,7 @@ const App = () => (
                   </ProtectedRoute>
                 } />
                 <Route path="/market-data" element={<MarketData />} />
+                <Route path="/news" element={<News />} />
                 <Route path="/pending-approval" element={
                   <ProtectedRoute requireApproval={false}>
                     <PendingApproval />

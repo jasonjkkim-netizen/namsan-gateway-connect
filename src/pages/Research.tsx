@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Download, Calendar, Sparkles, TrendingUp, LayoutDashboard, Package, PlayCircle, MessageSquare, BookOpen } from 'lucide-react';
+import { FileText, Download, Calendar, Sparkles, TrendingUp, LayoutDashboard, Package, PlayCircle, MessageSquare, BookOpen, Newspaper } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SummaryDialog } from '@/components/research/SummaryDialog';
 
@@ -33,6 +33,7 @@ export default function Research() {
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+    { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText, active: true },
