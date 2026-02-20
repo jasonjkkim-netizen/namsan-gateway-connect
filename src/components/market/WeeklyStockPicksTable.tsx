@@ -14,6 +14,8 @@ interface StockPick {
   closing_price_at_recommendation: number;
   current_closing_price: number | null;
   market?: string;
+  sold_date?: string | null;
+  sold_price?: number | null;
 }
 
 interface WeeklyStockPicksTableProps {
@@ -110,6 +112,12 @@ function StockTable({
                 {language === 'ko' ? '수익률' : 'Return'}
               </th>
               <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+                {language === 'ko' ? '매도일' : 'Sold'}
+              </th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+                {language === 'ko' ? '매도가' : 'Sold Price'}
+              </th>
+              <th className="px-3 py-2 text-center font-medium text-muted-foreground">
                 {language === 'ko' ? '링크' : 'Link'}
               </th>
             </tr>
@@ -160,6 +168,15 @@ function StockTable({
                   }`}>
                     {calculateReturn(stock.closing_price_at_recommendation, stock.current_closing_price)}
                   </td>
+                  <td className="px-3 py-2 text-center text-muted-foreground">
+                    {stock.sold_date ? (() => {
+                      const d = new Date(stock.sold_date);
+                      return `${d.getMonth() + 1}/${d.getDate()}`;
+                    })() : '-'}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {stock.sold_price ? formatPrice(stock.sold_price) : '-'}
+                  </td>
                   <td className="px-3 py-2 text-center">
                     {stockUrl ? (
                       <a
@@ -193,10 +210,23 @@ function StockTable({
               const ret = ((s.current_closing_price! - s.closing_price_at_recommendation) / s.closing_price_at_recommendation) * 100;
               return sum + ret * (s.closing_price_at_recommendation / totalWeight);
             }, 0);
+
+            // Realized return for sold stocks
+            const soldStocks = stocks.filter(
+              s => s.sold_price && s.closing_price_at_recommendation > 0
+            );
+            const soldWeight = soldStocks.reduce((sum, s) => sum + s.closing_price_at_recommendation, 0);
+            const realizedReturn = soldStocks.length > 0
+              ? soldStocks.reduce((sum, s) => {
+                  const ret = ((s.sold_price! - s.closing_price_at_recommendation) / s.closing_price_at_recommendation) * 100;
+                  return sum + ret * (s.closing_price_at_recommendation / soldWeight);
+                }, 0)
+              : null;
+
             return (
               <tfoot className="border-t-2 border-border bg-muted/30">
                 <tr>
-                  <td colSpan={4} className="px-3 py-2 text-right font-semibold text-xs">
+                  <td colSpan={6} className="px-3 py-2 text-right font-semibold text-xs">
                     {language === 'ko' ? '가중 평균 수익률' : 'Weighted Avg Return'}
                   </td>
                   <td className={`px-3 py-2 text-right font-bold text-xs ${
@@ -206,6 +236,19 @@ function StockTable({
                   </td>
                   <td className="px-3 py-2" />
                 </tr>
+                {realizedReturn !== null && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-2 text-right font-semibold text-xs">
+                      {language === 'ko' ? '실현 수익률' : 'Realized Return'}
+                    </td>
+                    <td className={`px-3 py-2 text-right font-bold text-xs ${
+                      realizedReturn > 0 ? 'text-green-600' : realizedReturn < 0 ? 'text-red-600' : ''
+                    }`}>
+                      {realizedReturn >= 0 ? '+' : ''}{realizedReturn.toFixed(2)}%
+                    </td>
+                    <td className="px-3 py-2" />
+                  </tr>
+                )}
               </tfoot>
             );
           })()}

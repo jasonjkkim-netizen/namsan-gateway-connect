@@ -799,6 +799,8 @@ export type Database = {
           market: string
           price_reference_date: string | null
           recommendation_date: string
+          sold_date: string | null
+          sold_price: number | null
           stock_code: string | null
           stock_name: string
           updated_at: string
@@ -813,6 +815,8 @@ export type Database = {
           market?: string
           price_reference_date?: string | null
           recommendation_date: string
+          sold_date?: string | null
+          sold_price?: number | null
           stock_code?: string | null
           stock_name: string
           updated_at?: string
@@ -827,6 +831,8 @@ export type Database = {
           market?: string
           price_reference_date?: string | null
           recommendation_date?: string
+          sold_date?: string | null
+          sold_price?: number | null
           stock_code?: string | null
           stock_name?: string
           updated_at?: string
