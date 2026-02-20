@@ -180,19 +180,20 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
                   {language === 'ko' ? category.ko : category.en}
                 </h4>
               </div>
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-[340px]">
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-xs h-9">
+                    <TableHead className="text-xs h-9 whitespace-nowrap">
                       {language === 'ko' ? '종목' : 'Item'}
                     </TableHead>
-                    <TableHead className="text-xs h-9 text-right">
+                    <TableHead className="text-xs h-9 text-right whitespace-nowrap">
                       {language === 'ko' ? '현재가' : 'Price'}
                     </TableHead>
-                    <TableHead className="text-xs h-9 text-right">
+                    <TableHead className="text-xs h-9 text-right whitespace-nowrap">
                       {language === 'ko' ? '변동' : 'Change'}
                     </TableHead>
-                    <TableHead className="text-xs h-9 text-right w-16">
+                    <TableHead className="text-xs h-9 text-right w-16 whitespace-nowrap">
                       {language === 'ko' ? '링크' : 'Links'}
                     </TableHead>
                   </TableRow>
@@ -203,13 +204,13 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
                     const hasData = item.current_value !== null && item.current_value !== undefined;
                     return (
                       <TableRow key={item.id} className="hover:bg-muted/50">
-                        <TableCell className="py-2 font-medium text-xs">
+                        <TableCell className="py-2 font-medium text-xs whitespace-nowrap">
                           {language === 'ko' ? item.title_ko : item.title_en}
                         </TableCell>
-                        <TableCell className="py-2 text-right text-xs font-medium">
+                        <TableCell className="py-2 text-right text-xs font-medium whitespace-nowrap">
                           {formatValue(item.current_value)}
                         </TableCell>
-                        <TableCell className="py-2 text-right">
+                        <TableCell className="py-2 text-right whitespace-nowrap">
                           {hasData && item.change_value !== null ? (
                             <div className={`flex items-center justify-end gap-1 text-xs ${isPositive ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
                               {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -235,6 +236,7 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
                   })}
                 </TableBody>
               </Table>
+              </div>
             </div>
           );
         })}

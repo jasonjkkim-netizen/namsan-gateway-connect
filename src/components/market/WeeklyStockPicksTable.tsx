@@ -95,29 +95,29 @@ function StockTable({
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="bg-muted/50">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+             <tr>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">
                 {language === 'ko' ? '추천 종목' : 'Stock'}
               </th>
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">
                 {language === 'ko' ? '추가일' : 'Added'}
               </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
                 {refDateHeader}
               </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
                 {todayHeader}
               </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
                 {language === 'ko' ? '수익률' : 'Return'}
               </th>
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">
                 {language === 'ko' ? '매도일' : 'Sold'}
               </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
                 {language === 'ko' ? '매도가' : 'Sold Price'}
               </th>
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground">
+              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">
                 {language === 'ko' ? '링크' : 'Link'}
               </th>
             </tr>
@@ -137,8 +137,8 @@ function StockTable({
                   className="hover:bg-muted/30 transition-colors cursor-pointer"
                   onClick={() => onStockClick(stock)}
                 >
-                  <td className="px-3 py-2 font-medium">{stock.stock_name}</td>
-                  <td className="px-3 py-2 text-center text-muted-foreground">{addedDateStr}</td>
+                  <td className="px-3 py-2 font-medium whitespace-nowrap">{stock.stock_name}</td>
+                  <td className="px-3 py-2 text-center text-muted-foreground whitespace-nowrap">{addedDateStr}</td>
                   <td className="px-3 py-2 text-right">
                     {stock.closing_price_at_recommendation > 0
                       ? formatPrice(stock.closing_price_at_recommendation)
