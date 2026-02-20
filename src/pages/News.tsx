@@ -41,7 +41,7 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
             <TableHead className="text-xs font-medium w-[50px] whitespace-nowrap">
               {language === 'ko' ? '시간' : 'Time'}
             </TableHead>
-            <TableHead className="text-xs font-medium min-w-[200px] md:min-w-[300px]">
+            <TableHead className="text-xs font-medium min-w-[170px] md:min-w-[255px]">
               {language === 'ko' ? '제목' : 'Title'}
             </TableHead>
             <TableHead className="text-xs font-medium hidden md:table-cell min-w-[300px]">
@@ -65,7 +65,7 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
                   <TableCell className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap align-top">
                     {format(new Date(item.created_at), 'HH:mm')}
                   </TableCell>
-                  <TableCell className="text-[10px] md:text-xs font-medium align-top min-w-[200px] md:min-w-[300px]">
+                  <TableCell className="text-[10px] md:text-xs font-medium align-top min-w-[170px] md:min-w-[255px]">
                     <span className="flex items-center gap-1">
                       <ChevronDown className={`h-3 w-3 md:hidden shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                       <span className="md:line-clamp-none">{language === 'ko' ? item.title_ko : item.title_en}</span>
