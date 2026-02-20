@@ -15,7 +15,7 @@ interface IndexResult {
   error?: string;
 }
 
-const ADMIN_EMAIL = "jason.jk.kim@gmail.com";
+const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@namsan-korea.com';
 
 // Map internal symbols to Yahoo Finance ticker symbols
 const YAHOO_SYMBOL_MAP: Record<string, string> = {

@@ -18,7 +18,7 @@ interface StockInput {
   name: string;
 }
 
-const ADMIN_EMAIL = "jason.jk.kim@gmail.com";
+const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@namsan-korea.com';
 
 async function sendFailureNotification(failedStocks: StockPriceResult[], totalStocks: number) {
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
