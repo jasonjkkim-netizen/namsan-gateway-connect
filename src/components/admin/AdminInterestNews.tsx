@@ -255,7 +255,7 @@ export function AdminInterestNews() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto top-[50%]">
           <DialogHeader>
             <DialogTitle>
               {editingId
@@ -263,7 +263,7 @@ export function AdminInterestNews() {
                 : (language === 'ko' ? '관심 뉴스 추가' : 'Add Interest News')}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
               <Label>{language === 'ko' ? '제목 (한국어)' : 'Title (Korean)'}</Label>
               <Input value={formData.title_ko} onChange={e => setFormData(p => ({ ...p, title_ko: e.target.value }))} />
@@ -274,11 +274,11 @@ export function AdminInterestNews() {
             </div>
             <div>
               <Label>{language === 'ko' ? '본문 (한국어)' : 'Content (Korean)'}</Label>
-              <Textarea value={formData.content_ko} onChange={e => setFormData(p => ({ ...p, content_ko: e.target.value }))} rows={3} />
+              <Textarea value={formData.content_ko} onChange={e => setFormData(p => ({ ...p, content_ko: e.target.value }))} rows={2} />
             </div>
             <div>
               <Label>{language === 'ko' ? '본문 (영어)' : 'Content (English)'}</Label>
-              <Textarea value={formData.content_en} onChange={e => setFormData(p => ({ ...p, content_en: e.target.value }))} rows={3} />
+              <Textarea value={formData.content_en} onChange={e => setFormData(p => ({ ...p, content_en: e.target.value }))} rows={2} />
             </div>
             <div>
               <Label>URL</Label>
