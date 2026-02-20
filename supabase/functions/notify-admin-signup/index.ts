@@ -19,7 +19,7 @@ interface SignupNotificationRequest {
   signupDate: string;
 }
 
-const ADMIN_EMAIL = "jason.jk.kim@gmail.com";
+const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@namsan-korea.com';
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
