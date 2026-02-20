@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, ExternalLink, Newspaper } from 'lucide-react';
+import { Bell, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, ExternalLink, Newspaper, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
@@ -29,7 +30,82 @@ interface InterestNews {
   display_order: number;
 }
 
-export default function News() {
+function NewsTable({ items, language }: { items: InterestNews[]; language: string }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-xs font-medium w-[50px] whitespace-nowrap">
+              {language === 'ko' ? '시간' : 'Time'}
+            </TableHead>
+            <TableHead className="text-xs font-medium">
+              {language === 'ko' ? '제목' : 'Title'}
+            </TableHead>
+            <TableHead className="text-xs font-medium hidden md:table-cell">
+              {language === 'ko' ? '본문' : 'Content'}
+            </TableHead>
+            <TableHead className="text-xs font-medium text-right w-[40px] whitespace-nowrap">
+              {language === 'ko' ? '링크' : 'Link'}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => {
+            const isExpanded = expandedId === item.id;
+            return (
+              <>
+                <TableRow
+                  key={item.id}
+                  className="md:cursor-default cursor-pointer"
+                  onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                >
+                  <TableCell className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap align-top">
+                    {format(new Date(item.created_at), 'HH:mm')}
+                  </TableCell>
+                  <TableCell className="text-[10px] md:text-xs font-medium align-top">
+                    <span className="flex items-center gap-1">
+                      <ChevronDown className={`h-3 w-3 md:hidden shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      <span className="line-clamp-2 md:line-clamp-none">{language === 'ko' ? item.title_ko : item.title_en}</span>
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-[10px] md:text-xs text-muted-foreground align-top hidden md:table-cell">
+                    <div className="max-h-[120px] overflow-y-auto leading-relaxed">
+                      {language === 'ko' ? item.content_ko : item.content_en}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right align-top">
+                    {item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-primary hover:underline bg-primary/10 rounded px-1.5 py-1 md:bg-transparent md:px-0 md:py-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </TableCell>
+                </TableRow>
+                {isExpanded && (
+                  <TableRow key={`${item.id}-content`} className="md:hidden bg-muted/30">
+                    <TableCell colSpan={3} className="text-[10px] text-muted-foreground leading-relaxed py-2 px-3">
+                      {language === 'ko' ? item.content_ko : item.content_en}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
@@ -127,55 +203,7 @@ export default function News() {
                     {groupedByDate[dateKey].length}{language === 'ko' ? '건' : ' items'}
                   </span>
                 </div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs font-medium w-[50px] whitespace-nowrap">
-                          {language === 'ko' ? '시간' : 'Time'}
-                        </TableHead>
-                        <TableHead className="text-xs font-medium w-[100px] md:w-[160px]">
-                          {language === 'ko' ? '제목' : 'Title'}
-                        </TableHead>
-                        <TableHead className="text-xs font-medium">
-                          {language === 'ko' ? '본문' : 'Content'}
-                        </TableHead>
-                        <TableHead className="text-xs font-medium text-right w-[40px] whitespace-nowrap">
-                          {language === 'ko' ? '링크' : 'Link'}
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {groupedByDate[dateKey].map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap align-top">
-                            {format(new Date(item.created_at), 'HH:mm')}
-                          </TableCell>
-                          <TableCell className="text-[10px] md:text-xs font-medium align-top break-words">
-                            <span className="line-clamp-2 md:line-clamp-none">{language === 'ko' ? item.title_ko : item.title_en}</span>
-                          </TableCell>
-                          <TableCell className="text-[10px] md:text-xs text-muted-foreground align-top">
-                            <div className="max-h-[80px] md:max-h-[120px] overflow-y-auto leading-relaxed">
-                              {language === 'ko' ? item.content_ko : item.content_en}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right align-top">
-                            {item.url && (
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-primary hover:underline bg-primary/10 rounded px-1.5 py-1 md:bg-transparent md:px-0 md:py-0"
-                              >
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <NewsTable items={groupedByDate[dateKey]} language={language} />
               </div>
             ))}
           </div>
