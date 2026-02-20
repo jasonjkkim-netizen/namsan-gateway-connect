@@ -106,6 +106,7 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
   );
 }
 
+export default function News() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
 
