@@ -85,9 +85,8 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('product-documents')
-        .getPublicUrl(path);
+      // Store the storage path, not a public URL
+      const storagePath = path;
 
       const { error: insertError } = await supabase
         .from('product_documents')
@@ -96,7 +95,7 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
           name_ko: nameKo || nameEn,
           name_en: nameEn || nameKo,
           document_type: docType,
-          file_url: urlData.publicUrl,
+          file_url: storagePath,
           file_size: file.size,
           display_order: documents.length,
         });
@@ -246,11 +245,21 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                  <Button variant="ghost" size="sm" title={language === 'ko' ? '다운로드' : 'Download'}>
-                    <Download className="h-3.5 w-3.5" />
-                  </Button>
-                </a>
+                <Button variant="ghost" size="sm" title={language === 'ko' ? '다운로드' : 'Download'}
+                  onClick={async () => {
+                    // Support both legacy full URLs and storage paths
+                    if (doc.file_url.startsWith('http')) {
+                      window.open(doc.file_url, '_blank');
+                    } else {
+                      const { data } = await supabase.storage
+                        .from('product-documents')
+                        .createSignedUrl(doc.file_url, 300);
+                      if (data?.signedUrl) window.open(data.signedUrl, '_blank');
+                    }
+                  }}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => handleDelete(doc)}>
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>

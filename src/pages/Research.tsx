@@ -210,9 +210,19 @@ export default function Research() {
                   <Button 
                     variant="outline" 
                     disabled={!report.pdf_url}
-                    onClick={() => {
+                    onClick={async () => {
                       if (report.pdf_url) {
-                        window.open(report.pdf_url, '_blank');
+                        // If it's already a full URL (legacy), open directly; otherwise create signed URL
+                        if (report.pdf_url.startsWith('http')) {
+                          window.open(report.pdf_url, '_blank');
+                        } else {
+                          const { data, error } = await supabase.storage
+                            .from('research-documents')
+                            .createSignedUrl(report.pdf_url, 300);
+                          if (data?.signedUrl) {
+                            window.open(data.signedUrl, '_blank');
+                          }
+                        }
                       }
                     }}
                   >
