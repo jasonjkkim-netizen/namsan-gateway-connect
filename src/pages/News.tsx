@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useQuery } from '@tanstack/react-query';
@@ -109,21 +109,22 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
 export default function News() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
 
-  const { data: news, isLoading } = useQuery({
-    queryKey: ['interest-news-all'],
+  const { data: news, isLoading, isFetching } = useQuery({
+    queryKey: ['interest-news-all', page],
     queryFn: async () => {
-      const oneWeekAgo = subDays(new Date(), 7).toISOString();
       const { data, error } = await supabase
         .from('interest_news')
         .select('*')
         .eq('is_active', true)
-        .gte('created_at', oneWeekAgo)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .range(0, page * PAGE_SIZE - 1);
       if (error) throw error;
       return (data || []) as InterestNews[];
     },
+    placeholderData: (prev) => prev,
   });
 
   const sections = [
@@ -156,7 +157,7 @@ export default function News() {
             {language === 'ko' ? '날짜별 주요 관심 뉴스' : 'Daily Key Interest News'}
           </h1>
           <p className="mt-1 text-muted-foreground">
-            {language === 'ko' ? '최근 1주일간 주요 관심 뉴스' : 'Key interest news from the past week'}
+            {language === 'ko' ? '주요 관심 뉴스 전체 보기' : 'All key interest news'}
           </p>
         </div>
 
@@ -210,7 +211,23 @@ export default function News() {
           </div>
         ) : (
           <div className="card-elevated p-8 text-center text-muted-foreground text-sm">
-            {language === 'ko' ? '최근 1주일간 등록된 뉴스가 없습니다' : 'No news from the past week'}
+            {language === 'ko' ? '등록된 뉴스가 없습니다' : 'No news available'}
+          </div>
+        )}
+
+        {/* Load More */}
+        {!isLoading && news && news.length >= page * PAGE_SIZE && (
+          <div className="flex justify-center mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={isFetching}
+              className="min-w-[160px]"
+            >
+              {isFetching
+                ? (language === 'ko' ? '불러오는 중...' : 'Loading...')
+                : (language === 'ko' ? '더 보기' : 'Load More')}
+            </Button>
           </div>
         )}
       </main>
