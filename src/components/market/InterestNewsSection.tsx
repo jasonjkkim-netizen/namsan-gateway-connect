@@ -149,6 +149,7 @@ export function InterestNewsSection({ language }: Props) {
                   const date = new Date(item.created_at);
                   const config = TYPE_CONFIG[item.type];
                   const hasLink = !!(item.url || item.link);
+                  const isToday = new Date().toDateString() === date.toDateString();
                   return (
                     <TableRow
                       key={`${item.type}-${item.id}`}
@@ -156,7 +157,14 @@ export function InterestNewsSection({ language }: Props) {
                       onClick={() => hasLink && handleRowClick(item)}
                     >
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                        {date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { month: '2-digit', day: '2-digit' })}
+                        <span className="flex items-center gap-1.5">
+                          {date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { month: '2-digit', day: '2-digit' })}
+                          {isToday && (
+                            <span className="inline-block text-[9px] font-bold text-red-600 dark:text-red-400 animate-pulse">
+                              NEW
+                            </span>
+                          )}
+                        </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${config.color}`}>
