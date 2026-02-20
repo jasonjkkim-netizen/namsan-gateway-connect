@@ -54,11 +54,11 @@ export function InterestNewsSection({ language }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-sm font-medium w-[100px]">{language === 'ko' ? '날짜' : 'Date'}</TableHead>
-                <TableHead className="text-sm font-medium w-[60px]">{language === 'ko' ? '시간' : 'Time'}</TableHead>
+                <TableHead className="text-sm font-medium whitespace-nowrap">{language === 'ko' ? '날짜' : 'Date'}</TableHead>
+                <TableHead className="text-sm font-medium whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '시간' : 'Time'}</TableHead>
                 <TableHead className="text-sm font-medium">{language === 'ko' ? '제목' : 'Title'}</TableHead>
-                <TableHead className="text-sm font-medium max-w-[300px]">{language === 'ko' ? '본문' : 'Content'}</TableHead>
-                <TableHead className="text-sm font-medium text-right w-[60px]">{language === 'ko' ? '링크' : 'Link'}</TableHead>
+                <TableHead className="text-sm font-medium hidden md:table-cell">{language === 'ko' ? '본문' : 'Content'}</TableHead>
+                <TableHead className="text-sm font-medium text-right whitespace-nowrap">{language === 'ko' ? '링크' : 'Link'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -78,15 +78,15 @@ export function InterestNewsSection({ language }: Props) {
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                        {date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                        {date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { month: '2-digit', day: '2-digit' })}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                         {date.toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
                       </TableCell>
-                      <TableCell className="text-sm font-medium">
+                      <TableCell className="text-sm font-medium max-w-[150px] sm:max-w-[200px] truncate">
                         {language === 'ko' ? item.title_ko : (item.title_en || item.title_ko)}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate">
+                      <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate hidden md:table-cell">
                         {language === 'ko' ? (item.content_ko || '-') : (item.content_en || item.content_ko || '-')}
                       </TableCell>
                       <TableCell className="text-right">
