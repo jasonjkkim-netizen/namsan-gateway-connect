@@ -131,16 +131,16 @@ export default function News() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-sm font-medium w-[70px]">
+                        <TableHead className="text-xs font-medium w-[60px] whitespace-nowrap">
                           {language === 'ko' ? '시간' : 'Time'}
                         </TableHead>
-                        <TableHead className="text-sm font-medium w-[200px]">
+                        <TableHead className="text-xs font-medium w-[180px] whitespace-nowrap">
                           {language === 'ko' ? '제목' : 'Title'}
                         </TableHead>
-                        <TableHead className="text-sm font-medium">
+                        <TableHead className="text-xs font-medium">
                           {language === 'ko' ? '본문' : 'Content'}
                         </TableHead>
-                        <TableHead className="text-sm font-medium text-right w-[60px]">
+                        <TableHead className="text-xs font-medium text-right w-[50px] whitespace-nowrap">
                           {language === 'ko' ? '링크' : 'Link'}
                         </TableHead>
                       </TableRow>
@@ -148,24 +148,28 @@ export default function News() {
                     <TableBody>
                       {groupedByDate[dateKey].map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap align-top">
                             {format(new Date(item.created_at), 'HH:mm')}
                           </TableCell>
-                          <TableCell className="text-sm font-medium">
+                          <TableCell className="text-xs font-medium align-top">
                             {language === 'ko' ? item.title_ko : item.title_en}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground line-clamp-2 max-w-[400px]">
-                            {language === 'ko' ? item.content_ko : item.content_en}
+                          <TableCell className="text-xs text-muted-foreground align-top">
+                            <div className="max-h-[120px] overflow-y-auto leading-relaxed">
+                              {language === 'ko' ? item.content_ko : item.content_en}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-right">
-                            <a
-                              href={item.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center text-primary hover:underline"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
+                          <TableCell className="text-right align-top">
+                            {item.url && (
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center text-primary hover:underline"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
