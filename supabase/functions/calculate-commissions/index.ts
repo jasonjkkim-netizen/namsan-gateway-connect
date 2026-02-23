@@ -252,6 +252,31 @@ Deno.serve(async (req) => {
       },
     });
 
+    // 11. Send notifications to ancestors about new investment
+    if (insertedCount > 0) {
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/notify-sales`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceRoleKey}`,
+          },
+          body: JSON.stringify({
+            type: "investment_created",
+            investment_id,
+            investor_name: investorProfile.full_name,
+            product_name_en: investment.product_name_en,
+            product_name_ko: investment.product_name_ko,
+            amount: investmentAmount,
+            currency: investment.invested_currency || "USD",
+            recipient_ids: [investment.user_id],
+          }),
+        });
+      } catch (notifyErr) {
+        console.error("Notification error (non-blocking):", notifyErr);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

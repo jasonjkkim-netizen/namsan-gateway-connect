@@ -644,6 +644,45 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body_en: string
+          body_ko: string
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          title_en: string
+          title_ko: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body_en?: string
+          body_ko?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title_en?: string
+          title_ko?: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          body_en?: string
+          body_ko?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title_en?: string
+          title_ko?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       popup_ads: {
         Row: {
           button_link: string | null
