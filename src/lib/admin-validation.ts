@@ -44,7 +44,7 @@ export const productSchema = z.object({
   target_return: z.number().min(0, 'Return must be non-negative').max(100, 'Return cannot exceed 100%').nullable().optional(),
   minimum_investment: z.number().positive('Minimum investment must be positive').max(999999999999, 'Amount too large').nullable().optional(),
   募集_deadline: z.string().regex(datePattern, 'Invalid date format').nullable().optional(),
-  status: z.enum(['open', 'closed', 'coming_soon']),
+  status: z.enum(['draft', 'pending', 'open', 'closed', 'coming_soon', 'archived']),
   is_active: z.boolean(),
 });
 
