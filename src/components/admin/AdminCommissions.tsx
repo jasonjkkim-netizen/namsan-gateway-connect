@@ -146,6 +146,56 @@ export function AdminCommissions() {
     return language === 'ko' ? p.name_ko : p.name_en;
   };
 
+  const [recalculating, setRecalculating] = useState<Record<string, boolean>>({});
+  const [bulkRecalculating, setBulkRecalculating] = useState(false);
+
+  const handleRecalculate = async (investmentId: string) => {
+    setRecalculating(prev => ({ ...prev, [investmentId]: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke('calculate-commissions', {
+        body: { investment_id: investmentId },
+      });
+      if (error) throw error;
+      toast.success(
+        language === 'ko'
+          ? `커미션 재계산 완료 (${data?.distributions_created || 0}건)`
+          : `Commissions recalculated (${data?.distributions_created || 0} distributions)`
+      );
+      fetchAll();
+    } catch (err: any) {
+      toast.error(language === 'ko' ? '재계산 실패' : 'Recalculation failed');
+      console.error(err);
+    } finally {
+      setRecalculating(prev => ({ ...prev, [investmentId]: false }));
+    }
+  };
+
+  const handleBulkRecalculate = async () => {
+    const uniqueInvestmentIds = [...new Set(distributions.map(d => d.investment_id))];
+    if (uniqueInvestmentIds.length === 0) return;
+    setBulkRecalculating(true);
+    let success = 0;
+    let failed = 0;
+    for (const invId of uniqueInvestmentIds) {
+      try {
+        const { error } = await supabase.functions.invoke('calculate-commissions', {
+          body: { investment_id: invId },
+        });
+        if (error) throw error;
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    toast.success(
+      language === 'ko'
+        ? `재계산 완료: ${success}건 성공, ${failed}건 실패`
+        : `Recalculated: ${success} succeeded, ${failed} failed`
+    );
+    setBulkRecalculating(false);
+    fetchAll();
+  };
+
   const handleStatusChange = async (id: string, toUserId: string, newStatus: string) => {
     const { error } = await supabase.from('commission_distributions').update({ status: newStatus }).eq('id', id);
     if (error) {
@@ -325,6 +375,17 @@ export function AdminCommissions() {
 
         {/* Distributions Tab */}
         <TabsContent value="distributions">
+          <div className="flex justify-end mb-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBulkRecalculate}
+              disabled={bulkRecalculating || distributions.length === 0}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${bulkRecalculating ? 'animate-spin' : ''}`} />
+              {language === 'ko' ? '전체 재계산' : 'Recalculate All'}
+            </Button>
+          </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -383,16 +444,28 @@ export function AdminCommissions() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(d.created_at)}</TableCell>
                       <TableCell>
-                        {d.status === 'pending' && (
-                          <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'available')}>
-                            {language === 'ko' ? '승인' : 'Approve'}
+                        <div className="flex gap-1">
+                          {d.status === 'pending' && (
+                            <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'available')}>
+                              {language === 'ko' ? '승인' : 'Approve'}
+                            </Button>
+                          )}
+                          {d.status === 'available' && (
+                            <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'paid')}>
+                              {language === 'ko' ? '지급완료' : 'Mark Paid'}
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs"
+                            disabled={recalculating[d.investment_id]}
+                            onClick={() => handleRecalculate(d.investment_id)}
+                            title={language === 'ko' ? '재계산' : 'Recalculate'}
+                          >
+                            <RefreshCw className={`h-3.5 w-3.5 ${recalculating[d.investment_id] ? 'animate-spin' : ''}`} />
                           </Button>
-                        )}
-                        {d.status === 'available' && (
-                          <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'paid')}>
-                            {language === 'ko' ? '지급완료' : 'Mark Paid'}
-                          </Button>
-                        )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
