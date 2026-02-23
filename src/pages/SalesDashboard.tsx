@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp } from 'lucide-react';
+import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus } from 'lucide-react';
+import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
 
 interface DownlineMember {
   user_id: string;
@@ -87,6 +88,7 @@ export default function SalesDashboard() {
   const [downlineInvestments, setDownlineInvestments] = useState<Investment[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateInvestment, setShowCreateInvestment] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -489,12 +491,18 @@ export default function SalesDashboard() {
           {/* Investment Pipeline Tab */}
           <TabsContent value="pipeline">
             <div className="card-elevated">
-              <div className="p-6 border-b border-border">
+              <div className="p-6 border-b border-border flex items-center justify-between">
                 <h2 className="text-lg font-serif font-semibold">
                   {language === 'ko'
                     ? '하위 조직 투자 현황'
                     : 'Downline Investment Pipeline'}
                 </h2>
+                {downline.length > 0 && (
+                  <Button size="sm" onClick={() => setShowCreateInvestment(true)}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    {language === 'ko' ? '투자 등록' : 'New Investment'}
+                  </Button>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <Table>
@@ -582,6 +590,13 @@ export default function SalesDashboard() {
             </div>
           </TabsContent>
         </Tabs>
+
+        <CreateInvestmentDialog
+          open={showCreateInvestment}
+          onOpenChange={setShowCreateInvestment}
+          downline={downline}
+          onCreated={fetchAll}
+        />
       </main>
     </div>
   );
