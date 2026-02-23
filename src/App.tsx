@@ -24,6 +24,7 @@ import MarketData from "./pages/MarketData";
 import News from "./pages/News";
 import Admin from "./pages/Admin";
 import SalesSignUp from "./pages/SalesSignUp";
+import SalesDashboard from "./pages/SalesDashboard";
 import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
 
@@ -84,6 +85,11 @@ const App = () => (
                 <Route path="/pending-approval" element={
                   <ProtectedRoute requireApproval={false}>
                     <PendingApproval />
+                  </ProtectedRoute>
+                } />
+                <Route path="/sales-dashboard" element={
+                  <ProtectedRoute>
+                    <SalesDashboard />
                   </ProtectedRoute>
                 } />
                 <Route path="/admin" element={
