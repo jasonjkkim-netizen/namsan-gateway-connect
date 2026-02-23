@@ -18,8 +18,9 @@ import { AdminBlog } from '@/components/admin/AdminBlog';
 import { AdminInterestNews } from '@/components/admin/AdminInterestNews';
 import { AdminPopups } from '@/components/admin/AdminPopups';
 import { AdminSalesApprovals } from '@/components/admin/AdminSalesApprovals';
+import { AdminCommissions } from '@/components/admin/AdminCommissions';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network } from 'lucide-react';
+import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, DollarSign } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -80,6 +81,7 @@ export default function Admin() {
     { id: 'news', label: language === 'ko' ? '관심 뉴스' : 'News', icon: Newspaper },
     { id: 'popups', label: language === 'ko' ? '팝업 광고' : 'Popups', icon: Megaphone },
     { id: 'sales', label: language === 'ko' ? '영업 관리' : 'Sales', icon: Network },
+    { id: 'commissions', label: language === 'ko' ? '커미션' : 'Commissions', icon: DollarSign },
   ];
 
   return (
@@ -161,6 +163,10 @@ export default function Admin() {
 
           <TabsContent value="sales">
             <AdminSalesApprovals />
+          </TabsContent>
+
+          <TabsContent value="commissions">
+            <AdminCommissions />
           </TabsContent>
         </Tabs>
       </main>

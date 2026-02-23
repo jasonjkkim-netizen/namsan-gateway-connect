@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.market-news]
 verify_jwt = false
+
+[functions.calculate-commissions]
+verify_jwt = false
