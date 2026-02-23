@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,8 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import ExcelJS from 'exceljs';
 
 interface DownlineMember {
   user_id: string;
@@ -188,6 +194,82 @@ export default function SalesDashboard() {
     if (!downlineByDepth[m.depth]) downlineByDepth[m.depth] = [];
     downlineByDepth[m.depth].push(m);
   });
+
+  // Commission report filters
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+
+  const filteredCommissions = useMemo(() => {
+    return commissions.filter((c) => {
+      if (statusFilter !== 'all' && c.status !== statusFilter) return false;
+      if (dateFrom && new Date(c.created_at) < dateFrom) return false;
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        if (new Date(c.created_at) > end) return false;
+      }
+      return true;
+    });
+  }, [commissions, statusFilter, dateFrom, dateTo]);
+
+  const exportToExcel = async () => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(language === 'ko' ? '커미션 리포트' : 'Commission Report');
+
+    ws.columns = [
+      { header: language === 'ko' ? '투자자' : 'Investor', key: 'investor', width: 20 },
+      { header: language === 'ko' ? '레이어' : 'Layer', key: 'layer', width: 10 },
+      { header: language === 'ko' ? '선취 커미션' : 'Upfront', key: 'upfront', width: 18 },
+      { header: language === 'ko' ? '성과 커미션' : 'Performance', key: 'performance', width: 18 },
+      { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 18 },
+      { header: language === 'ko' ? '적용률' : 'Rate', key: 'rate', width: 10 },
+      { header: language === 'ko' ? '통화' : 'Currency', key: 'currency', width: 10 },
+      { header: language === 'ko' ? '상태' : 'Status', key: 'status', width: 12 },
+      { header: language === 'ko' ? '일자' : 'Date', key: 'date', width: 14 },
+    ];
+
+    // Style header
+    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+    ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+    filteredCommissions.forEach((c) => {
+      const upfront = Number(c.upfront_amount) || 0;
+      const perf = Number(c.performance_amount) || 0;
+      ws.addRow({
+        investor: c.from_user_id ? getName(c.from_user_id) : '—',
+        layer: c.layer,
+        upfront,
+        performance: perf,
+        total: upfront + perf,
+        rate: c.rate_used ? `${c.rate_used}%` : '—',
+        currency: c.currency || 'USD',
+        status: c.status,
+        date: format(new Date(c.created_at), 'yyyy-MM-dd'),
+      });
+    });
+
+    // Summary row
+    const totalUp = filteredCommissions.reduce((s, c) => s + (Number(c.upfront_amount) || 0), 0);
+    const totalPerf = filteredCommissions.reduce((s, c) => s + (Number(c.performance_amount) || 0), 0);
+    const summaryRow = ws.addRow({
+      investor: language === 'ko' ? '합계' : 'TOTAL',
+      upfront: totalUp,
+      performance: totalPerf,
+      total: totalUp + totalPerf,
+    });
+    summaryRow.font = { bold: true };
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `commission-report-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const displayName =
     language === 'ko' && (profile as any)?.full_name_ko
@@ -386,22 +468,58 @@ export default function SalesDashboard() {
           {/* Commissions Tab */}
           <TabsContent value="commissions">
             <div className="card-elevated">
-              <div className="p-6 border-b border-border flex items-center justify-between">
-                <h2 className="text-lg font-serif font-semibold">
-                  {language === 'ko' ? '커미션 내역' : 'Commission History'}
-                </h2>
-                <div className="flex gap-3 text-sm">
-                  <span className="text-muted-foreground">
-                    {language === 'ko' ? '대기:' : 'Pending:'}{' '}
-                    <span className="font-medium text-foreground">
-                      {pendingCommissions.length}
-                    </span>
-                  </span>
-                  <span className="text-muted-foreground">
-                    {language === 'ko' ? '수령 가능:' : 'Available:'}{' '}
-                    <span className="font-medium text-success">
-                      {availableCommissions.length}
-                    </span>
+              <div className="p-6 border-b border-border space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-serif font-semibold">
+                    {language === 'ko' ? '커미션 내역' : 'Commission History'}
+                  </h2>
+                  <Button size="sm" variant="outline" onClick={exportToExcel} disabled={filteredCommissions.length === 0}>
+                    <Download className="h-4 w-4 mr-1" />
+                    {language === 'ko' ? 'Excel 다운로드' : 'Export Excel'}
+                  </Button>
+                </div>
+                {/* Filters */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{language === 'ko' ? '전체 상태' : 'All Status'}</SelectItem>
+                      <SelectItem value="pending">{language === 'ko' ? '대기' : 'Pending'}</SelectItem>
+                      <SelectItem value="available">{language === 'ko' ? '수령가능' : 'Available'}</SelectItem>
+                      <SelectItem value="paid">{language === 'ko' ? '지급완료' : 'Paid'}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                        <CalendarIcon className="h-4 w-4 mr-1" />
+                        {dateFrom ? format(dateFrom, 'yyyy-MM-dd') : (language === 'ko' ? '시작일' : 'From')}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                        <CalendarIcon className="h-4 w-4 mr-1" />
+                        {dateTo ? format(dateTo, 'yyyy-MM-dd') : (language === 'ko' ? '종료일' : 'To')}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={dateTo} onSelect={setDateTo} className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                  {(dateFrom || dateTo || statusFilter !== 'all') && (
+                    <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); setStatusFilter('all'); }}>
+                      {language === 'ko' ? '초기화' : 'Clear'}
+                    </Button>
+                  )}
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {filteredCommissions.length}{language === 'ko' ? '건' : ' records'}
                   </span>
                 </div>
               </div>
@@ -409,27 +527,13 @@ export default function SalesDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>
-                        {language === 'ko' ? '투자자' : 'Investor'}
-                      </TableHead>
-                      <TableHead>
-                        {language === 'ko' ? '레이어' : 'Layer'}
-                      </TableHead>
-                      <TableHead>
-                        {language === 'ko' ? '선취' : 'Upfront'}
-                      </TableHead>
-                      <TableHead>
-                        {language === 'ko' ? '성과' : 'Performance'}
-                      </TableHead>
-                      <TableHead>
-                        {language === 'ko' ? '적용률' : 'Rate'}
-                      </TableHead>
-                      <TableHead>
-                        {language === 'ko' ? '상태' : 'Status'}
-                      </TableHead>
-                      <TableHead>
-                        {language === 'ko' ? '일자' : 'Date'}
-                      </TableHead>
+                      <TableHead>{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
+                      <TableHead>{language === 'ko' ? '레이어' : 'Layer'}</TableHead>
+                      <TableHead>{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                      <TableHead>{language === 'ko' ? '성과' : 'Performance'}</TableHead>
+                      <TableHead>{language === 'ko' ? '적용률' : 'Rate'}</TableHead>
+                      <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                      <TableHead>{language === 'ko' ? '일자' : 'Date'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -443,72 +547,35 @@ export default function SalesDashboard() {
                           ))}
                         </TableRow>
                       ))
-                    ) : commissions.length === 0 ? (
+                    ) : filteredCommissions.length === 0 ? (
                       <TableRow>
-                        <TableCell
-                          colSpan={7}
-                          className="text-center py-8 text-muted-foreground"
-                        >
-                          {language === 'ko'
-                            ? '커미션 내역이 없습니다'
-                            : 'No commissions yet'}
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          {language === 'ko' ? '커미션 내역이 없습니다' : 'No commissions found'}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      commissions.map((c) => (
+                      filteredCommissions.map((c) => (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">
-                            {c.from_user_id
-                              ? getName(c.from_user_id)
-                              : '—'}
+                            {c.from_user_id ? getName(c.from_user_id) : '—'}
                           </TableCell>
                           <TableCell>{c.layer}</TableCell>
                           <TableCell>
                             {c.upfront_amount ? (
-                              <span className="text-success font-medium">
-                                +{formatCurrency(Number(c.upfront_amount))}
-                              </span>
-                            ) : (
-                              '—'
-                            )}
+                              <span className="text-success font-medium">+{formatCurrency(Number(c.upfront_amount))}</span>
+                            ) : '—'}
                           </TableCell>
                           <TableCell>
                             {c.performance_amount ? (
-                              <span className="text-success font-medium">
-                                +
-                                {formatCurrency(
-                                  Number(c.performance_amount)
-                                )}
-                              </span>
-                            ) : (
-                              '—'
-                            )}
+                              <span className="text-success font-medium">+{formatCurrency(Number(c.performance_amount))}</span>
+                            ) : '—'}
                           </TableCell>
+                          <TableCell>{c.rate_used ? `${c.rate_used}%` : '—'}</TableCell>
                           <TableCell>
-                            {c.rate_used ? `${c.rate_used}%` : '—'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                c.status === 'available'
-                                  ? 'default'
-                                  : c.status === 'paid'
-                                  ? 'outline'
-                                  : 'secondary'
-                              }
-                            >
-                              {c.status === 'pending'
-                                ? language === 'ko'
-                                  ? '대기'
-                                  : 'Pending'
-                                : c.status === 'available'
-                                ? language === 'ko'
-                                  ? '수령가능'
-                                  : 'Available'
-                                : c.status === 'paid'
-                                ? language === 'ko'
-                                  ? '지급완료'
-                                  : 'Paid'
+                            <Badge variant={c.status === 'available' ? 'default' : c.status === 'paid' ? 'outline' : 'secondary'}>
+                              {c.status === 'pending' ? (language === 'ko' ? '대기' : 'Pending')
+                                : c.status === 'available' ? (language === 'ko' ? '수령가능' : 'Available')
+                                : c.status === 'paid' ? (language === 'ko' ? '지급완료' : 'Paid')
                                 : c.status}
                             </Badge>
                           </TableCell>
