@@ -87,6 +87,11 @@ export default function Home() {
                 {language === 'ko' ? '고객 로그인' : 'Client Login'}
               </Button>
             </Link>
+            <Link to="/join">
+              <Button size="sm" className="btn-gold ml-2">
+                {language === 'ko' ? '가입하기' : 'Join Us'}
+              </Button>
+            </Link>
             <LanguageToggle />
           </nav>
 
@@ -107,6 +112,9 @@ export default function Home() {
                 </a>)}
               <Link to="/login" className="px-4 py-3 text-base font-medium text-accent hover:bg-muted rounded-md transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                 {language === 'ko' ? '고객 로그인' : 'Client Login'}
+              </Link>
+              <Link to="/join" className="px-4 py-3 text-base font-medium text-accent hover:bg-muted rounded-md transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                {language === 'ko' ? '가입하기' : 'Join Us'}
               </Link>
             </nav>
           </div>}
