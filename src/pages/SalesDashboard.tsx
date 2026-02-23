@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus } from 'lucide-react';
+import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
 
 interface DownlineMember {
@@ -162,6 +162,20 @@ export default function SalesDashboard() {
   const availableCommissions = commissions.filter(
     (c) => c.status === 'available'
   );
+  const paidCommissions = commissions.filter((c) => c.status === 'paid');
+
+  const paidTotal = paidCommissions.reduce(
+    (s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0),
+    0
+  );
+  const availableTotal = availableCommissions.reduce(
+    (s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0),
+    0
+  );
+  const pendingTotal = pendingCommissions.reduce(
+    (s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0),
+    0
+  );
 
   const totalDownlineInvested = downlineInvestments.reduce(
     (s, inv) => s + Number(inv.investment_amount),
@@ -207,15 +221,13 @@ export default function SalesDashboard() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-fade-in" style={{ animationDelay: '50ms' }}>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 animate-fade-in" style={{ animationDelay: '50ms' }}>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
               <Users className="h-4 w-4" />
               {language === 'ko' ? '하위 영업인' : 'Downline'}
             </div>
-            {loading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
+            {loading ? <Skeleton className="h-8 w-16" /> : (
               <p className="text-2xl font-semibold">{downline.length}</p>
             )}
           </div>
@@ -224,12 +236,8 @@ export default function SalesDashboard() {
               <DollarSign className="h-4 w-4" />
               {language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}
             </div>
-            {loading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <p className="text-2xl font-semibold text-success">
-                {formatCurrency(totalUpfront)}
-              </p>
+            {loading ? <Skeleton className="h-8 w-24" /> : (
+              <p className="text-2xl font-semibold text-success">{formatCurrency(totalUpfront)}</p>
             )}
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
@@ -237,12 +245,8 @@ export default function SalesDashboard() {
               <TrendingUp className="h-4 w-4" />
               {language === 'ko' ? '총 성과 커미션' : 'Total Performance'}
             </div>
-            {loading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <p className="text-2xl font-semibold text-success">
-                {formatCurrency(totalPerformance)}
-              </p>
+            {loading ? <Skeleton className="h-8 w-24" /> : (
+              <p className="text-2xl font-semibold text-success">{formatCurrency(totalPerformance)}</p>
             )}
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
@@ -250,15 +254,47 @@ export default function SalesDashboard() {
               <Briefcase className="h-4 w-4" />
               {language === 'ko' ? '하위 투자 총액' : 'Downline AUM'}
             </div>
-            {loading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <p className="text-2xl font-semibold">
-                {formatCurrency(totalDownlineInvested)}
-              </p>
+            {loading ? <Skeleton className="h-8 w-24" /> : (
+              <p className="text-2xl font-semibold">{formatCurrency(totalDownlineInvested)}</p>
             )}
           </div>
         </div>
+
+        {/* Commission Status Breakdown */}
+        {!loading && commissions.length > 0 && (
+          <div className="grid grid-cols-3 gap-4 mb-8 animate-fade-in" style={{ animationDelay: '75ms' }}>
+            <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+              <div className="rounded-full bg-muted p-2">
+                <CheckCircle className="h-4 w-4 text-success" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{language === 'ko' ? '지급완료' : 'Paid'}</p>
+                <p className="text-lg font-semibold">{formatCurrency(paidTotal)}</p>
+                <p className="text-xs text-muted-foreground">{paidCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+              <div className="rounded-full bg-muted p-2">
+                <Wallet className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{language === 'ko' ? '수령 가능' : 'Available'}</p>
+                <p className="text-lg font-semibold">{formatCurrency(availableTotal)}</p>
+                <p className="text-xs text-muted-foreground">{availableCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
+              <div className="rounded-full bg-muted p-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{language === 'ko' ? '대기중' : 'Pending'}</p>
+                <p className="text-lg font-semibold">{formatCurrency(pendingTotal)}</p>
+                <p className="text-xs text-muted-foreground">{pendingCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="downline" className="space-y-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
