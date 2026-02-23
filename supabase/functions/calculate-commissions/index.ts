@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
         rate_used: rate.upfront_rate,
         set_by_user_id: user.id,
         currency: investment.invested_currency || "USD",
-        status: "pending",
+        status: "available",
       });
     }
 
