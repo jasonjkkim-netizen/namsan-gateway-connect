@@ -65,14 +65,19 @@ export type Database = {
       client_investments: {
         Row: {
           created_at: string
+          created_by: string | null
           current_value: number
+          date_invested: string | null
           expected_return: number | null
           id: string
+          invested_currency: string | null
           investment_amount: number
           maturity_date: string | null
           product_id: string | null
           product_name_en: string
           product_name_ko: string
+          realized_return_amount: number | null
+          realized_return_percent: number | null
           start_date: string
           status: string | null
           updated_at: string
@@ -80,14 +85,19 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           current_value: number
+          date_invested?: string | null
           expected_return?: number | null
           id?: string
+          invested_currency?: string | null
           investment_amount: number
           maturity_date?: string | null
           product_id?: string | null
           product_name_en: string
           product_name_ko: string
+          realized_return_amount?: number | null
+          realized_return_percent?: number | null
           start_date: string
           status?: string | null
           updated_at?: string
@@ -95,14 +105,19 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           current_value?: number
+          date_invested?: string | null
           expected_return?: number | null
           id?: string
+          invested_currency?: string | null
           investment_amount?: number
           maturity_date?: string | null
           product_id?: string | null
           product_name_en?: string
           product_name_ko?: string
+          realized_return_amount?: number | null
+          realized_return_percent?: number | null
           start_date?: string
           status?: string | null
           updated_at?: string
@@ -143,6 +158,148 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "client_product_access_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "investment_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_audit_log: {
+        Row: {
+          action: string
+          changed_by: string
+          created_at: string
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          action: string
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          action?: string
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: []
+      }
+      commission_distributions: {
+        Row: {
+          created_at: string
+          currency: string | null
+          from_user_id: string | null
+          id: string
+          investment_id: string
+          layer: number
+          performance_amount: number | null
+          rate_used: number | null
+          set_by_user_id: string | null
+          status: string
+          to_user_id: string
+          upfront_amount: number | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          from_user_id?: string | null
+          id?: string
+          investment_id: string
+          layer: number
+          performance_amount?: number | null
+          rate_used?: number | null
+          set_by_user_id?: string | null
+          status?: string
+          to_user_id: string
+          upfront_amount?: number | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          from_user_id?: string | null
+          id?: string
+          investment_id?: string
+          layer?: number
+          performance_amount?: number | null
+          rate_used?: number | null
+          set_by_user_id?: string | null
+          status?: string
+          to_user_id?: string
+          upfront_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_distributions_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "client_investments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_rates: {
+        Row: {
+          created_at: string
+          id: string
+          is_override: boolean | null
+          max_rate: number | null
+          min_rate: number | null
+          override_user_id: string | null
+          performance_rate: number
+          product_id: string
+          sales_level: number
+          sales_role: string
+          set_by: string | null
+          updated_at: string
+          upfront_rate: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_override?: boolean | null
+          max_rate?: number | null
+          min_rate?: number | null
+          override_user_id?: string | null
+          performance_rate?: number
+          product_id: string
+          sales_level: number
+          sales_role: string
+          set_by?: string | null
+          updated_at?: string
+          upfront_rate?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_override?: boolean | null
+          max_rate?: number | null
+          min_rate?: number | null
+          override_user_id?: string | null
+          performance_rate?: number
+          product_id?: string
+          sales_level?: number
+          sales_role?: string
+          set_by?: string | null
+          updated_at?: string
+          upfront_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_rates_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "investment_products"
@@ -237,49 +394,70 @@ export type Database = {
         Row: {
           created_at: string
           currency: string | null
+          default_currency: string | null
           description_en: string | null
           description_ko: string | null
+          fixed_return_percent: number | null
           id: string
           is_active: boolean | null
+          management_fee_percent: number | null
+          min_investment_amount: number | null
           minimum_investment: number | null
           name_en: string
           name_ko: string
+          performance_fee_percent: number | null
           status: string | null
           target_return: number | null
+          target_return_percent: number | null
           type: string
           updated_at: string
+          upfront_commission_percent: number | null
           募集_deadline: string | null
         }
         Insert: {
           created_at?: string
           currency?: string | null
+          default_currency?: string | null
           description_en?: string | null
           description_ko?: string | null
+          fixed_return_percent?: number | null
           id?: string
           is_active?: boolean | null
+          management_fee_percent?: number | null
+          min_investment_amount?: number | null
           minimum_investment?: number | null
           name_en: string
           name_ko: string
+          performance_fee_percent?: number | null
           status?: string | null
           target_return?: number | null
+          target_return_percent?: number | null
           type: string
           updated_at?: string
+          upfront_commission_percent?: number | null
           募集_deadline?: string | null
         }
         Update: {
           created_at?: string
           currency?: string | null
+          default_currency?: string | null
           description_en?: string | null
           description_ko?: string | null
+          fixed_return_percent?: number | null
           id?: string
           is_active?: boolean | null
+          management_fee_percent?: number | null
+          min_investment_amount?: number | null
           minimum_investment?: number | null
           name_en?: string
           name_ko?: string
+          performance_fee_percent?: number | null
           status?: string | null
           target_return?: number | null
+          target_return_percent?: number | null
           type?: string
           updated_at?: string
+          upfront_commission_percent?: number | null
           募集_deadline?: string | null
         }
         Relationships: []
@@ -613,10 +791,15 @@ export type Database = {
           is_admin: boolean | null
           is_approved: boolean | null
           is_rejected: boolean | null
+          parent_id: string | null
           phone: string | null
+          preferred_currency: string | null
           preferred_language: string | null
           rejected_at: string | null
           rejected_by: string | null
+          sales_level: number | null
+          sales_role: string | null
+          sales_status: string | null
           updated_at: string
           user_id: string
         }
@@ -633,10 +816,15 @@ export type Database = {
           is_admin?: boolean | null
           is_approved?: boolean | null
           is_rejected?: boolean | null
+          parent_id?: string | null
           phone?: string | null
+          preferred_currency?: string | null
           preferred_language?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
+          sales_level?: number | null
+          sales_role?: string | null
+          sales_status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -653,14 +841,27 @@ export type Database = {
           is_admin?: boolean | null
           is_approved?: boolean | null
           is_rejected?: boolean | null
+          parent_id?: string | null
           phone?: string | null
+          preferred_currency?: string | null
           preferred_language?: string | null
           rejected_at?: string | null
           rejected_by?: string | null
+          sales_level?: number | null
+          sales_role?: string | null
+          sales_status?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_profiles_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       research_reports: {
         Row: {
@@ -850,11 +1051,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_sales_ancestors: {
+        Args: { _user_id: string }
+        Returns: {
+          depth: number
+          full_name: string
+          sales_level: number
+          sales_role: string
+          user_id: string
+        }[]
+      }
+      get_sales_subtree: {
+        Args: { _user_id: string }
+        Returns: {
+          depth: number
+          full_name: string
+          parent_id: string
+          sales_level: number
+          sales_role: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_in_subtree: {
+        Args: { _ancestor_id: string; _descendant_id: string }
         Returns: boolean
       }
     }
