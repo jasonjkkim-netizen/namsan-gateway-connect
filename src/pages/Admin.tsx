@@ -17,8 +17,9 @@ import { AdminViewpoints } from '@/components/admin/AdminViewpoints';
 import { AdminBlog } from '@/components/admin/AdminBlog';
 import { AdminInterestNews } from '@/components/admin/AdminInterestNews';
 import { AdminPopups } from '@/components/admin/AdminPopups';
+import { AdminSalesApprovals } from '@/components/admin/AdminSalesApprovals';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper } from 'lucide-react';
+import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -78,6 +79,7 @@ export default function Admin() {
     { id: 'market', label: language === 'ko' ? '시장 개요' : 'Market', icon: TrendingUp },
     { id: 'news', label: language === 'ko' ? '관심 뉴스' : 'News', icon: Newspaper },
     { id: 'popups', label: language === 'ko' ? '팝업 광고' : 'Popups', icon: Megaphone },
+    { id: 'sales', label: language === 'ko' ? '영업 관리' : 'Sales', icon: Network },
   ];
 
   return (
@@ -155,6 +157,10 @@ export default function Admin() {
 
           <TabsContent value="popups">
             <AdminPopups />
+          </TabsContent>
+
+          <TabsContent value="sales">
+            <AdminSalesApprovals />
           </TabsContent>
         </Tabs>
       </main>

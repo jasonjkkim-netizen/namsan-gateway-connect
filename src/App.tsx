@@ -23,6 +23,7 @@ import Blog from "./pages/Blog";
 import MarketData from "./pages/MarketData";
 import News from "./pages/News";
 import Admin from "./pages/Admin";
+import SalesSignUp from "./pages/SalesSignUp";
 import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
 
@@ -49,6 +50,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/join" element={<SalesSignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/dashboard" element={
