@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,9 +16,14 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Search, DollarSign, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog } from 'lucide-react';
+import { Search, DollarSign, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet } from 'lucide-react';
+import { format } from 'date-fns';
+import ExcelJS from 'exceljs';
 
 interface Distribution {
   id: string;
@@ -86,6 +91,236 @@ const STATUS_COLORS: Record<string, string> = {
 
 const SALES_ROLES = ['district_manager', 'principal_agent', 'agent'] as const;
 const ROLE_LEVELS: Record<string, number> = { district_manager: 1, principal_agent: 2, agent: 3 };
+
+// Reports sub-component
+function AdminCommissionReports({
+  distributions,
+  profiles,
+  language,
+  formatCurrency,
+  formatDate: formatDateFn,
+  getName,
+  getRole,
+  loading,
+}: {
+  distributions: Distribution[];
+  profiles: Profile[];
+  language: string;
+  formatCurrency: (v: number) => string;
+  formatDate: (v: string) => string;
+  getName: (id: string) => string;
+  getRole: (id: string) => string | null;
+  loading: boolean;
+}) {
+  const [reportDateFrom, setReportDateFrom] = useState<Date | undefined>(undefined);
+  const [reportDateTo, setReportDateTo] = useState<Date | undefined>(undefined);
+  const [reportStatus, setReportStatus] = useState('all');
+  const [reportUser, setReportUser] = useState('all');
+
+  const salesUsers = profiles.filter(p => p.sales_role && p.sales_role !== 'client');
+
+  const filtered = useMemo(() => {
+    return distributions.filter((d) => {
+      if (reportStatus !== 'all' && d.status !== reportStatus) return false;
+      if (reportUser !== 'all' && d.to_user_id !== reportUser) return false;
+      if (reportDateFrom && new Date(d.created_at) < reportDateFrom) return false;
+      if (reportDateTo) {
+        const end = new Date(reportDateTo);
+        end.setHours(23, 59, 59, 999);
+        if (new Date(d.created_at) > end) return false;
+      }
+      return true;
+    });
+  }, [distributions, reportStatus, reportUser, reportDateFrom, reportDateTo]);
+
+  const userSummary = useMemo(() => {
+    const map: Record<string, { upfront: number; performance: number; count: number; name: string; role: string | null }> = {};
+    filtered.forEach((d) => {
+      if (!map[d.to_user_id]) {
+        map[d.to_user_id] = { upfront: 0, performance: 0, count: 0, name: getName(d.to_user_id), role: getRole(d.to_user_id) };
+      }
+      map[d.to_user_id].upfront += Number(d.upfront_amount) || 0;
+      map[d.to_user_id].performance += Number(d.performance_amount) || 0;
+      map[d.to_user_id].count++;
+    });
+    return Object.entries(map).sort((a, b) => (b[1].upfront + b[1].performance) - (a[1].upfront + a[1].performance));
+  }, [filtered]);
+
+  const grandTotalUpfront = filtered.reduce((s, d) => s + (Number(d.upfront_amount) || 0), 0);
+  const grandTotalPerf = filtered.reduce((s, d) => s + (Number(d.performance_amount) || 0), 0);
+
+  const exportReport = async () => {
+    const wb = new ExcelJS.Workbook();
+    const summarySheet = wb.addWorksheet(language === 'ko' ? '요약' : 'Summary');
+    summarySheet.columns = [
+      { header: language === 'ko' ? '영업사원' : 'Sales Person', key: 'name', width: 25 },
+      { header: language === 'ko' ? '역할' : 'Role', key: 'role', width: 18 },
+      { header: language === 'ko' ? '건수' : 'Count', key: 'count', width: 10 },
+      { header: language === 'ko' ? '선취 합계' : 'Upfront Total', key: 'upfront', width: 18 },
+      { header: language === 'ko' ? '성과 합계' : 'Performance Total', key: 'performance', width: 18 },
+      { header: language === 'ko' ? '총 합계' : 'Grand Total', key: 'total', width: 18 },
+    ];
+    summarySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    summarySheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+    userSummary.forEach(([, s]) => {
+      summarySheet.addRow({ name: s.name, role: s.role || '—', count: s.count, upfront: s.upfront, performance: s.performance, total: s.upfront + s.performance });
+    });
+    const totalRow = summarySheet.addRow({ name: language === 'ko' ? '합계' : 'TOTAL', count: filtered.length, upfront: grandTotalUpfront, performance: grandTotalPerf, total: grandTotalUpfront + grandTotalPerf });
+    totalRow.font = { bold: true };
+
+    const detailSheet = wb.addWorksheet(language === 'ko' ? '상세' : 'Details');
+    detailSheet.columns = [
+      { header: language === 'ko' ? '수취인' : 'Recipient', key: 'recipient', width: 20 },
+      { header: language === 'ko' ? '역할' : 'Role', key: 'role', width: 15 },
+      { header: language === 'ko' ? '투자자' : 'Investor', key: 'investor', width: 20 },
+      { header: language === 'ko' ? '레이어' : 'Layer', key: 'layer', width: 8 },
+      { header: language === 'ko' ? '선취' : 'Upfront', key: 'upfront', width: 15 },
+      { header: language === 'ko' ? '성과' : 'Performance', key: 'performance', width: 15 },
+      { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 15 },
+      { header: language === 'ko' ? '적용률' : 'Rate', key: 'rate', width: 10 },
+      { header: language === 'ko' ? '통화' : 'Currency', key: 'currency', width: 8 },
+      { header: language === 'ko' ? '상태' : 'Status', key: 'status', width: 12 },
+      { header: language === 'ko' ? '일자' : 'Date', key: 'date', width: 14 },
+    ];
+    detailSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    detailSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+    filtered.forEach((d) => {
+      const up = Number(d.upfront_amount) || 0;
+      const perf = Number(d.performance_amount) || 0;
+      detailSheet.addRow({
+        recipient: getName(d.to_user_id), role: getRole(d.to_user_id) || '—',
+        investor: d.from_user_id ? getName(d.from_user_id) : '—', layer: d.layer,
+        upfront: up, performance: perf, total: up + perf,
+        rate: d.rate_used ? `${d.rate_used}%` : '—', currency: d.currency || 'USD',
+        status: d.status, date: format(new Date(d.created_at), 'yyyy-MM-dd'),
+      });
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `commission-payout-report-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <Select value={reportStatus} onValueChange={setReportStatus}>
+          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{language === 'ko' ? '전체 상태' : 'All Status'}</SelectItem>
+            <SelectItem value="pending">{language === 'ko' ? '대기' : 'Pending'}</SelectItem>
+            <SelectItem value="available">{language === 'ko' ? '수령가능' : 'Available'}</SelectItem>
+            <SelectItem value="paid">{language === 'ko' ? '지급완료' : 'Paid'}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={reportUser} onValueChange={setReportUser}>
+          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{language === 'ko' ? '전체 영업사원' : 'All Sales Users'}</SelectItem>
+            {salesUsers.map((u) => (
+              <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !reportDateFrom && "text-muted-foreground")}>
+              <CalendarIcon className="h-4 w-4 mr-1" />
+              {reportDateFrom ? format(reportDateFrom, 'yyyy-MM-dd') : (language === 'ko' ? '시작일' : 'From')}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={reportDateFrom} onSelect={setReportDateFrom} className={cn("p-3 pointer-events-auto")} />
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !reportDateTo && "text-muted-foreground")}>
+              <CalendarIcon className="h-4 w-4 mr-1" />
+              {reportDateTo ? format(reportDateTo, 'yyyy-MM-dd') : (language === 'ko' ? '종료일' : 'To')}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={reportDateTo} onSelect={setReportDateTo} className={cn("p-3 pointer-events-auto")} />
+          </PopoverContent>
+        </Popover>
+        {(reportDateFrom || reportDateTo || reportStatus !== 'all' || reportUser !== 'all') && (
+          <Button variant="ghost" size="sm" onClick={() => { setReportDateFrom(undefined); setReportDateTo(undefined); setReportStatus('all'); setReportUser('all'); }}>
+            {language === 'ko' ? '초기화' : 'Clear'}
+          </Button>
+        )}
+        <div className="ml-auto">
+          <Button size="sm" onClick={exportReport} disabled={filtered.length === 0}>
+            <Download className="h-4 w-4 mr-1" />
+            {language === 'ko' ? 'Excel 다운로드' : 'Export Excel'}
+          </Button>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-base font-semibold mb-3">
+          {language === 'ko' ? '영업사원별 요약' : 'Summary by Sales Person'}
+          <span className="text-sm font-normal text-muted-foreground ml-2">({filtered.length}{language === 'ko' ? '건' : ' records'})</span>
+        </h3>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{language === 'ko' ? '영업사원' : 'Sales Person'}</TableHead>
+              <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
+              <TableHead>{language === 'ko' ? '건수' : 'Count'}</TableHead>
+              <TableHead>{language === 'ko' ? '선취 합계' : 'Upfront'}</TableHead>
+              <TableHead>{language === 'ko' ? '성과 합계' : 'Performance'}</TableHead>
+              <TableHead>{language === 'ko' ? '총 합계' : 'Total'}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 6 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : userSummary.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              <>
+                {userSummary.map(([userId, s]) => (
+                  <TableRow key={userId}>
+                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell>{s.role ? <Badge variant="outline" className="text-xs">{s.role}</Badge> : '—'}</TableCell>
+                    <TableCell>{s.count}</TableCell>
+                    <TableCell className="text-success font-medium">{formatCurrency(s.upfront)}</TableCell>
+                    <TableCell className="text-success font-medium">{formatCurrency(s.performance)}</TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(s.upfront + s.performance)}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="bg-muted/30 font-semibold">
+                  <TableCell>{language === 'ko' ? '합계' : 'TOTAL'}</TableCell>
+                  <TableCell />
+                  <TableCell>{filtered.length}</TableCell>
+                  <TableCell className="text-success">{formatCurrency(grandTotalUpfront)}</TableCell>
+                  <TableCell className="text-success">{formatCurrency(grandTotalPerf)}</TableCell>
+                  <TableCell>{formatCurrency(grandTotalUpfront + grandTotalPerf)}</TableCell>
+                </TableRow>
+              </>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
 
 export function AdminCommissions() {
   const { language, formatCurrency, formatDate } = useLanguage();
@@ -355,6 +590,10 @@ export function AdminCommissions() {
             <Settings className="h-4 w-4" />
             {language === 'ko' ? '요율 설정' : 'Rate Settings'}
           </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <FileSpreadsheet className="h-4 w-4" />
+            {language === 'ko' ? '보고서' : 'Reports'}
+          </TabsTrigger>
           <TabsTrigger value="audit" className="flex items-center gap-2">
             <History className="h-4 w-4" />
             {language === 'ko' ? '감사 로그' : 'Audit Log'}
@@ -606,6 +845,20 @@ export function AdminCommissions() {
               </Table>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Reports Tab */}
+        <TabsContent value="reports">
+          <AdminCommissionReports
+            distributions={distributions}
+            profiles={profiles}
+            language={language}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+            getName={getName}
+            getRole={getRole}
+            loading={loading}
+          />
         </TabsContent>
 
         {/* Audit Log Tab */}
