@@ -200,6 +200,13 @@ export default function SalesSignUp() {
       }
 
       // Validate sponsor exists if required
+      const ROLE_LEVELS: Record<string, number> = {
+        district_manager: 1,
+        principal_agent: 2,
+        agent: 3,
+        client: 4,
+      };
+
       let sponsorUserId: string | null = null;
       if (needsSponsor && sponsorEmail) {
         const { data: sponsorProfile } = await supabase
@@ -216,6 +223,27 @@ export default function SalesSignUp() {
 
         if (sponsorProfile.sales_status !== 'active') {
           toast.error(language === 'ko' ? '스폰서가 활성 상태가 아닙니다' : 'Sponsor is not active');
+          setLoading(false);
+          return;
+        }
+
+        // Role hierarchy validation: sponsor must be a higher role (lower level number)
+        const sponsorLevel = ROLE_LEVELS[sponsorProfile.sales_role || ''] || 0;
+        const myLevel = ROLE_LEVELS[selectedRole] || 0;
+
+        if (sponsorLevel >= myLevel) {
+          const sponsorRoleLabel = ROLE_CONFIG[sponsorProfile.sales_role as SalesRole];
+          toast.error(
+            language === 'ko'
+              ? `${sponsorRoleLabel?.labelKo || sponsorProfile.sales_role}은(는) ${roleConfig.labelKo}를 후원할 수 없습니다. 상위 역할의 스폰서가 필요합니다.`
+              : `A ${sponsorRoleLabel?.labelEn || sponsorProfile.sales_role} cannot sponsor a ${roleConfig.labelEn}. You need a sponsor with a higher role.`
+          );
+          setLoading(false);
+          return;
+        }
+
+        if (sponsorProfile.sales_role === 'client') {
+          toast.error(language === 'ko' ? '고객은 다른 사용자를 후원할 수 없습니다' : 'Clients cannot sponsor other users');
           setLoading(false);
           return;
         }
