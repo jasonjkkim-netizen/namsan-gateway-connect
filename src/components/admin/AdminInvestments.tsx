@@ -1,32 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { ExcelUpload } from './ExcelUpload';
 import { investmentSchema, validateFormData, validateBulkImportRow } from '@/lib/admin-validation';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Plus, Edit, Search, Upload, Trash2 } from 'lucide-react';
@@ -42,6 +33,12 @@ interface Investment {
   maturity_date: string | null;
   expected_return: number | null;
   status: string | null;
+  // New fields
+  invested_currency: string | null;
+  realized_return_amount: number | null;
+  realized_return_percent: number | null;
+  created_by: string | null;
+  date_invested: string | null;
 }
 
 interface Profile {
@@ -49,10 +46,12 @@ interface Profile {
   user_id: string;
   email: string;
   full_name: string;
+  sales_role: string | null;
 }
 
 export function AdminInvestments() {
   const { language, formatCurrency, formatDate, formatPercent } = useLanguage();
+  const { user } = useAuth();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +71,11 @@ export function AdminInvestments() {
     maturity_date: '',
     expected_return: '',
     status: 'active',
+    // New fields
+    invested_currency: 'USD',
+    realized_return_amount: '',
+    realized_return_percent: '',
+    date_invested: '',
   });
 
   useEffect(() => {
@@ -81,7 +85,7 @@ export function AdminInvestments() {
   async function fetchData() {
     const [investmentsRes, profilesRes] = await Promise.all([
       supabase.from('client_investments').select('*').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('id, user_id, email, full_name'),
+      supabase.from('profiles').select('id, user_id, email, full_name, sales_role'),
     ]);
 
     if (investmentsRes.data) setInvestments(investmentsRes.data as Investment[]);
@@ -101,6 +105,10 @@ export function AdminInvestments() {
       maturity_date: investment.maturity_date || '',
       expected_return: investment.expected_return ? String(investment.expected_return) : '',
       status: investment.status || 'active',
+      invested_currency: investment.invested_currency || 'USD',
+      realized_return_amount: investment.realized_return_amount ? String(investment.realized_return_amount) : '',
+      realized_return_percent: investment.realized_return_percent ? String(investment.realized_return_percent) : '',
+      date_invested: investment.date_invested || '',
     });
     setDialogOpen(true);
   };
@@ -108,26 +116,21 @@ export function AdminInvestments() {
   const handleAdd = () => {
     setEditingInvestment(null);
     setFormData({
-      user_id: '',
-      product_name_en: '',
-      product_name_ko: '',
-      investment_amount: '',
-      current_value: '',
+      user_id: '', product_name_en: '', product_name_ko: '',
+      investment_amount: '', current_value: '',
       start_date: new Date().toISOString().split('T')[0],
-      maturity_date: '',
-      expected_return: '',
-      status: 'active',
+      maturity_date: '', expected_return: '', status: 'active',
+      invested_currency: 'USD', realized_return_amount: '',
+      realized_return_percent: '', date_invested: new Date().toISOString().split('T')[0],
     });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    // Parse numeric values
     const investmentAmount = parseFloat(formData.investment_amount);
     const currentValue = parseFloat(formData.current_value);
     const expectedReturn = formData.expected_return ? parseFloat(formData.expected_return) : null;
 
-    // Validate form data
     const validationResult = validateFormData(investmentSchema, {
       user_id: formData.user_id,
       product_name_en: formData.product_name_en,
@@ -145,6 +148,8 @@ export function AdminInvestments() {
       return;
     }
 
+    const parseNum = (v: string) => v ? parseFloat(v) || null : null;
+
     const payload = {
       user_id: validationResult.data.user_id!,
       product_name_en: validationResult.data.product_name_en!,
@@ -155,6 +160,12 @@ export function AdminInvestments() {
       maturity_date: validationResult.data.maturity_date ?? null,
       expected_return: validationResult.data.expected_return ?? null,
       status: validationResult.data.status!,
+      // New fields
+      invested_currency: formData.invested_currency,
+      realized_return_amount: parseNum(formData.realized_return_amount),
+      realized_return_percent: parseNum(formData.realized_return_percent),
+      date_invested: formData.date_invested || null,
+      created_by: editingInvestment ? undefined : user?.id,
     };
 
     let error;
@@ -176,9 +187,7 @@ export function AdminInvestments() {
 
   const handleDelete = async (id: string) => {
     if (!confirm(language === 'ko' ? '삭제하시겠습니까?' : 'Are you sure?')) return;
-    
     const { error } = await supabase.from('client_investments').delete().eq('id', id);
-    
     if (error) {
       toast.error(language === 'ko' ? '삭제 실패' : 'Delete failed');
     } else {
@@ -190,19 +199,7 @@ export function AdminInvestments() {
   const handleBulkImport = async () => {
     if (parsedData.length === 0) return;
 
-    // Validate all rows first
-    const validatedRows: {
-      user_id: string;
-      product_name_en: string;
-      product_name_ko: string;
-      investment_amount: number;
-      current_value: number;
-      start_date: string;
-      maturity_date: string | null;
-      expected_return: number | null;
-      status: string;
-    }[] = [];
-
+    const validatedRows: any[] = [];
     for (let i = 0; i < parsedData.length; i++) {
       const row = parsedData[i];
       const investmentAmount = parseFloat(row.investment_amount);
@@ -218,29 +215,21 @@ export function AdminInvestments() {
         start_date: row.start_date,
         maturity_date: row.maturity_date || null,
         expected_return: expectedReturn,
-        status: (row.status || 'active') as 'active' | 'matured' | 'pending' | 'closed',
+        status: (row.status || 'active') as any,
       }, i);
 
       if (!validation.success) {
         toast.error(validation.error);
         return;
       }
-      
       validatedRows.push({
-        user_id: validation.data.user_id!,
-        product_name_en: validation.data.product_name_en!,
-        product_name_ko: validation.data.product_name_ko!,
-        investment_amount: validation.data.investment_amount!,
-        current_value: validation.data.current_value!,
-        start_date: validation.data.start_date!,
+        ...validation.data,
         maturity_date: validation.data.maturity_date ?? null,
         expected_return: validation.data.expected_return ?? null,
-        status: validation.data.status!,
       });
     }
 
     const { error } = await supabase.from('client_investments').insert(validatedRows);
-
     if (error) {
       toast.error(language === 'ko' ? '일괄 업로드 실패' : 'Bulk import failed');
       console.error(error);
@@ -257,6 +246,11 @@ export function AdminInvestments() {
     return profile ? `${profile.full_name} (${profile.email})` : userId;
   };
 
+  const getClientRole = (userId: string) => {
+    const profile = profiles.find((p) => p.user_id === userId);
+    return profile?.sales_role || null;
+  };
+
   const filteredInvestments = investments.filter(
     (inv) =>
       inv.product_name_en.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -264,14 +258,14 @@ export function AdminInvestments() {
       getClientName(inv.user_id).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const expectedColumns = [
-    'user_id',
-    'product_name_en',
-    'product_name_ko',
-    'investment_amount',
-    'current_value',
-    'start_date',
-  ];
+  const expectedColumns = ['user_id', 'product_name_en', 'product_name_ko', 'investment_amount', 'current_value', 'start_date'];
+
+  const ROLE_LABELS: Record<string, string> = {
+    district_manager: language === 'ko' ? 'DM' : 'DM',
+    principal_agent: language === 'ko' ? 'PA' : 'PA',
+    agent: language === 'ko' ? 'AG' : 'AG',
+    client: language === 'ko' ? '고객' : 'Client',
+  };
 
   return (
     <div className="card-elevated">
@@ -282,12 +276,7 @@ export function AdminInvestments() {
         <div className="flex items-center gap-4 flex-wrap">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={language === 'ko' ? '검색...' : 'Search...'}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
+            <Input placeholder={language === 'ko' ? '검색...' : 'Search...'} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
           </div>
           <Button variant="outline" onClick={() => setUploadDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
@@ -305,10 +294,11 @@ export function AdminInvestments() {
           <TableHeader>
             <TableRow>
               <TableHead>{language === 'ko' ? '고객' : 'Client'}</TableHead>
+              <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
               <TableHead>{language === 'ko' ? '상품명' : 'Product'}</TableHead>
               <TableHead>{language === 'ko' ? '투자금액' : 'Amount'}</TableHead>
-              <TableHead>{language === 'ko' ? '현재가치' : 'Current Value'}</TableHead>
-              <TableHead>{language === 'ko' ? '시작일' : 'Start Date'}</TableHead>
+              <TableHead>{language === 'ko' ? '현재가치' : 'Current'}</TableHead>
+              <TableHead>{language === 'ko' ? '실현수익' : 'Realized'}</TableHead>
               <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
               <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
             </TableRow>
@@ -317,44 +307,58 @@ export function AdminInvestments() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-5 w-24" />
-                    </TableCell>
+                  {Array.from({ length: 8 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-5 w-24" /></TableCell>
                   ))}
                 </TableRow>
               ))
             ) : filteredInvestments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredInvestments.map((inv) => (
-                <TableRow key={inv.id}>
-                  <TableCell className="font-medium max-w-[200px] truncate">
-                    {getClientName(inv.user_id)}
-                  </TableCell>
-                  <TableCell>
-                    {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
-                  </TableCell>
-                  <TableCell>{formatCurrency(inv.investment_amount)}</TableCell>
-                  <TableCell>{formatCurrency(inv.current_value)}</TableCell>
-                  <TableCell>{formatDate(inv.start_date)}</TableCell>
-                  <TableCell>{inv.status}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(inv)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(inv.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredInvestments.map((inv) => {
+                const role = getClientRole(inv.user_id);
+                return (
+                  <TableRow key={inv.id}>
+                    <TableCell className="font-medium max-w-[180px] truncate">
+                      {getClientName(inv.user_id)}
+                    </TableCell>
+                    <TableCell>
+                      {role ? (
+                        <Badge variant="outline" className="text-xs">{ROLE_LABELS[role] || role}</Badge>
+                      ) : '—'}
+                    </TableCell>
+                    <TableCell>{language === 'ko' ? inv.product_name_ko : inv.product_name_en}</TableCell>
+                    <TableCell>{formatCurrency(inv.investment_amount)}</TableCell>
+                    <TableCell>{formatCurrency(inv.current_value)}</TableCell>
+                    <TableCell>
+                      {inv.realized_return_amount ? (
+                        <span className={Number(inv.realized_return_amount) >= 0 ? 'text-success font-medium' : 'text-destructive font-medium'}>
+                          {Number(inv.realized_return_amount) >= 0 ? '+' : ''}{formatCurrency(Number(inv.realized_return_amount))}
+                        </span>
+                      ) : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={inv.status === 'active' ? 'default' : 'secondary'}>
+                        {inv.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(inv)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDelete(inv.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -362,7 +366,7 @@ export function AdminInvestments() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingInvestment
@@ -380,7 +384,7 @@ export function AdminInvestments() {
                 <SelectContent>
                   {profiles.map((p) => (
                     <SelectItem key={p.user_id} value={p.user_id}>
-                      {p.full_name} ({p.email})
+                      {p.full_name} ({p.email}) {p.sales_role ? `[${ROLE_LABELS[p.sales_role] || p.sales_role}]` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -396,20 +400,37 @@ export function AdminInvestments() {
                 <Input value={formData.product_name_ko} onChange={(e) => setFormData({ ...formData, product_name_ko: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '투자금액' : 'Amount'}</Label>
-                <Input type="number" value={formData.investment_amount} onChange={(e) => setFormData({ ...formData, investment_amount: e.target.value })} />
+                <Input type="number" step="0.01" value={formData.investment_amount} onChange={(e) => setFormData({ ...formData, investment_amount: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '현재가치' : 'Current Value'}</Label>
-                <Input type="number" value={formData.current_value} onChange={(e) => setFormData({ ...formData, current_value: e.target.value })} />
+                <Input type="number" step="0.01" value={formData.current_value} onChange={(e) => setFormData({ ...formData, current_value: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '통화' : 'Currency'}</Label>
+                <Select value={formData.invested_currency} onValueChange={(v) => setFormData({ ...formData, invested_currency: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="KRW">KRW</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="JPY">JPY</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '시작일' : 'Start Date'}</Label>
                 <Input type="date" value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '투자일' : 'Date Invested'}</Label>
+                <Input type="date" value={formData.date_invested} onChange={(e) => setFormData({ ...formData, date_invested: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '만기일' : 'Maturity Date'}</Label>
@@ -419,14 +440,12 @@ export function AdminInvestments() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '예상수익률 (%)' : 'Expected Return (%)'}</Label>
-                <Input type="number" step="0.1" value={formData.expected_return} onChange={(e) => setFormData({ ...formData, expected_return: e.target.value })} />
+                <Input type="number" step="0.01" value={formData.expected_return} onChange={(e) => setFormData({ ...formData, expected_return: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '상태' : 'Status'}</Label>
                 <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">{language === 'ko' ? '활성' : 'Active'}</SelectItem>
                     <SelectItem value="matured">{language === 'ko' ? '만기' : 'Matured'}</SelectItem>
@@ -436,6 +455,26 @@ export function AdminInvestments() {
                 </Select>
               </div>
             </div>
+
+            <Separator />
+
+            {/* Realized Returns - Admin Only */}
+            <div>
+              <h3 className="font-serif font-semibold text-base mb-3">
+                {language === 'ko' ? '실현 수익 (관리자 전용)' : 'Realized Returns (Admin Only)'}
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{language === 'ko' ? '실현 수익금' : 'Realized Return Amount'}</Label>
+                  <Input type="number" step="0.000001" value={formData.realized_return_amount} onChange={(e) => setFormData({ ...formData, realized_return_amount: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'ko' ? '실현 수익률 (%)' : 'Realized Return (%)'}</Label>
+                  <Input type="number" step="0.01" value={formData.realized_return_percent} onChange={(e) => setFormData({ ...formData, realized_return_percent: e.target.value })} />
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 {language === 'ko' ? '취소' : 'Cancel'}
@@ -452,16 +491,10 @@ export function AdminInvestments() {
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {language === 'ko' ? '엑셀 일괄 업로드' : 'Excel Bulk Upload'}
-            </DialogTitle>
+            <DialogTitle>{language === 'ko' ? '엑셀 일괄 업로드' : 'Excel Bulk Upload'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <ExcelUpload
-              onDataParsed={setParsedData}
-              expectedColumns={expectedColumns}
-              templateName="investments_template"
-            />
+            <ExcelUpload onDataParsed={setParsedData} expectedColumns={expectedColumns} templateName="investments_template" />
             {parsedData.length > 0 && (
               <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline" onClick={() => { setParsedData([]); setUploadDialogOpen(false); }}>
