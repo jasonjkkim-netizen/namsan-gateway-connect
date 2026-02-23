@@ -101,7 +101,7 @@ export function AdminCommissions() {
     return ROLE_LABELS[language]?.[p.sales_role] || p.sales_role;
   };
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const handleStatusChange = async (id: string, toUserId: string, newStatus: string) => {
     const { error } = await supabase
       .from('commission_distributions')
       .update({ status: newStatus })
@@ -110,6 +110,15 @@ export function AdminCommissions() {
       toast.error(language === 'ko' ? '상태 변경 실패' : 'Status update failed');
     } else {
       toast.success(language === 'ko' ? '상태 변경 완료' : 'Status updated');
+      // Trigger notification
+      supabase.functions.invoke('notify-sales', {
+        body: {
+          type: 'commission_status_changed',
+          commission_id: id,
+          new_status: newStatus,
+          recipient_ids: [toUserId],
+        },
+      }).catch(console.error);
       fetchAll();
     }
   };
@@ -254,7 +263,7 @@ export function AdminCommissions() {
                               variant="outline"
                               size="sm"
                               className="text-xs"
-                              onClick={() => handleStatusChange(d.id, 'available')}
+                              onClick={() => handleStatusChange(d.id, d.to_user_id, 'available')}
                             >
                               {language === 'ko' ? '승인' : 'Approve'}
                             </Button>
@@ -265,7 +274,7 @@ export function AdminCommissions() {
                             variant="outline"
                             size="sm"
                             className="text-xs"
-                            onClick={() => handleStatusChange(d.id, 'paid')}
+                            onClick={() => handleStatusChange(d.id, d.to_user_id, 'paid')}
                           >
                             {language === 'ko' ? '지급완료' : 'Mark Paid'}
                           </Button>

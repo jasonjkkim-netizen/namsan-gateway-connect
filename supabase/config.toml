@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.calculate-commissions]
 verify_jwt = false
+
+[functions.notify-sales]
+verify_jwt = false

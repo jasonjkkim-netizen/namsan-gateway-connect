@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { LogOut, Settings, BarChart3 } from 'lucide-react';
+import { NotificationBell } from './NotificationBell';
 import { supabase } from '@/integrations/supabase/client';
 import { ConsultationButton } from './ConsultationButton';
 import logo from '@/assets/namsan-logo.png';
@@ -60,6 +61,7 @@ export function Header() {
           
           {user && (
             <>
+              <NotificationBell />
               {hasSalesRole && (
                 <Button
                   variant="outline"
