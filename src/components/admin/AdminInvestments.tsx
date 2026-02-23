@@ -20,7 +20,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Search, Upload, Trash2 } from 'lucide-react';
+import { Plus, Edit, Search, Upload, Trash2, Calculator } from 'lucide-react';
 
 interface Investment {
   id: string;
@@ -351,6 +351,31 @@ export function AdminInvestments() {
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(inv)}>
                           <Edit className="h-4 w-4" />
                         </Button>
+                        {inv.status === 'active' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={language === 'ko' ? '커미션 계산' : 'Calculate Commissions'}
+                            onClick={async () => {
+                              try {
+                                const { data, error } = await supabase.functions.invoke('calculate-commissions', {
+                                  body: { investment_id: inv.id },
+                                });
+                                if (error) throw error;
+                                toast.success(
+                                  language === 'ko'
+                                    ? `${data.distributions_created}건 커미션 분배 완료`
+                                    : `${data.distributions_created} commission distributions created`
+                                );
+                              } catch (err: any) {
+                                toast.error(language === 'ko' ? '커미션 계산 실패' : 'Commission calculation failed');
+                                console.error(err);
+                              }
+                            }}
+                          >
+                            <Calculator className="h-4 w-4 text-primary" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(inv.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
