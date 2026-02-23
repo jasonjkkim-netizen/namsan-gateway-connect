@@ -21,7 +21,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Search, DollarSign, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet } from 'lucide-react';
+import { Search, DollarSign, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
 
@@ -444,6 +445,21 @@ export function AdminCommissions() {
     }
   };
 
+  // === Bulk Selection ===
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+
   // === Rate CRUD ===
   const openAddRate = () => {
     setEditingRate(null);
@@ -541,9 +557,50 @@ export function AdminCommissions() {
       d.investment_id.toLowerCase().includes(term);
   });
 
+  // Bulk selection helpers (depend on filteredDistributions)
+  const selectAllFiltered = (status: string) => {
+    const ids = filteredDistributions.filter(d => d.status === status).map(d => d.id);
+    setSelectedIds(new Set(ids));
+  };
+  const selectedDistributions = filteredDistributions.filter(d => selectedIds.has(d.id));
+  const selectedTotal = selectedDistributions.reduce((s, d) => s + (Number(d.upfront_amount) || 0) + (Number(d.performance_amount) || 0), 0);
+  const canBulkApprove = selectedDistributions.some(d => d.status === 'pending');
+  const canBulkPay = selectedDistributions.some(d => d.status === 'available');
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedIds.size === 0) return;
+    setBulkProcessing(true);
+    let success = 0;
+    let failed = 0;
+    const recipientIds = new Set<string>();
+    for (const id of selectedIds) {
+      const dist = distributions.find(d => d.id === id);
+      if (!dist) continue;
+      // Only change if valid transition
+      if (newStatus === 'available' && dist.status !== 'pending') continue;
+      if (newStatus === 'paid' && dist.status !== 'available') continue;
+      const { error } = await supabase.from('commission_distributions').update({ status: newStatus }).eq('id', id);
+      if (error) { failed++; } else { success++; recipientIds.add(dist.to_user_id); }
+    }
+    if (recipientIds.size > 0) {
+      supabase.functions.invoke('notify-sales', {
+        body: { type: 'commission_status_changed', new_status: newStatus, recipient_ids: [...recipientIds] },
+      }).catch(console.error);
+    }
+    toast.success(
+      language === 'ko'
+        ? `일괄 처리 완료: ${success}건 성공, ${failed}건 실패`
+        : `Bulk update: ${success} succeeded, ${failed} failed`
+    );
+    setBulkProcessing(false);
+    clearSelection();
+    fetchAll();
+  };
+
   const totalUpfront = distributions.reduce((s, d) => s + (Number(d.upfront_amount) || 0), 0);
   const totalPerformance = distributions.reduce((s, d) => s + (Number(d.performance_amount) || 0), 0);
   const pendingCount = distributions.filter(d => d.status === 'pending').length;
+  const availableCount = distributions.filter(d => d.status === 'available').length;
 
   // Rates filtered by selected product
   const defaultRates = rates.filter(r => r.product_id === selectedProductId && !r.is_override);
@@ -614,7 +671,46 @@ export function AdminCommissions() {
 
         {/* Distributions Tab */}
         <TabsContent value="distributions">
-          <div className="flex justify-end mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedIds.size > 0 && (
+                <>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedIds.size}{language === 'ko' ? '건 선택' : ' selected'}
+                    {selectedTotal > 0 && ` · ${formatCurrency(selectedTotal)}`}
+                  </span>
+                  {canBulkApprove && (
+                    <Button size="sm" onClick={() => handleBulkStatusChange('available')} disabled={bulkProcessing}>
+                      <CheckSquare className="h-4 w-4 mr-1" />
+                      {language === 'ko' ? '일괄 승인' : 'Bulk Approve'}
+                    </Button>
+                  )}
+                  {canBulkPay && (
+                    <Button size="sm" variant="outline" onClick={() => handleBulkStatusChange('paid')} disabled={bulkProcessing}>
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      {language === 'ko' ? '일괄 지급' : 'Bulk Pay'}
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={clearSelection}>
+                    {language === 'ko' ? '선택 해제' : 'Clear'}
+                  </Button>
+                </>
+              )}
+              {selectedIds.size === 0 && (
+                <div className="flex gap-2">
+                  {pendingCount > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => selectAllFiltered('pending')}>
+                      {language === 'ko' ? `대기중 전체 선택 (${pendingCount})` : `Select All Pending (${pendingCount})`}
+                    </Button>
+                  )}
+                  {availableCount > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => selectAllFiltered('available')}>
+                      {language === 'ko' ? `수령가능 전체 선택 (${availableCount})` : `Select All Available (${availableCount})`}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -629,6 +725,18 @@ export function AdminCommissions() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={filteredDistributions.length > 0 && selectedIds.size === filteredDistributions.length}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedIds(new Set(filteredDistributions.map(d => d.id)));
+                        } else {
+                          clearSelection();
+                        }
+                      }}
+                    />
+                  </TableHead>
                   <TableHead>{language === 'ko' ? '수취인' : 'Recipient'}</TableHead>
                   <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
                   <TableHead>{language === 'ko' ? '레이어' : 'Layer'}</TableHead>
@@ -645,20 +753,23 @@ export function AdminCommissions() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 10 }).map((_, j) => (
+                      {Array.from({ length: 11 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : filteredDistributions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       {language === 'ko' ? '분배 내역이 없습니다' : 'No distributions found'}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredDistributions.map((d) => (
-                    <TableRow key={d.id}>
+                    <TableRow key={d.id} data-state={selectedIds.has(d.id) ? 'selected' : undefined}>
+                      <TableCell>
+                        <Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => toggleSelect(d.id)} />
+                      </TableCell>
                       <TableCell className="font-medium">{getName(d.to_user_id)}</TableCell>
                       <TableCell>
                         {getRole(d.to_user_id) ? (
