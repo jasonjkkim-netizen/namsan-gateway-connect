@@ -16,6 +16,8 @@ interface Profile {
   approved_by: string | null;
   created_at: string;
   updated_at: string;
+  sales_role: string | null;
+  sales_status: string | null;
 }
 
 interface AuthContextType {
