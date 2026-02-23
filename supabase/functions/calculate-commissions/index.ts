@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify the caller is admin using their JWT
+    // Verify the caller using their JWT
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     // Use service role for data operations
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Check admin role
+    // Check if user is admin OR has a sales role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -46,15 +46,24 @@ Deno.serve(async (req) => {
       .eq("role", "admin")
       .maybeSingle();
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("sales_role")
+      .eq("user_id", user.id)
+      .single();
+
+    const isAdmin = !!roleData;
+    const isSalesUser = !!profileData?.sales_role;
+
+    if (!isAdmin && !isSalesUser) {
+      return new Response(JSON.stringify({ error: "Access denied" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const { investment_id } = await req.json();
-    if (!investment_id) {
+    if (!investment_id || typeof investment_id !== "string") {
       return new Response(JSON.stringify({ error: "investment_id is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -75,7 +84,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Get the investor's profile to find their upline
+    // If sales user (not admin), verify they created this investment or the investor is in their subtree
+    if (!isAdmin) {
+      const { data: inSubtree } = await supabase.rpc("is_in_subtree", {
+        _ancestor_id: user.id,
+        _descendant_id: investment.user_id,
+      });
+      if (!inSubtree) {
+        return new Response(JSON.stringify({ error: "Not authorized for this investment" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // 2. Get the investor's profile
     const { data: investorProfile } = await supabase
       .from("profiles")
       .select("user_id, parent_id, sales_role, full_name")
@@ -89,7 +112,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Get ancestors (upline) using the DB function
+    // 3. Get ancestors (upline)
     const { data: ancestors, error: ancestorErr } = await supabase
       .rpc("get_sales_ancestors", { _user_id: investment.user_id });
 
@@ -110,7 +133,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 5. Fetch commission rates for this product
+    // 5. Fetch commission rates
     const { data: rates } = await supabase
       .from("commission_rates")
       .select("*")
@@ -148,7 +171,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 7. Delete existing distributions for this investment (recalculate)
+    // 7. Delete existing distributions (recalculate)
     const { data: existingDists } = await supabase
       .from("commission_distributions")
       .select("*")
@@ -159,16 +182,14 @@ Deno.serve(async (req) => {
       .delete()
       .eq("investment_id", investment_id);
 
-    // 8. Calculate distributions for each ancestor (waterfall)
+    // 8. Calculate distributions (waterfall)
     const investmentAmount = Number(investment.investment_amount);
     const realizedReturn = Number(investment.realized_return_amount) || 0;
     const distributions: any[] = [];
 
-    // Also include the direct seller (the investor's parent) first, then up
     const sortedAncestors = (ancestors || []).sort((a: any, b: any) => a.depth - b.depth);
 
     for (const ancestor of sortedAncestors) {
-      // Use override if available, otherwise use role-based rate
       const rate = overridesByUser[ancestor.user_id] || ratesByRole[ancestor.sales_role];
       if (!rate) continue;
 
