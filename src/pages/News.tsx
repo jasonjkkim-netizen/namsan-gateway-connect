@@ -38,16 +38,16 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="text-xs font-medium w-[50px] whitespace-nowrap">
+            <TableHead className="text-xs font-medium w-[45px] md:w-[50px] whitespace-nowrap">
               {language === 'ko' ? '시간' : 'Time'}
             </TableHead>
-            <TableHead className="text-xs font-medium min-w-[170px] md:min-w-[255px]">
+            <TableHead className="text-xs font-medium">
               {language === 'ko' ? '제목' : 'Title'}
             </TableHead>
             <TableHead className="text-xs font-medium hidden md:table-cell min-w-[300px]">
               {language === 'ko' ? '본문' : 'Content'}
             </TableHead>
-            <TableHead className="text-xs font-medium text-right w-[40px] whitespace-nowrap">
+            <TableHead className="text-xs font-medium text-right w-[36px] md:w-[40px] whitespace-nowrap">
               {language === 'ko' ? '링크' : 'Link'}
             </TableHead>
           </TableRow>
@@ -65,15 +65,15 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
                   <TableCell className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap align-top">
                     {format(new Date(item.created_at), 'HH:mm')}
                   </TableCell>
-                  <TableCell className="text-[10px] md:text-xs font-medium align-top min-w-[170px] md:min-w-[255px]">
+                  <TableCell className="text-[10px] md:text-xs font-medium align-top">
                     <span className="flex items-center gap-1">
                       <ChevronDown className={`h-3 w-3 md:hidden shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                      <span className="md:line-clamp-none">{language === 'ko' ? item.title_ko : item.title_en}</span>
+                      <span className="md:line-clamp-none">{language === 'ko' ? item.title_ko : (item.title_en || item.title_ko)}</span>
                     </span>
                   </TableCell>
                   <TableCell className="text-[10px] md:text-xs text-muted-foreground align-top hidden md:table-cell">
                     <div className="max-h-[120px] overflow-y-auto leading-relaxed">
-                      {language === 'ko' ? item.content_ko : item.content_en}
+                      {language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}
                     </div>
                   </TableCell>
                   <TableCell className="text-right align-top">
@@ -93,7 +93,7 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
                 {isExpanded && (
                   <TableRow key={`${item.id}-content`} className="md:hidden bg-muted/30">
                     <TableCell colSpan={3} className="text-[10px] text-muted-foreground leading-relaxed py-2 px-3">
-                      {language === 'ko' ? item.content_ko : item.content_en}
+                      {language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}
                     </TableCell>
                   </TableRow>
                 )}
