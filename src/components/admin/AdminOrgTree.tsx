@@ -101,7 +101,7 @@ function TreeNodeComponent({
   node, language, depth = 0, draggedNode, dropTargetId, tree,
   onDragStart, onDragEnd, onDropTarget, onDrop,
 }: TreeNodeComponentProps) {
-  const [expanded, setExpanded] = useState(depth < 2);
+  const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
   const role = node.sales_role || 'client';
   const Icon = ROLE_ICONS[role] || User;
