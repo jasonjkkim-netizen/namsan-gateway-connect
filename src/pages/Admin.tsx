@@ -19,8 +19,9 @@ import { AdminInterestNews } from '@/components/admin/AdminInterestNews';
 import { AdminPopups } from '@/components/admin/AdminPopups';
 import { AdminSalesApprovals } from '@/components/admin/AdminSalesApprovals';
 import { AdminCommissions } from '@/components/admin/AdminCommissions';
+import { AdminOrgTree } from '@/components/admin/AdminOrgTree';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, DollarSign } from 'lucide-react';
+import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, DollarSign, GitBranch } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -81,6 +82,7 @@ export default function Admin() {
     { id: 'news', label: language === 'ko' ? '관심 뉴스' : 'News', icon: Newspaper },
     { id: 'popups', label: language === 'ko' ? '팝업 광고' : 'Popups', icon: Megaphone },
     { id: 'sales', label: language === 'ko' ? '영업 관리' : 'Sales', icon: Network },
+    { id: 'orgtree', label: language === 'ko' ? '조직도' : 'Org Tree', icon: GitBranch },
     { id: 'commissions', label: language === 'ko' ? '커미션' : 'Commissions', icon: DollarSign },
   ];
 
@@ -163,6 +165,10 @@ export default function Admin() {
 
           <TabsContent value="sales">
             <AdminSalesApprovals />
+          </TabsContent>
+
+          <TabsContent value="orgtree">
+            <AdminOrgTree />
           </TabsContent>
 
           <TabsContent value="commissions">
