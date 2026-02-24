@@ -83,7 +83,7 @@ export default function Admin() {
     { id: 'popups', label: language === 'ko' ? '팝업 광고' : 'Popups', icon: Megaphone },
     { id: 'sales', label: language === 'ko' ? '영업 관리' : 'Sales', icon: Network },
     { id: 'orgtree', label: language === 'ko' ? '조직도' : 'Org Tree', icon: GitBranch },
-    { id: 'commissions', label: language === 'ko' ? '커미션' : 'Commissions', icon: DollarSign },
+    { id: 'commissions', label: language === 'ko' ? '수수료' : 'Commissions', icon: DollarSign },
   ];
 
   return (
