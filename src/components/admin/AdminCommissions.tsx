@@ -462,34 +462,57 @@ export function AdminCommissions() {
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null);
 
   const exportAttribution = async () => {
+    const toDisplay = (amount: number, srcCurrency: string) => {
+      if (displayCurrency === 'USD') return srcCurrency === 'KRW' ? amount / usdKrwRate : amount;
+      if (displayCurrency === 'KRW') return srcCurrency === 'USD' ? amount * usdKrwRate : amount;
+      return amount;
+    };
+    const dispLabel = displayCurrency === 'KRW' ? '₩' : '$';
     const wb = new ExcelJS.Workbook();
+
+    // Summary sheet with converted totals
     const summarySheet = wb.addWorksheet(language === 'ko' ? '개인별 요약' : 'Attribution Summary');
     summarySheet.columns = [
       { header: language === 'ko' ? '영업사원' : 'Sales Person', key: 'name', width: 25 },
       { header: language === 'ko' ? '역할' : 'Role', key: 'role', width: 18 },
-      { header: language === 'ko' ? '선취 합계' : 'Upfront Total', key: 'upfront', width: 18 },
-      { header: language === 'ko' ? '성과 합계' : 'Performance Total', key: 'performance', width: 18 },
-      { header: language === 'ko' ? '총 합계' : 'Grand Total', key: 'total', width: 18 },
+      { header: language === 'ko' ? '선취 (원본)' : 'Upfront (Raw)', key: 'upfront', width: 18 },
+      { header: language === 'ko' ? '성과 (원본)' : 'Performance (Raw)', key: 'performance', width: 18 },
+      { header: `${language === 'ko' ? '선취' : 'Upfront'} (${dispLabel}${displayCurrency})`, key: 'upfront_conv', width: 20 },
+      { header: `${language === 'ko' ? '성과' : 'Performance'} (${dispLabel}${displayCurrency})`, key: 'performance_conv', width: 20 },
+      { header: `${language === 'ko' ? '총 합계' : 'Total'} (${dispLabel}${displayCurrency})`, key: 'total_conv', width: 20 },
       { header: language === 'ko' ? '건수' : 'Count', key: 'count', width: 10 },
     ];
     summarySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     summarySheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
     personAttribution.forEach(([, data]) => {
+      // Sum converted amounts per source
+      let convUp = 0, convPerf = 0;
+      data.sources.forEach((src) => {
+        convUp += toDisplay(src.upfront, src.currency);
+        convPerf += toDisplay(src.performance, src.currency);
+      });
       summarySheet.addRow({
-        name: data.name, role: data.role || '—', upfront: data.totalUpfront,
-        performance: data.totalPerformance, total: data.totalUpfront + data.totalPerformance, count: data.sources.length,
+        name: data.name, role: data.role || '—',
+        upfront: data.totalUpfront, performance: data.totalPerformance,
+        upfront_conv: Math.round(convUp * 100) / 100,
+        performance_conv: Math.round(convPerf * 100) / 100,
+        total_conv: Math.round((convUp + convPerf) * 100) / 100,
+        count: data.sources.length,
       });
     });
 
+    // Detail sheet with converted columns
     const detailSheet = wb.addWorksheet(language === 'ko' ? '귀속 상세' : 'Attribution Detail');
     detailSheet.columns = [
       { header: language === 'ko' ? '수취인' : 'Recipient', key: 'recipient', width: 22 },
       { header: language === 'ko' ? '역할' : 'Role', key: 'role', width: 18 },
       { header: language === 'ko' ? '투자자' : 'Investor', key: 'investor', width: 22 },
-      { header: language === 'ko' ? '선취' : 'Upfront', key: 'upfront', width: 15 },
-      { header: language === 'ko' ? '성과' : 'Performance', key: 'performance', width: 15 },
-      { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 15 },
+      { header: language === 'ko' ? '선취 (원본)' : 'Upfront (Raw)', key: 'upfront', width: 15 },
+      { header: language === 'ko' ? '성과 (원본)' : 'Performance (Raw)', key: 'performance', width: 15 },
       { header: language === 'ko' ? '통화' : 'Currency', key: 'currency', width: 8 },
+      { header: `${language === 'ko' ? '선취' : 'Upfront'} (${displayCurrency})`, key: 'upfront_conv', width: 18 },
+      { header: `${language === 'ko' ? '성과' : 'Perf'} (${displayCurrency})`, key: 'performance_conv', width: 18 },
+      { header: `${language === 'ko' ? '합계' : 'Total'} (${displayCurrency})`, key: 'total_conv', width: 18 },
       { header: language === 'ko' ? '상태' : 'Status', key: 'status', width: 12 },
       { header: language === 'ko' ? '일자' : 'Date', key: 'date', width: 14 },
     ];
@@ -497,10 +520,15 @@ export function AdminCommissions() {
     detailSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
     personAttribution.forEach(([, data]) => {
       data.sources.forEach((src) => {
+        const convUp = toDisplay(src.upfront, src.currency);
+        const convPerf = toDisplay(src.performance, src.currency);
         detailSheet.addRow({
           recipient: data.name, role: data.role || '—', investor: src.investorName,
-          upfront: src.upfront, performance: src.performance, total: src.upfront + src.performance,
-          currency: src.currency, status: src.status, date: format(new Date(src.date), 'yyyy-MM-dd'),
+          upfront: src.upfront, performance: src.performance, currency: src.currency,
+          upfront_conv: Math.round(convUp * 100) / 100,
+          performance_conv: Math.round(convPerf * 100) / 100,
+          total_conv: Math.round((convUp + convPerf) * 100) / 100,
+          status: src.status, date: format(new Date(src.date), 'yyyy-MM-dd'),
         });
       });
     });
