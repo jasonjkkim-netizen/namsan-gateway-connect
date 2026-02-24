@@ -114,7 +114,10 @@ export default function SalesDashboard() {
   }>({ open: false, member: null, newRole: '' });
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
 
-  const isDM = (profile as any)?.sales_role === 'district_manager';
+  const userSalesRole = (profile as any)?.sales_role;
+  const isDM = userSalesRole === 'district_manager';
+  const isDeputyDM = userSalesRole === 'deputy_district_manager';
+  const canChangeRoles = isDM || isDeputyDM;
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -574,7 +577,7 @@ export default function SalesDashboard() {
                                       {getRoleLabel(m.sales_role)}
                                     </Badge>
                                   </div>
-                                  {isDM && m.sales_role !== 'district_manager' && (
+                                  {canChangeRoles && m.sales_role !== 'district_manager' && m.sales_role !== userSalesRole && (
                                     <Select
                                       value={m.sales_role}
                                       onValueChange={(newRole) => {
@@ -589,7 +592,7 @@ export default function SalesDashboard() {
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent className="bg-popover z-50">
-                                        <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>
+                                        {isDM && <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>}
                                         <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
                                         <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
                                         <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
