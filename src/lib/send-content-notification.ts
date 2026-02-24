@@ -4,6 +4,9 @@ import { toast } from 'sonner';
 type ContentType = 'viewpoint' | 'blog' | 'stock_pick' | 'video';
 type ActionType = 'added' | 'updated' | 'deleted';
 
+// Content types that broadcast to ALL approved users (downline)
+const BROADCAST_TYPES: ContentType[] = ['viewpoint', 'blog', 'stock_pick'];
+
 const contentLabels: Record<ContentType, { ko: string; en: string }> = {
   viewpoint: { ko: '남산 뷰포인트', en: 'Namsan Viewpoint' },
   blog: { ko: '블로그', en: 'Blog' },
@@ -73,7 +76,6 @@ export async function sendContentNotification({
 
     const label = contentLabels[contentType];
     const actionLabel = actionLabels[action];
-
     const subject = `[Namsan Partners] ${label.ko} - ${actionLabel.ko}`;
 
     const htmlContent = `
@@ -97,40 +99,78 @@ export async function sendContentNotification({
       </div>
     `;
 
-    console.log(`[Notification] Sending ${contentType} ${action} notification...`);
+    const isBroadcast = BROADCAST_TYPES.includes(contentType);
 
-    const { data, error } = await supabase.functions.invoke('send-newsletter', {
-      body: { subject, htmlContent },
-    });
+    console.log(`[Notification] Sending ${contentType} ${action} notification (broadcast=${isBroadcast})...`);
 
-    if (error) {
-      console.error('[Notification] Edge function error:', error);
-      toast.error(`알림 이메일 발송 실패 / Notification email failed: ${error.message || 'Unknown error'}`);
-      return { success: false, error };
-    }
+    if (isBroadcast) {
+      // Send to ALL approved users via send-newsletter
+      const { data, error } = await supabase.functions.invoke('send-newsletter', {
+        body: { subject, htmlContent },
+      });
 
-    if (data?.error) {
-      console.error('[Notification] Server error:', data.error);
-      toast.error(`알림 이메일 발송 실패 / Notification email failed: ${data.error}`);
-      return { success: false, error: data.error };
-    }
+      if (error) {
+        console.error('[Notification] Edge function error:', error);
+        toast.error(`알림 이메일 발송 실패 / Notification email failed: ${error.message || 'Unknown error'}`);
+        return { success: false, error };
+      }
 
-    // Log alerts for all recipients
-    try {
-      const { data: approvedProfiles } = await supabase
+      if (data?.error) {
+        console.error('[Notification] Server error:', data.error);
+        toast.error(`알림 이메일 발송 실패 / Notification email failed: ${data.error}`);
+        return { success: false, error: data.error };
+      }
+
+      // Log alerts for all recipients
+      try {
+        const { data: approvedProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .eq('is_approved', true);
+        if (approvedProfiles) {
+          await logAlerts(contentType, subject, approvedProfiles);
+        }
+      } catch (logErr) {
+        console.error('[Notification] Failed to log:', logErr);
+      }
+
+      console.log(`[Notification] Broadcast sent: ${contentType} ${action}, ${data?.sentCount} recipients`);
+      toast.success(`알림 이메일 발송 완료 (${data?.sentCount}명) / Notification sent to ${data?.sentCount} recipients`);
+      return { success: true, sentCount: data?.sentCount };
+    } else {
+      // Non-broadcast: send only to district managers (upper management)
+      const { data: dmProfiles } = await supabase
         .from('profiles')
         .select('user_id, full_name, email')
+        .eq('sales_role', 'district_manager')
         .eq('is_approved', true);
-      if (approvedProfiles) {
-        await logAlerts(contentType, subject, approvedProfiles);
-      }
-    } catch (logErr) {
-      console.error('[Notification] Failed to log:', logErr);
-    }
 
-    console.log(`[Notification] Sent: ${contentType} ${action}, ${data?.sentCount} recipients`);
-    toast.success(`알림 이메일 발송 완료 (${data?.sentCount}명) / Notification sent to ${data?.sentCount} recipients`);
-    return { success: true, sentCount: data?.sentCount };
+      const recipients = dmProfiles || [];
+      if (recipients.length === 0) {
+        console.log('[Notification] No district managers found, skipping.');
+        toast.info('총괄관리인이 없어 알림을 건너뜁니다 / No district managers found');
+        return { success: true, skipped: true };
+      }
+
+      let sentCount = 0;
+      for (const dm of recipients) {
+        if (!dm.email) continue;
+        try {
+          const { error } = await supabase.functions.invoke('send-newsletter', {
+            body: { subject, htmlContent, targetEmail: dm.email },
+          });
+          if (!error) sentCount++;
+        } catch (err) {
+          console.error(`[Notification] Failed to send to ${dm.email}:`, err);
+        }
+      }
+
+      await logAlerts(contentType, subject, recipients);
+
+      console.log(`[Notification] Upper-mgmt only: ${contentType} ${action}, ${sentCount} recipients`);
+      toast.success(`총괄관리인에게 알림 발송 완료 (${sentCount}명) / Sent to ${sentCount} manager(s)`);
+      return { success: true, sentCount };
+    }
   } catch (err: any) {
     console.error('[Notification] Failed to send:', err);
     toast.error(`알림 이메일 발송 실패 / Notification email failed: ${err?.message || 'Unknown error'}`);
