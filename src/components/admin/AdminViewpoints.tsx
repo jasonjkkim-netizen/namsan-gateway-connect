@@ -56,7 +56,7 @@ export function AdminViewpoints() {
     const { data, error } = await supabase
       .from('namsan_viewpoints')
       .select('*')
-      .order('display_order', { ascending: true });
+      .order('created_at', { ascending: false });
     if (!error && data) setItems(data as Viewpoint[]);
     setLoading(false);
   }
