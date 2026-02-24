@@ -130,12 +130,35 @@ export default function SalesDashboard() {
     if (!user) return;
     setLoading(true);
 
-    // Fetch downline tree
-    const { data: tree } = await supabase.rpc('get_sales_subtree', {
-      _user_id: user.id,
-    });
+    const currentRole = (profile as any)?.sales_role;
+    const isDMUser = currentRole === 'district_manager';
 
-    const downlineData = (tree || []) as DownlineMember[];
+    let downlineData: DownlineMember[];
+
+    if (isDMUser) {
+      // DM sees ALL sales members (not just subtree)
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, sales_role, sales_level, parent_id, depth:sales_level')
+        .not('sales_role', 'is', null)
+        .neq('user_id', user.id);
+
+      downlineData = (allProfiles || []).map((p: any) => ({
+        user_id: p.user_id,
+        full_name: p.full_name,
+        sales_role: p.sales_role,
+        sales_level: p.sales_level,
+        parent_id: p.parent_id,
+        depth: p.sales_level || 0,
+      })) as DownlineMember[];
+    } else {
+      // Normal: subtree only
+      const { data: tree } = await supabase.rpc('get_sales_subtree', {
+        _user_id: user.id,
+      });
+      downlineData = (tree || []) as DownlineMember[];
+    }
+
     setDownline(downlineData);
 
     // Fetch commissions for this user
@@ -149,22 +172,30 @@ export default function SalesDashboard() {
     // Fetch investments from downline members
     const downlineIds = downlineData.map((d) => d.user_id);
     if (downlineIds.length > 0) {
-      const { data: invData } = await supabase
-        .from('client_investments')
-        .select('*')
-        .in('user_id', downlineIds)
-        .order('start_date', { ascending: false })
-        .limit(50);
+      // For DM, fetch all investments; for others, only subtree
+      const invQuery = isDMUser
+        ? supabase.from('client_investments').select('*').order('start_date', { ascending: false }).limit(100)
+        : supabase.from('client_investments').select('*').in('user_id', downlineIds).order('start_date', { ascending: false }).limit(50);
+
+      const { data: invData } = await invQuery;
       setDownlineInvestments((invData || []) as Investment[]);
     }
 
     // Fetch profiles for name resolution
     const allIds = [user.id, ...downlineIds];
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('user_id, full_name, email, sales_role')
-      .in('user_id', allIds);
-    setProfiles((profileData || []) as Profile[]);
+    if (isDMUser) {
+      // DM: fetch all profiles
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email, sales_role');
+      setProfiles((profileData || []) as Profile[]);
+    } else {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email, sales_role')
+        .in('user_id', allIds);
+      setProfiles((profileData || []) as Profile[]);
+    }
 
     // Fetch display currency setting and exchange rate
     const [settingsRes, fxRes] = await Promise.all([

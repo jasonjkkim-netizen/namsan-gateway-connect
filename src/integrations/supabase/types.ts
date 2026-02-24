@@ -1208,6 +1208,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_district_manager: { Args: { _user_id: string }; Returns: boolean }
       is_in_subtree: {
         Args: { _ancestor_id: string; _descendant_id: string }
         Returns: boolean
