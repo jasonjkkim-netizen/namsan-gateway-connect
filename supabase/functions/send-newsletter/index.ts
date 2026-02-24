@@ -36,24 +36,31 @@ serve(async (req: Request) => {
       .maybeSingle();
     if (!adminRole) throw new Error("Admin access required");
 
-    const { subject, htmlContent, newsletterId } = await req.json();
+    const { subject, htmlContent, newsletterId, targetEmail } = await req.json();
 
     if (!subject || !htmlContent) {
       throw new Error("Missing subject or content");
     }
 
-    // Get all approved user emails
-    const { data: profiles, error: profilesError } = await supabase
-      .from("profiles")
-      .select("email, full_name, preferred_language")
-      .eq("is_approved", true);
+    let emails: string[];
 
-    if (profilesError) throw profilesError;
-    if (!profiles || profiles.length === 0) {
-      throw new Error("No approved recipients found");
+    if (targetEmail) {
+      // Manual send to a single recipient
+      emails = [targetEmail];
+    } else {
+      // Get all approved user emails
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("email, full_name, preferred_language")
+        .eq("is_approved", true);
+
+      if (profilesError) throw profilesError;
+      if (!profiles || profiles.length === 0) {
+        throw new Error("No approved recipients found");
+      }
+
+      emails = profiles.map((p: any) => p.email).filter(Boolean);
     }
-
-    const emails = profiles.map((p: any) => p.email).filter(Boolean);
 
     // Send emails in batches of 50
     let sentCount = 0;
