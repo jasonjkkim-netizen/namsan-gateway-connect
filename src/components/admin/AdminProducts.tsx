@@ -76,7 +76,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const SALES_ROLES = [
-  { value: 'district_manager', labelEn: 'District Manager', labelKo: '지역 매니저' },
+  { value: 'district_manager', labelEn: 'General Manager', labelKo: '총괄관리' },
   { value: 'principal_agent', labelEn: 'Principal Agent', labelKo: '수석 에이전트' },
   { value: 'agent', labelEn: 'Agent', labelKo: '에이전트' },
 ];

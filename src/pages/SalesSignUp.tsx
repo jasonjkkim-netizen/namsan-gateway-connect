@@ -30,8 +30,8 @@ const ROLE_CONFIG: Record<SalesRole, {
   color: string;
 }> = {
   district_manager: {
-    labelEn: 'District Manager',
-    labelKo: '지역 매니저',
+    labelEn: 'General Manager',
+    labelKo: '총괄관리',
     descEn: 'Top-level sales leader managing teams and territories',
     descKo: '팀과 지역을 관리하는 최상위 영업 리더',
     icon: Building2,
