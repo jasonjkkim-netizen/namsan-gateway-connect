@@ -182,13 +182,19 @@ export default function SalesDashboard() {
     return formatCurrency(amount);
   };
 
-  // Summary calculations
+  // Normalize a single commission amount to a common base (USD) for aggregation
+  const toUsd = (amount: number, currency?: string | null) => {
+    const src = currency || 'USD';
+    return src === 'KRW' ? amount / usdKrwRate : amount;
+  };
+
+  // Summary calculations (normalized to USD, then formatted via formatCommAmount)
   const totalUpfront = commissions.reduce(
-    (s, c) => s + (Number(c.upfront_amount) || 0),
+    (s, c) => s + toUsd(Number(c.upfront_amount) || 0, c.currency),
     0
   );
   const totalPerformance = commissions.reduce(
-    (s, c) => s + (Number(c.performance_amount) || 0),
+    (s, c) => s + toUsd(Number(c.performance_amount) || 0, c.currency),
     0
   );
   const pendingCommissions = commissions.filter((c) => c.status === 'pending');
@@ -198,15 +204,15 @@ export default function SalesDashboard() {
   const paidCommissions = commissions.filter((c) => c.status === 'paid');
 
   const paidTotal = paidCommissions.reduce(
-    (s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0),
+    (s, c) => s + toUsd((Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), c.currency),
     0
   );
   const availableTotal = availableCommissions.reduce(
-    (s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0),
+    (s, c) => s + toUsd((Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), c.currency),
     0
   );
   const pendingTotal = pendingCommissions.reduce(
-    (s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0),
+    (s, c) => s + toUsd((Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), c.currency),
     0
   );
 
