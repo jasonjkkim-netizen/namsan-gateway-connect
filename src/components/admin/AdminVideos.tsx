@@ -43,6 +43,7 @@ interface Video {
   youtube_url: string;
   thumbnail_url: string | null;
   is_active: boolean | null;
+  created_at: string;
 }
 
 export function AdminVideos() {
@@ -215,6 +216,7 @@ export function AdminVideos() {
               <TableHead>{language === 'ko' ? '제목' : 'Title'}</TableHead>
               <TableHead>{language === 'ko' ? '카테고리' : 'Category'}</TableHead>
               <TableHead>{language === 'ko' ? 'YouTube URL' : 'YouTube URL'}</TableHead>
+              <TableHead>{language === 'ko' ? '생성일' : 'Created'}</TableHead>
               <TableHead>{language === 'ko' ? '활성' : 'Active'}</TableHead>
               <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
             </TableRow>
@@ -223,7 +225,7 @@ export function AdminVideos() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 5 }).map((_, j) => (
+                  {Array.from({ length: 6 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-5 w-24" />
                     </TableCell>
@@ -232,7 +234,7 @@ export function AdminVideos() {
               ))
             ) : filteredVideos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
                 </TableCell>
               </TableRow>
@@ -244,6 +246,12 @@ export function AdminVideos() {
                   </TableCell>
                   <TableCell>{video.category}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{video.youtube_url}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {new Date(video.created_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', {
+                      year: 'numeric', month: '2-digit', day: '2-digit',
+                      hour: '2-digit', minute: '2-digit'
+                    })}
+                  </TableCell>
                   <TableCell>{video.is_active ? '✓' : '✗'}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

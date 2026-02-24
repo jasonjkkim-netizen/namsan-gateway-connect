@@ -17,6 +17,7 @@ interface Video {
   category: string;
   description_en: string | null;
   description_ko: string | null;
+  created_at: string;
 }
 
 function getYoutubeThumbnail(url: string): string {
@@ -212,9 +213,17 @@ export default function Videos() {
                 </div>
                 
                 <div className="p-4">
-                  <Badge className={`${getCategoryColor(video.category)} mb-2`}>
-                    {t(getCategoryKey(video.category))}
-                  </Badge>
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge className={`${getCategoryColor(video.category)}`}>
+                      {t(getCategoryKey(video.category))}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(video.created_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
                   
                   <h3 className="font-serif font-semibold mb-2 line-clamp-2">
                     {language === 'ko' ? video.title_ko : video.title_en}
