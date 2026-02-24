@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -22,7 +33,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Edit, Search } from 'lucide-react';
+import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -35,10 +46,14 @@ interface Profile {
   preferred_language: string | null;
   birthday: string | null;
   created_at: string;
+  is_deleted: boolean | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
 }
 
 export function AdminClients() {
   const { language, formatDate } = useLanguage();
+  const { user } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -46,6 +61,8 @@ export function AdminClients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -91,7 +108,6 @@ export function AdminClients() {
 
     try {
       if (isCurrentlyAdmin) {
-        // Remove admin role
         const { error } = await supabase
           .from('user_roles')
           .delete()
@@ -113,7 +129,6 @@ export function AdminClients() {
           toast.success(language === 'ko' ? '관리자 권한이 해제되었습니다' : 'Admin role removed');
         }
       } else {
-        // Add admin role
         const { error } = await supabase
           .from('user_roles')
           .insert({ user_id: profile.user_id, role: 'admin' });
@@ -147,7 +162,6 @@ export function AdminClients() {
   const handleSave = async () => {
     if (!editingProfile) return;
 
-    // Validate form data
     const validationResult = validateFormData(clientProfileSchema, {
       full_name: formData.full_name,
       full_name_ko: formData.full_name_ko || null,
@@ -182,95 +196,202 @@ export function AdminClients() {
     }
   };
 
-  const filteredProfiles = profiles.filter(
+  const handleDelete = async () => {
+    if (!deleteTarget || !user) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: user.id,
+      })
+      .eq('id', deleteTarget.id);
+
+    if (error) {
+      toast.error(language === 'ko' ? '삭제 실패' : 'Delete failed');
+      console.error('Delete error:', error);
+    } else {
+      toast.success(language === 'ko' ? '고객이 삭제되었습니다' : 'Client deleted');
+      fetchData();
+    }
+    setDeleteTarget(null);
+  };
+
+  const handleRestore = async (profile: Profile) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        is_deleted: false,
+        deleted_at: null,
+        deleted_by: null,
+        is_rejected: false,
+        rejected_at: null,
+        rejected_by: null,
+      })
+      .eq('id', profile.id);
+
+    if (error) {
+      toast.error(language === 'ko' ? '복원 실패' : 'Restore failed');
+    } else {
+      toast.success(language === 'ko' ? '고객이 복원되었습니다' : 'Client restored');
+      fetchData();
+    }
+  };
+
+  const activeProfiles = profiles.filter(p => !p.is_deleted);
+  const deletedProfiles = profiles.filter(p => p.is_deleted);
+
+  const filteredProfiles = activeProfiles.filter(
     (p) =>
       p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (p.full_name_ko && p.full_name_ko.includes(searchTerm))
   );
 
+  const filteredDeleted = deletedProfiles.filter(
+    (p) =>
+      p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.full_name_ko && p.full_name_ko.includes(searchTerm))
+  );
+
+  const renderRows = (list: Profile[], isDeletedSection: boolean) => {
+    if (loading) {
+      return Array.from({ length: 3 }).map((_, i) => (
+        <TableRow key={i}>
+          {Array.from({ length: isDeletedSection ? 8 : 9 }).map((_, j) => (
+            <TableCell key={j}><Skeleton className="h-5 w-24" /></TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+
+    if (list.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={isDeletedSection ? 8 : 9} className="text-center py-8 text-muted-foreground">
+            {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
+          </TableCell>
+        </TableRow>
+      );
+    }
+
+    return list.map((profile) => (
+      <TableRow key={profile.id}>
+        <TableCell className="font-medium">{profile.email}</TableCell>
+        <TableCell>{profile.full_name}</TableCell>
+        <TableCell>{profile.full_name_ko || '-'}</TableCell>
+        <TableCell>{profile.phone || '-'}</TableCell>
+        <TableCell className="max-w-[200px] truncate">{profile.address || '-'}</TableCell>
+        <TableCell>{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
+        <TableCell>{isDeletedSection && profile.deleted_at ? formatDate(profile.deleted_at) : formatDate(profile.created_at)}</TableCell>
+        {!isDeletedSection && (
+          <TableCell className="text-center">
+            <Switch
+              checked={adminUserIds.has(profile.user_id)}
+              onCheckedChange={() => handleToggleAdmin(profile)}
+              disabled={togglingAdmin === profile.user_id}
+            />
+          </TableCell>
+        )}
+        <TableCell>
+          <div className="flex items-center gap-1">
+            {isDeletedSection ? (
+              <Button variant="ghost" size="sm" onClick={() => handleRestore(profile)} title={language === 'ko' ? '복원' : 'Restore'}>
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(profile)} className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
+    ));
+  };
+
   return (
-    <div className="card-elevated">
-      <div className="p-6 border-b border-border flex items-center justify-between">
-        <h2 className="text-xl font-serif font-semibold">
-          {language === 'ko' ? '고객 목록' : 'Client List'}
-        </h2>
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={language === 'ko' ? '검색...' : 'Search...'}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+    <div className="space-y-6">
+      {/* Active Clients */}
+      <div className="card-elevated">
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <h2 className="text-xl font-serif font-semibold">
+            {language === 'ko' ? '고객 목록' : 'Client List'}
+          </h2>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={language === 'ko' ? '검색...' : 'Search...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{language === 'ko' ? '이메일' : 'Email'}</TableHead>
+                <TableHead>{language === 'ko' ? '이름 (영문)' : 'Name (EN)'}</TableHead>
+                <TableHead>{language === 'ko' ? '이름 (한글)' : 'Name (KO)'}</TableHead>
+                <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
+                <TableHead>{language === 'ko' ? '주소' : 'Address'}</TableHead>
+                <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
+                <TableHead>{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
+                <TableHead className="text-center">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>
+                <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {renderRows(filteredProfiles, false)}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{language === 'ko' ? '이메일' : 'Email'}</TableHead>
-              <TableHead>{language === 'ko' ? '이름 (영문)' : 'Name (EN)'}</TableHead>
-              <TableHead>{language === 'ko' ? '이름 (한글)' : 'Name (KO)'}</TableHead>
-              <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
-              <TableHead>{language === 'ko' ? '주소' : 'Address'}</TableHead>
-              <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
-              <TableHead>{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
-              <TableHead className="text-center">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>
-              <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {Array.from({ length: 9 }).map((_, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-5 w-24" />
-                    </TableCell>
-                  ))}
+      {/* Deleted Clients */}
+      <div className="card-elevated">
+        <button
+          onClick={() => setShowDeleted(!showDeleted)}
+          className="w-full p-6 flex items-center justify-between text-left border-b border-border"
+        >
+          <h2 className="text-xl font-serif font-semibold text-muted-foreground">
+            {language === 'ko' ? `삭제된 고객 (${deletedProfiles.length})` : `Deleted Clients (${deletedProfiles.length})`}
+          </h2>
+          {showDeleted ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+        </button>
+        {showDeleted && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{language === 'ko' ? '이메일' : 'Email'}</TableHead>
+                  <TableHead>{language === 'ko' ? '이름 (영문)' : 'Name (EN)'}</TableHead>
+                  <TableHead>{language === 'ko' ? '이름 (한글)' : 'Name (KO)'}</TableHead>
+                  <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
+                  <TableHead>{language === 'ko' ? '주소' : 'Address'}</TableHead>
+                  <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
+                  <TableHead>{language === 'ko' ? '삭제일' : 'Deleted'}</TableHead>
+                  <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
                 </TableRow>
-              ))
-            ) : filteredProfiles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                  {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredProfiles.map((profile) => (
-                <TableRow key={profile.id}>
-                  <TableCell className="font-medium">{profile.email}</TableCell>
-                  <TableCell>{profile.full_name}</TableCell>
-                  <TableCell>{profile.full_name_ko || '-'}</TableCell>
-                  <TableCell>{profile.phone || '-'}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{profile.address || '-'}</TableCell>
-                  <TableCell>{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
-                  <TableCell>{formatDate(profile.created_at)}</TableCell>
-                  <TableCell className="text-center">
-                    <Switch
-                      checked={adminUserIds.has(profile.user_id)}
-                      onCheckedChange={() => handleToggleAdmin(profile)}
-                      disabled={togglingAdmin === profile.user_id}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(profile)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {renderRows(filteredDeleted, true)}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
 
+      {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -281,39 +402,23 @@ export function AdminClients() {
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label>{language === 'ko' ? '이름 (영문)' : 'Name (English)'}</Label>
-              <Input
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              />
+              <Input value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{language === 'ko' ? '이름 (한글)' : 'Name (Korean)'}</Label>
-              <Input
-                value={formData.full_name_ko}
-                onChange={(e) => setFormData({ ...formData, full_name_ko: e.target.value })}
-              />
+              <Input value={formData.full_name_ko} onChange={(e) => setFormData({ ...formData, full_name_ko: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{language === 'ko' ? '연락처' : 'Phone'}</Label>
-              <Input
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
+              <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{language === 'ko' ? '주소' : 'Address'}</Label>
-              <Input
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
+              <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>{language === 'ko' ? '생년월일' : 'Birthday'}</Label>
-              <Input
-                type="date"
-                value={formData.birthday}
-                onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-              />
+              <Input type="date" value={formData.birthday} onChange={(e) => setFormData({ ...formData, birthday: e.target.value })} />
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -326,6 +431,28 @@ export function AdminClients() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'ko' ? '고객 삭제' : 'Delete Client'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === 'ko'
+                ? `"${deleteTarget?.full_name}" 고객을 삭제하시겠습니까? 삭제된 고객은 별도 보관되며 복원할 수 있습니다.`
+                : `Are you sure you want to delete "${deleteTarget?.full_name}"? Deleted clients are archived and can be restored.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{language === 'ko' ? '취소' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {language === 'ko' ? '삭제' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -913,12 +913,15 @@ export type Database = {
           approved_by: string | null
           birthday: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           email: string
           full_name: string
           full_name_ko: string | null
           id: string
           is_admin: boolean | null
           is_approved: boolean | null
+          is_deleted: boolean | null
           is_rejected: boolean | null
           parent_id: string | null
           phone: string | null
@@ -938,12 +941,15 @@ export type Database = {
           approved_by?: string | null
           birthday?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           email: string
           full_name: string
           full_name_ko?: string | null
           id?: string
           is_admin?: boolean | null
           is_approved?: boolean | null
+          is_deleted?: boolean | null
           is_rejected?: boolean | null
           parent_id?: string | null
           phone?: string | null
@@ -963,12 +969,15 @@ export type Database = {
           approved_by?: string | null
           birthday?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           email?: string
           full_name?: string
           full_name_ko?: string | null
           id?: string
           is_admin?: boolean | null
           is_approved?: boolean | null
+          is_deleted?: boolean | null
           is_rejected?: boolean | null
           parent_id?: string | null
           phone?: string | null
