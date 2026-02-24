@@ -75,11 +75,17 @@ export function AdminSalesApprovals() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('pending');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     profile: SalesProfile | null;
     action: 'approve' | 'reject' | 'suspend' | 'restore';
   }>({ open: false, profile: null, action: 'approve' });
+  const [roleChangeDialog, setRoleChangeDialog] = useState<{
+    open: boolean;
+    profile: SalesProfile | null;
+    newRole: string;
+  }>({ open: false, profile: null, newRole: '' });
 
   const [counts, setCounts] = useState({ pending: 0, active: 0, suspended: 0, rejected: 0 });
 
@@ -176,6 +182,86 @@ export function AdminSalesApprovals() {
       fetchProfiles();
     }
     setConfirmDialog({ open: false, profile: null, action: 'approve' });
+  };
+
+  const handleRoleChange = async (profile: SalesProfile, newRole: string) => {
+    if (newRole === profile.sales_role) return;
+    setChangingRoleId(profile.id);
+
+    try {
+      // Role level map
+      const ROLE_LEVELS: Record<string, number> = {
+        district_manager: 1,
+        principal_agent: 2,
+        agent: 3,
+        client: 4,
+      };
+
+      const newLevel = ROLE_LEVELS[newRole] || 0;
+
+      // Update profile role and level
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          sales_role: newRole,
+          sales_level: newLevel,
+        })
+        .eq('id', profile.id);
+
+      if (profileError) throw profileError;
+
+      // Recalculate commissions: update commission_rates references
+      // Update commission distributions that reference this user's role
+      const { data: investments } = await supabase
+        .from('client_investments')
+        .select('id')
+        .eq('user_id', profile.user_id);
+
+      if (investments && investments.length > 0) {
+        // Trigger recalculation via the edge function for each investment
+        for (const inv of investments) {
+          try {
+            await supabase.functions.invoke('calculate-commissions', {
+              body: { investment_id: inv.id },
+            });
+          } catch (e) {
+            console.error('Commission recalc failed for', inv.id, e);
+          }
+        }
+      }
+
+      // Also recalculate commissions for investments where this user earns commissions (as upline)
+      const { data: commDists } = await supabase
+        .from('commission_distributions')
+        .select('investment_id')
+        .eq('to_user_id', profile.user_id);
+
+      if (commDists && commDists.length > 0) {
+        const uniqueInvIds = [...new Set(commDists.map(c => c.investment_id))];
+        for (const invId of uniqueInvIds) {
+          try {
+            await supabase.functions.invoke('calculate-commissions', {
+              body: { investment_id: invId },
+            });
+          } catch (e) {
+            console.error('Commission recalc failed for', invId, e);
+          }
+        }
+      }
+
+      toast.success(
+        language === 'ko'
+          ? `${profile.full_name} 님의 역할이 ${ROLE_LABELS[newRole]?.ko || newRole}(으)로 변경되었습니다`
+          : `${profile.full_name}'s role changed to ${ROLE_LABELS[newRole]?.en || newRole}`
+      );
+      fetchProfiles();
+    } catch (err) {
+      console.error(err);
+      toast.error(language === 'ko' ? '역할 변경 실패' : 'Failed to change role');
+    } finally {
+      setChangingRoleId(null);
+      setRoleChangeDialog({ open: false, profile: null, newRole: '' });
+    }
   };
 
   const filteredProfiles = profiles.filter((p) => {
@@ -301,7 +387,27 @@ export function AdminSalesApprovals() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">{profile.email}</TableCell>
-                  <TableCell><RoleBadge role={profile.sales_role} language={language} /></TableCell>
+                  <TableCell>
+                    <Select
+                      value={profile.sales_role || ''}
+                      onValueChange={(newRole) => {
+                        if (newRole !== profile.sales_role) {
+                          setRoleChangeDialog({ open: true, profile, newRole });
+                        }
+                      }}
+                      disabled={changingRoleId === profile.id}
+                    >
+                      <SelectTrigger className="w-[140px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="district_manager">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>
+                        <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
+                        <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
+                        <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell className="text-sm">{profile.phone || '—'}</TableCell>
                   <TableCell className="text-sm">{formatDate(profile.created_at)}</TableCell>
                   <TableCell>
@@ -385,6 +491,35 @@ export function AdminSalesApprovals() {
               {confirmDialog.action === 'reject' && (language === 'ko' ? '거절' : 'Reject')}
               {confirmDialog.action === 'suspend' && (language === 'ko' ? '정지' : 'Suspend')}
               {confirmDialog.action === 'restore' && (language === 'ko' ? '복원' : 'Restore')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Role Change Confirmation Dialog */}
+      <AlertDialog open={roleChangeDialog.open} onOpenChange={(open) => setRoleChangeDialog({ ...roleChangeDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'ko' ? '역할 변경 확인' : 'Confirm Role Change'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === 'ko'
+                ? `${roleChangeDialog.profile?.full_name} 님의 역할을 "${ROLE_LABELS[roleChangeDialog.profile?.sales_role || '']?.ko || ''}"에서 "${ROLE_LABELS[roleChangeDialog.newRole]?.ko || ''}"(으)로 변경하시겠습니까? 관련 커미션이 자동으로 재계산됩니다.`
+                : `Change ${roleChangeDialog.profile?.full_name}'s role from "${ROLE_LABELS[roleChangeDialog.profile?.sales_role || '']?.en || ''}" to "${ROLE_LABELS[roleChangeDialog.newRole]?.en || ''}"? Related commissions will be recalculated automatically.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{language === 'ko' ? '취소' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              className="btn-gold"
+              onClick={() => {
+                if (roleChangeDialog.profile) {
+                  handleRoleChange(roleChangeDialog.profile, roleChangeDialog.newRole);
+                }
+              }}
+            >
+              {language === 'ko' ? '변경' : 'Change'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
