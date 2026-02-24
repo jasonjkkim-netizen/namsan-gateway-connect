@@ -204,66 +204,20 @@ export function AdminSalesApprovals() {
       const newLevel = ROLE_LEVELS[newRole] || 0;
       const oldLevel = ROLE_LEVELS[profile.sales_role || ''] || 0;
 
-      // If downgrading (higher level number = lower rank), check for downline conflicts
-      if (newLevel > oldLevel) {
+      // Admin users can freely change roles. Only restriction: client cannot have downline.
+      if (newRole === 'client') {
         const { data: downline } = await supabase.rpc('get_sales_subtree', {
           _user_id: profile.user_id,
         });
-
         if (downline && downline.length > 0) {
-          // Check if any direct child has a role level <= newLevel (would violate hierarchy)
-          const directChildren = (downline as any[]).filter((d: any) => d.depth === 1);
-          const conflicting = directChildren.filter((d: any) => {
-            const childLevel = ROLE_LEVELS[d.sales_role] || 0;
-            return childLevel <= newLevel; // child must be strictly below new role
-          });
-
-          if (conflicting.length > 0) {
-            const names = conflicting.map((c: any) => c.full_name).join(', ');
-            toast.error(
-              language === 'ko'
-                ? `역할 변경 불가: 하위 멤버(${names})의 역할이 새 역할보다 같거나 높습니다. 먼저 하위 멤버의 역할을 변경해주세요.`
-                : `Cannot change role: downline member(s) (${names}) have a role at or above the new role. Please change their roles first.`
-            );
-            setChangingRoleId(null);
-            setRoleChangeDialog({ open: false, profile: null, newRole: '' });
-            return;
-          }
-
-          // Client cannot have any downline
-          if (newRole === 'client') {
-            toast.error(
-              language === 'ko'
-                ? `역할 변경 불가: ${downline.length}명의 하위 멤버가 있어 고객으로 변경할 수 없습니다. 먼저 하위 멤버를 재배치해주세요.`
-                : `Cannot change to Client: ${downline.length} downline member(s) exist. Please reassign them first.`
-            );
-            setChangingRoleId(null);
-            setRoleChangeDialog({ open: false, profile: null, newRole: '' });
-            return;
-          }
-        }
-      }
-
-      // Also validate against parent: new role must be strictly below parent's role
-      if (profile.parent_id) {
-        const { data: parentProfile } = await supabase
-          .from('profiles')
-          .select('sales_role, full_name')
-          .eq('user_id', profile.parent_id)
-          .maybeSingle();
-
-        if (parentProfile?.sales_role) {
-          const parentLevel = ROLE_LEVELS[parentProfile.sales_role] || 0;
-          if (newLevel <= parentLevel) {
-            toast.error(
-              language === 'ko'
-                ? `역할 변경 불가: 스폰서(${parentProfile.full_name})의 역할(${ROLE_LABELS[parentProfile.sales_role]?.ko})보다 같거나 높은 역할로 변경할 수 없습니다.`
-                : `Cannot change role: new role must be below sponsor (${parentProfile.full_name}, ${ROLE_LABELS[parentProfile.sales_role]?.en}).`
-            );
-            setChangingRoleId(null);
-            setRoleChangeDialog({ open: false, profile: null, newRole: '' });
-            return;
-          }
+          toast.error(
+            language === 'ko'
+              ? `역할 변경 불가: ${downline.length}명의 하위 멤버가 있어 고객으로 변경할 수 없습니다. 먼저 하위 멤버를 재배치해주세요.`
+              : `Cannot change to Client: ${downline.length} downline member(s) exist. Please reassign them first.`
+          );
+          setChangingRoleId(null);
+          setRoleChangeDialog({ open: false, profile: null, newRole: '' });
+          return;
         }
       }
 
