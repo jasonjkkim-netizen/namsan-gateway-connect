@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Mail, Phone, MapPin, Calendar, Users, DollarSign, CheckCircle, Clock, Wallet } from 'lucide-react';
+import { Mail, Phone, MapPin, Calendar, Users, DollarSign, CheckCircle, Clock, Wallet, Briefcase } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
   ko: { district_manager: '총괄관리', principal_agent: '수석 에이전트', agent: '에이전트', client: '고객' },
@@ -34,6 +34,18 @@ interface CommissionRecord {
   created_at: string;
 }
 
+interface InvestmentRecord {
+  id: string;
+  product_name_en: string;
+  product_name_ko: string;
+  investment_amount: number;
+  current_value: number;
+  status: string | null;
+  start_date: string;
+  maturity_date: string | null;
+  invested_currency: string | null;
+}
+
 interface MemberDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,6 +59,7 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
   const [investmentStats, setInvestmentStats] = useState({ count: 0, totalAmount: 0 });
   const [downlineCount, setDownlineCount] = useState(0);
   const [commissions, setCommissions] = useState<CommissionRecord[]>([]);
+  const [investments, setInvestments] = useState<InvestmentRecord[]>([]);
 
   useEffect(() => {
     if (!open || !userId) return;
@@ -55,17 +68,18 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
     const fetchData = async () => {
       const [profileRes, investRes, downlineRes, commRes] = await Promise.all([
         supabase.from('profiles').select('full_name, full_name_ko, email, phone, address, birthday, sales_role, sales_status, sales_level, created_at').eq('user_id', userId).maybeSingle(),
-        supabase.from('client_investments').select('investment_amount').eq('user_id', userId),
+        supabase.from('client_investments').select('id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency').eq('user_id', userId).order('start_date', { ascending: false }),
         supabase.rpc('get_sales_subtree', { _user_id: userId }),
         supabase.from('commission_distributions').select('id, upfront_amount, performance_amount, currency, status, created_at').eq('to_user_id', userId).order('created_at', { ascending: false }).limit(20),
       ]);
 
       setProfile(profileRes.data as MemberProfile | null);
 
-      const investments = investRes.data || [];
+      const investData = (investRes.data || []) as InvestmentRecord[];
+      setInvestments(investData);
       setInvestmentStats({
-        count: investments.length,
-        totalAmount: investments.reduce((s, i) => s + (Number(i.investment_amount) || 0), 0),
+        count: investData.length,
+        totalAmount: investData.reduce((s, i) => s + (Number(i.investment_amount) || 0), 0),
       });
 
       setDownlineCount((downlineRes.data || []).length);
@@ -207,6 +221,54 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
                   <p className="text-lg font-semibold">{formatCurrency(investmentStats.totalAmount)}</p>
                 </div>
               )}
+
+              {/* Investment List */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Briefcase className="h-4 w-4" />
+                  {language === 'ko' ? '투자 목록' : 'Investment List'}
+                </h4>
+                {investments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-3">
+                    {language === 'ko' ? '투자 내역이 없습니다' : 'No investments yet'}
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {investments.map((inv) => {
+                      const returnPct = inv.investment_amount > 0
+                        ? ((inv.current_value - inv.investment_amount) / inv.investment_amount * 100)
+                        : 0;
+                      const isPositive = returnPct >= 0;
+                      return (
+                        <div key={inv.id} className="rounded-lg border border-border px-3 py-2.5 text-sm">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium truncate mr-2">
+                              {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                              {inv.status === 'active'
+                                ? (language === 'ko' ? '활성' : 'Active')
+                                : inv.status === 'matured'
+                                ? (language === 'ko' ? '만기' : 'Matured')
+                                : (inv.status || 'N/A')}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{language === 'ko' ? '투자금: ' : 'Invested: '}{formatCurrency(inv.investment_amount)}</span>
+                            <span className={isPositive ? 'text-emerald-600' : 'text-destructive'}>
+                              {isPositive ? '+' : ''}{returnPct.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground mt-0.5">
+                            <span>{language === 'ko' ? '현재가치: ' : 'Current: '}{formatCurrency(inv.current_value)}</span>
+                            <span>{formatDate(inv.start_date)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               {/* Commission Section */}
               <div className="space-y-3">
