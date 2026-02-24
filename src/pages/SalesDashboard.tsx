@@ -17,6 +17,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
+import { MemberDetailDialog } from '@/components/sales/MemberDetailDialog';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import ExcelJS from 'exceljs';
 
@@ -95,7 +96,7 @@ export default function SalesDashboard() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateInvestment, setShowCreateInvestment] = useState(false);
-
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -449,7 +450,8 @@ export default function SalesDashboard() {
                               {members.map((m) => (
                                 <div
                                   key={m.user_id}
-                                  className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-muted/30 transition-colors"
+                                  onClick={() => setSelectedMemberId(m.user_id)}
+                                  className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
                                   style={{ marginLeft: `${(depth + 1) * 24}px` }}
                                 >
                                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -711,6 +713,11 @@ export default function SalesDashboard() {
           onOpenChange={setShowCreateInvestment}
           downline={downline}
           onCreated={fetchAll}
+        />
+        <MemberDetailDialog
+          open={!!selectedMemberId}
+          onOpenChange={(open) => { if (!open) setSelectedMemberId(null); }}
+          userId={selectedMemberId}
         />
       </main>
     </div>
