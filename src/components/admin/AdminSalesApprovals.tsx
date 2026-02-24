@@ -38,7 +38,7 @@ interface SalesProfile {
 type ViewMode = 'pending' | 'active' | 'suspended' | 'rejected';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
-  district_manager: { en: 'District Manager', ko: '지역 매니저' },
+  district_manager: { en: 'General Manager', ko: '총괄관리' },
   principal_agent: { en: 'Principal Agent', ko: '수석 에이전트' },
   agent: { en: 'Agent', ko: '에이전트' },
   client: { en: 'Client', ko: '고객' },
@@ -240,7 +240,7 @@ export function AdminSalesApprovals() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{language === 'ko' ? '모든 역할' : 'All Roles'}</SelectItem>
-              <SelectItem value="district_manager">{language === 'ko' ? '지역 매니저' : 'District Manager'}</SelectItem>
+              <SelectItem value="district_manager">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>
               <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
               <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
               <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>

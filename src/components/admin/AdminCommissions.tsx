@@ -79,8 +79,8 @@ interface Product {
 }
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
-  ko: { district_manager: '지역 매니저', principal_agent: '수석 에이전트', agent: '에이전트', client: '고객' },
-  en: { district_manager: 'District Manager', principal_agent: 'Principal Agent', agent: 'Agent', client: 'Client' },
+  ko: { district_manager: '총괄관리', principal_agent: '수석 에이전트', agent: '에이전트', client: '고객' },
+  en: { district_manager: 'General Manager', principal_agent: 'Principal Agent', agent: 'Agent', client: 'Client' },
 };
 
 const STATUS_COLORS: Record<string, string> = {
