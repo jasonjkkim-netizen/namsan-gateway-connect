@@ -577,7 +577,7 @@ export default function SalesDashboard() {
                                       {getRoleLabel(m.sales_role)}
                                     </Badge>
                                   </div>
-                                  {canChangeRoles && m.sales_role !== 'district_manager' && m.sales_role !== userSalesRole && (
+                                  {canChangeRoles && m.user_id !== user?.id && (isDM || m.sales_role !== 'deputy_district_manager') && (
                                     <Select
                                       value={m.sales_role}
                                       onValueChange={(newRole) => {
