@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Search, DollarSign, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare } from 'lucide-react';
+import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
@@ -331,6 +331,9 @@ export function AdminCommissions() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [displayCurrency, setDisplayCurrency] = useState<string>('KRW');
+  const [savingCurrency, setSavingCurrency] = useState(false);
+  const [usdKrwRate, setUsdKrwRate] = useState<number>(1350);
 
   // Rates state
   const [rates, setRates] = useState<CommissionRate[]>([]);
@@ -346,12 +349,14 @@ export function AdminCommissions() {
 
   async function fetchAll() {
     setLoading(true);
-    const [distRes, auditRes, profilesRes, productsRes, ratesRes] = await Promise.all([
+    const [distRes, auditRes, profilesRes, productsRes, ratesRes, settingsRes, fxRes] = await Promise.all([
       supabase.from('commission_distributions').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('commission_audit_log').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('profiles').select('user_id, full_name, email, sales_role'),
       supabase.from('investment_products').select('id, name_en, name_ko').eq('is_active', true),
       supabase.from('commission_rates').select('*').order('sales_level', { ascending: true }),
+      supabase.from('app_settings').select('*').eq('key', 'commission_display_currency').maybeSingle(),
+      supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
     ]);
 
     if (distRes.data) setDistributions(distRes.data as Distribution[]);
@@ -362,6 +367,11 @@ export function AdminCommissions() {
       if (!selectedProductId && productsRes.data.length > 0) setSelectedProductId(productsRes.data[0].id);
     }
     if (ratesRes.data) setRates(ratesRes.data as CommissionRate[]);
+    if (settingsRes.data?.value) {
+      const val = typeof settingsRes.data.value === 'string' ? settingsRes.data.value : JSON.stringify(settingsRes.data.value).replace(/"/g, '');
+      setDisplayCurrency(val || 'KRW');
+    }
+    if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
     setLoading(false);
   }
 
@@ -384,6 +394,72 @@ export function AdminCommissions() {
 
   const [recalculating, setRecalculating] = useState<Record<string, boolean>>({});
   const [bulkRecalculating, setBulkRecalculating] = useState(false);
+
+  const handleSaveDisplayCurrency = async (newCurrency: string) => {
+    setSavingCurrency(true);
+    setDisplayCurrency(newCurrency);
+    const { error } = await supabase
+      .from('app_settings')
+      .update({ value: JSON.stringify(newCurrency), updated_at: new Date().toISOString(), updated_by: user?.id })
+      .eq('key', 'commission_display_currency');
+    if (error) {
+      toast.error(language === 'ko' ? '설정 저장 실패' : 'Failed to save setting');
+    } else {
+      toast.success(language === 'ko' ? '표시 통화 변경됨' : 'Display currency updated');
+    }
+    setSavingCurrency(false);
+  };
+
+  const formatCommAmount = (amount: number, currency?: string | null) => {
+    const srcCurrency = currency || 'USD';
+    if (displayCurrency === 'USD') {
+      const usdAmount = srcCurrency === 'KRW' ? amount / usdKrwRate : amount;
+      return `$${usdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (displayCurrency === 'KRW') {
+      const krwAmount = srcCurrency === 'USD' ? amount * usdKrwRate : amount;
+      return `₩${Math.round(krwAmount).toLocaleString('ko-KR')}`;
+    }
+    return formatCurrency(amount);
+  };
+
+  // Per-person attribution
+  const personAttribution = useMemo(() => {
+    const map: Record<string, {
+      name: string;
+      role: string | null;
+      totalUpfront: number;
+      totalPerformance: number;
+      sources: { investorName: string; investmentId: string; upfront: number; performance: number; currency: string; status: string; date: string }[];
+    }> = {};
+    distributions.forEach((d) => {
+      if (!map[d.to_user_id]) {
+        map[d.to_user_id] = {
+          name: getName(d.to_user_id),
+          role: getRole(d.to_user_id),
+          totalUpfront: 0,
+          totalPerformance: 0,
+          sources: [],
+        };
+      }
+      const up = Number(d.upfront_amount) || 0;
+      const perf = Number(d.performance_amount) || 0;
+      map[d.to_user_id].totalUpfront += up;
+      map[d.to_user_id].totalPerformance += perf;
+      map[d.to_user_id].sources.push({
+        investorName: d.from_user_id ? getName(d.from_user_id) : '—',
+        investmentId: d.investment_id,
+        upfront: up,
+        performance: perf,
+        currency: d.currency || 'USD',
+        status: d.status,
+        date: d.created_at,
+      });
+    });
+    return Object.entries(map).sort((a, b) => (b[1].totalUpfront + b[1].totalPerformance) - (a[1].totalUpfront + a[1].totalPerformance));
+  }, [distributions, profiles]);
+
+  const [expandedPerson, setExpandedPerson] = useState<string | null>(null);
 
   const handleRecalculate = async (investmentId: string) => {
     setRecalculating(prev => ({ ...prev, [investmentId]: true }));
@@ -615,20 +691,39 @@ export function AdminCommissions() {
           <h2 className="text-xl font-serif font-semibold">
             {language === 'ko' ? '커미션 관리' : 'Commission Management'}
           </h2>
-          <Button variant="outline" size="sm" onClick={fetchAll}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {language === 'ko' ? '새로고침' : 'Refresh'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm whitespace-nowrap">{language === 'ko' ? '표시 통화' : 'Display'}</Label>
+              <Select value={displayCurrency} onValueChange={handleSaveDisplayCurrency} disabled={savingCurrency}>
+                <SelectTrigger className="w-[100px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="KRW">₩ KRW</SelectItem>
+                  <SelectItem value="USD">$ USD</SelectItem>
+                </SelectContent>
+              </Select>
+              {usdKrwRate > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  1 USD = ₩{usdKrwRate.toLocaleString()}
+                </span>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={fetchAll}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              {language === 'ko' ? '새로고침' : 'Refresh'}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mt-4">
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}</p>
-            <p className="text-2xl font-semibold">{formatCurrency(totalUpfront)}</p>
+            <p className="text-2xl font-semibold">{formatCommAmount(totalUpfront)}</p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 성과 커미션' : 'Total Performance'}</p>
-            <p className="text-2xl font-semibold">{formatCurrency(totalPerformance)}</p>
+            <p className="text-2xl font-semibold">{formatCommAmount(totalPerformance)}</p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '대기중' : 'Pending'}</p>
@@ -640,7 +735,7 @@ export function AdminCommissions() {
       <Tabs defaultValue="distributions" className="p-6">
         <TabsList>
           <TabsTrigger value="distributions" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
+            <Coins className="h-4 w-4" />
             {language === 'ko' ? '분배 내역' : 'Distributions'}
           </TabsTrigger>
           <TabsTrigger value="rates" className="flex items-center gap-2">
@@ -654,6 +749,10 @@ export function AdminCommissions() {
           <TabsTrigger value="audit" className="flex items-center gap-2">
             <History className="h-4 w-4" />
             {language === 'ko' ? '감사 로그' : 'Audit Log'}
+          </TabsTrigger>
+          <TabsTrigger value="attribution" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {language === 'ko' ? '개인별 귀속' : 'Attribution'}
           </TabsTrigger>
         </TabsList>
 
@@ -687,7 +786,7 @@ export function AdminCommissions() {
                   )}
                   {canBulkPay && (
                     <Button size="sm" variant="outline" onClick={() => handleBulkStatusChange('paid')} disabled={bulkProcessing}>
-                      <DollarSign className="h-4 w-4 mr-1" />
+                      <Coins className="h-4 w-4 mr-1" />
                       {language === 'ko' ? '일괄 지급' : 'Bulk Pay'}
                     </Button>
                   )}
@@ -780,12 +879,12 @@ export function AdminCommissions() {
                       <TableCell>{d.from_user_id ? getName(d.from_user_id) : '—'}</TableCell>
                       <TableCell>
                         {d.upfront_amount ? (
-                          <span className="text-success font-medium">{formatCurrency(Number(d.upfront_amount))}</span>
+                          <span className="text-success font-medium">{formatCommAmount(Number(d.upfront_amount), d.currency)}</span>
                         ) : '—'}
                       </TableCell>
                       <TableCell>
                         {d.performance_amount ? (
-                          <span className="text-success font-medium">{formatCurrency(Number(d.performance_amount))}</span>
+                          <span className="text-success font-medium">{formatCommAmount(Number(d.performance_amount), d.currency)}</span>
                         ) : '—'}
                       </TableCell>
                       <TableCell>{d.rate_used ? `${d.rate_used}%` : '—'}</TableCell>
@@ -1019,6 +1118,98 @@ export function AdminCommissions() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(entry.created_at)}</TableCell>
                     </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        {/* Per-Person Attribution Tab */}
+        <TabsContent value="attribution">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {language === 'ko'
+                ? '개인별 커미션 귀속 내역입니다. 각 영업사원을 클릭하면 출처별 상세 내역을 확인할 수 있습니다.'
+                : 'Per-person commission attribution. Click on each salesperson to see detailed breakdown by source.'}
+            </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{language === 'ko' ? '영업사원' : 'Sales Person'}</TableHead>
+                  <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
+                  <TableHead>{language === 'ko' ? '선취 합계' : 'Upfront Total'}</TableHead>
+                  <TableHead>{language === 'ko' ? '성과 합계' : 'Performance Total'}</TableHead>
+                  <TableHead>{language === 'ko' ? '총 합계' : 'Grand Total'}</TableHead>
+                  <TableHead>{language === 'ko' ? '건수' : 'Count'}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {personAttribution.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {language === 'ko' ? '귀속 내역이 없습니다' : 'No attribution data'}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  personAttribution.map(([userId, data]) => (
+                    <React.Fragment key={userId}>
+                      <TableRow
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setExpandedPerson(expandedPerson === userId ? null : userId)}
+                      >
+                        <TableCell className="font-medium">
+                          <span className="flex items-center gap-1">
+                            <ChevronRight className={`h-4 w-4 transition-transform ${expandedPerson === userId ? 'rotate-90' : ''}`} />
+                            {data.name}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {data.role ? <Badge variant="outline" className="text-xs">{data.role}</Badge> : '—'}
+                        </TableCell>
+                        <TableCell className="text-success font-medium">{formatCommAmount(data.totalUpfront)}</TableCell>
+                        <TableCell className="text-success font-medium">{formatCommAmount(data.totalPerformance)}</TableCell>
+                        <TableCell className="font-semibold">{formatCommAmount(data.totalUpfront + data.totalPerformance)}</TableCell>
+                        <TableCell>{data.sources.length}</TableCell>
+                      </TableRow>
+                      {expandedPerson === userId && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="bg-muted/20 p-0">
+                            <div className="px-8 py-3">
+                              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
+                                {language === 'ko' ? '출처별 상세 내역' : 'Breakdown by Source'}
+                              </p>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
+                                    <TableHead className="text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                                    <TableHead className="text-xs">{language === 'ko' ? '성과' : 'Performance'}</TableHead>
+                                    <TableHead className="text-xs">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
+                                    <TableHead className="text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                                    <TableHead className="text-xs">{language === 'ko' ? '일자' : 'Date'}</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {data.sources.map((src, idx) => (
+                                    <TableRow key={idx}>
+                                      <TableCell className="text-sm">{src.investorName}</TableCell>
+                                      <TableCell className="text-sm text-success">{formatCommAmount(src.upfront, src.currency)}</TableCell>
+                                      <TableCell className="text-sm text-success">{formatCommAmount(src.performance, src.currency)}</TableCell>
+                                      <TableCell className="text-sm">{src.currency}</TableCell>
+                                      <TableCell>
+                                        <Badge variant={STATUS_COLORS[src.status] as any || 'secondary'} className="text-xs">{src.status}</Badge>
+                                      </TableCell>
+                                      <TableCell className="text-sm text-muted-foreground">{formatDate(src.date)}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   ))
                 )}
               </TableBody>

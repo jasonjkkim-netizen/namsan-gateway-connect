@@ -22,7 +22,7 @@ import { AdminCommissions } from '@/components/admin/AdminCommissions';
 import { AdminOrgTree } from '@/components/admin/AdminOrgTree';
 import { AdminAlerts } from '@/components/admin/AdminAlerts';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, DollarSign, GitBranch, Bell } from 'lucide-react';
+import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -84,7 +84,7 @@ export default function Admin() {
     { id: 'popups', label: language === 'ko' ? '팝업 광고' : 'Popups', icon: Megaphone },
     { id: 'sales', label: language === 'ko' ? '영업 관리' : 'Sales', icon: Network },
     { id: 'orgtree', label: language === 'ko' ? '조직도' : 'Org Tree', icon: GitBranch },
-    { id: 'commissions', label: language === 'ko' ? '수수료' : 'Commissions', icon: DollarSign },
+    { id: 'commissions', label: language === 'ko' ? '수수료' : 'Commissions', icon: Coins },
     { id: 'alerts', label: language === 'ko' ? '알림 관리' : 'Alerts', icon: Bell },
   ];
 

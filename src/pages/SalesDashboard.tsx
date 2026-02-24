@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown } from 'lucide-react';
+import { Users, Coins, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
 import { MemberDetailDialog } from '@/components/sales/MemberDetailDialog';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
@@ -97,6 +97,8 @@ export default function SalesDashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateInvestment, setShowCreateInvestment] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [displayCurrency, setDisplayCurrency] = useState<string>('KRW');
+  const [usdKrwRate, setUsdKrwRate] = useState<number>(1350);
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -145,6 +147,17 @@ export default function SalesDashboard() {
       .in('user_id', allIds);
     setProfiles((profileData || []) as Profile[]);
 
+    // Fetch display currency setting and exchange rate
+    const [settingsRes, fxRes] = await Promise.all([
+      supabase.from('app_settings').select('*').eq('key', 'commission_display_currency').maybeSingle(),
+      supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
+    ]);
+    if (settingsRes.data?.value) {
+      const val = typeof settingsRes.data.value === 'string' ? settingsRes.data.value : JSON.stringify(settingsRes.data.value).replace(/"/g, '');
+      setDisplayCurrency(val || 'KRW');
+    }
+    if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
+
     setLoading(false);
   }
 
@@ -155,6 +168,19 @@ export default function SalesDashboard() {
 
   const getRoleLabel = (role: string) =>
     ROLE_LABELS[language]?.[role] || role;
+
+  const formatCommAmount = (amount: number, currency?: string | null) => {
+    const srcCurrency = currency || 'USD';
+    if (displayCurrency === 'USD') {
+      const usdAmount = srcCurrency === 'KRW' ? amount / usdKrwRate : amount;
+      return `$${usdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (displayCurrency === 'KRW') {
+      const krwAmount = srcCurrency === 'USD' ? amount * usdKrwRate : amount;
+      return `₩${Math.round(krwAmount).toLocaleString('ko-KR')}`;
+    }
+    return formatCurrency(amount);
+  };
 
   // Summary calculations
   const totalUpfront = commissions.reduce(
@@ -316,11 +342,11 @@ export default function SalesDashboard() {
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <DollarSign className="h-4 w-4" />
+              <Coins className="h-4 w-4" />
               {language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}
             </div>
             {loading ? <Skeleton className="h-8 w-24" /> : (
-              <p className="text-2xl font-semibold text-success">{formatCurrency(totalUpfront)}</p>
+              <p className="text-2xl font-semibold text-success">{formatCommAmount(totalUpfront)}</p>
             )}
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
@@ -329,7 +355,7 @@ export default function SalesDashboard() {
               {language === 'ko' ? '총 성과 커미션' : 'Total Performance'}
             </div>
             {loading ? <Skeleton className="h-8 w-24" /> : (
-              <p className="text-2xl font-semibold text-success">{formatCurrency(totalPerformance)}</p>
+              <p className="text-2xl font-semibold text-success">{formatCommAmount(totalPerformance)}</p>
             )}
           </div>
           <div className="rounded-xl border border-border bg-card p-5">
@@ -352,7 +378,7 @@ export default function SalesDashboard() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{language === 'ko' ? '지급완료' : 'Paid'}</p>
-                <p className="text-lg font-semibold">{formatCurrency(paidTotal)}</p>
+                <p className="text-lg font-semibold">{formatCommAmount(paidTotal)}</p>
                 <p className="text-xs text-muted-foreground">{paidCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
               </div>
             </div>
@@ -362,7 +388,7 @@ export default function SalesDashboard() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{language === 'ko' ? '수령 가능' : 'Available'}</p>
-                <p className="text-lg font-semibold">{formatCurrency(availableTotal)}</p>
+                <p className="text-lg font-semibold">{formatCommAmount(availableTotal)}</p>
                 <p className="text-xs text-muted-foreground">{availableCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
               </div>
             </div>
@@ -372,7 +398,7 @@ export default function SalesDashboard() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{language === 'ko' ? '대기중' : 'Pending'}</p>
-                <p className="text-lg font-semibold">{formatCurrency(pendingTotal)}</p>
+                <p className="text-lg font-semibold">{formatCommAmount(pendingTotal)}</p>
                 <p className="text-xs text-muted-foreground">{pendingCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
               </div>
             </div>
@@ -387,7 +413,7 @@ export default function SalesDashboard() {
               {language === 'ko' ? '조직도' : 'Downline'}
             </TabsTrigger>
             <TabsTrigger value="commissions" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
+              <Coins className="h-4 w-4" />
               {language === 'ko' ? '커미션' : 'Commissions'}
             </TabsTrigger>
             <TabsTrigger value="pipeline" className="flex items-center gap-2">
@@ -576,12 +602,12 @@ export default function SalesDashboard() {
                           <TableCell>{c.layer}</TableCell>
                           <TableCell>
                             {c.upfront_amount ? (
-                              <span className="text-success font-medium">+{formatCurrency(Number(c.upfront_amount))}</span>
+                              <span className="text-success font-medium">+{formatCommAmount(Number(c.upfront_amount), c.currency)}</span>
                             ) : '—'}
                           </TableCell>
                           <TableCell>
                             {c.performance_amount ? (
-                              <span className="text-success font-medium">+{formatCurrency(Number(c.performance_amount))}</span>
+                              <span className="text-success font-medium">+{formatCommAmount(Number(c.performance_amount), c.currency)}</span>
                             ) : '—'}
                           </TableCell>
                           <TableCell>{c.rate_used ? `${c.rate_used}%` : '—'}</TableCell>
