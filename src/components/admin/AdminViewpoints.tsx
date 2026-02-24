@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendContentNotification } from '@/lib/send-content-notification';
 import { RichPasteEditor } from './RichPasteEditor';
@@ -34,6 +34,7 @@ export function AdminViewpoints() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Viewpoint | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     title_ko: '',
     title_en: '',
@@ -278,6 +279,16 @@ export function AdminViewpoints() {
         {items.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">{language === 'ko' ? '등록된 뷰 포인트가 없습니다' : 'No viewpoints yet'}</p>
         ) : (
+          <>
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={language === 'ko' ? '제목 또는 내용 검색...' : 'Search title or content...'}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="pl-9 max-w-sm"
+              />
+            </div>
           <Tabs defaultValue="active" className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="active" className="flex items-center gap-1.5">
@@ -297,7 +308,9 @@ export function AdminViewpoints() {
             </TabsList>
 
             {['active', 'archived', 'all'].map(tab => {
+              const searchLower = searchTerm.toLowerCase();
               const filtered = (tab === 'all' ? items : items.filter(i => tab === 'active' ? i.is_active : !i.is_active))
+                .filter(i => !searchTerm || i.title_ko.toLowerCase().includes(searchLower) || i.title_en.toLowerCase().includes(searchLower) || i.content_ko.toLowerCase().includes(searchLower) || i.content_en.toLowerCase().includes(searchLower))
                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
               
               // Group by month
@@ -408,6 +421,7 @@ export function AdminViewpoints() {
               );
             })}
           </Tabs>
+          </>
         )}
       </CardContent>
     </Card>
