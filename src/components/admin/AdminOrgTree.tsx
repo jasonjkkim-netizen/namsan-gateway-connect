@@ -331,7 +331,7 @@ export function AdminOrgTree() {
     const { data } = await supabase
       .from('profiles')
       .select('user_id, full_name, full_name_ko, email, sales_role, sales_level, sales_status, parent_id')
-      .not('sales_role', 'is', null)
+      .eq('is_approved', true)
       .order('sales_level', { ascending: true });
 
     const profiles = data || [];
