@@ -72,17 +72,21 @@ export function AdminApprovals() {
         .select('*')
         .eq('is_approved', false)
         .or('is_rejected.is.null,is_rejected.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('created_at', { ascending: false }),
       supabase
         .from('profiles')
         .select('*')
         .eq('is_approved', true)
+        .or('is_rejected.is.null,is_rejected.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('created_at', { ascending: false })
         .limit(50),
       supabase
         .from('profiles')
         .select('*')
         .eq('is_rejected', true)
+        .or('is_deleted.is.null,is_deleted.eq.false')
         .order('rejected_at', { ascending: false }),
     ]);
 

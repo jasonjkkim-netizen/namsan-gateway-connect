@@ -336,6 +336,8 @@ export function AdminOrgTree() {
       .from('profiles')
       .select('user_id, full_name, full_name_ko, email, sales_role, sales_level, sales_status, parent_id')
       .eq('is_approved', true)
+      .or('is_rejected.is.null,is_rejected.eq.false')
+      .or('is_deleted.is.null,is_deleted.eq.false')
       .order('sales_level', { ascending: true });
 
     const profiles = data || [];

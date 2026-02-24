@@ -85,7 +85,7 @@ export function AdminInvestments() {
   async function fetchData() {
     const [investmentsRes, profilesRes] = await Promise.all([
       supabase.from('client_investments').select('*').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('id, user_id, email, full_name, sales_role'),
+      supabase.from('profiles').select('id, user_id, email, full_name, sales_role').or('is_deleted.is.null,is_deleted.eq.false').or('is_rejected.is.null,is_rejected.eq.false'),
     ]);
 
     if (investmentsRes.data) setInvestments(investmentsRes.data as Investment[]);
