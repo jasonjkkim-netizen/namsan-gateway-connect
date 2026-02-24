@@ -297,7 +297,8 @@ export function AdminViewpoints() {
             </TabsList>
 
             {['active', 'archived', 'all'].map(tab => {
-              const filtered = tab === 'all' ? items : items.filter(i => tab === 'active' ? i.is_active : !i.is_active);
+              const filtered = (tab === 'all' ? items : items.filter(i => tab === 'active' ? i.is_active : !i.is_active))
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
               
               // Group by month
               const grouped = filtered.reduce<Record<string, Viewpoint[]>>((acc, item) => {
