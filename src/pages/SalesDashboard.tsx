@@ -70,6 +70,7 @@ interface Profile {
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
   ko: {
+    webmaster: '웹마스터',
     district_manager: '총괄관리',
     deputy_district_manager: '부총괄관리',
     principal_agent: '수석 에이전트',
@@ -77,6 +78,7 @@ const ROLE_LABELS: Record<string, Record<string, string>> = {
     client: '고객',
   },
   en: {
+    webmaster: 'Webmaster',
     district_manager: 'General Manager',
     deputy_district_manager: 'Deputy GM',
     principal_agent: 'Principal Agent',
@@ -86,6 +88,7 @@ const ROLE_LABELS: Record<string, Record<string, string>> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
+  webmaster: 'default',
   district_manager: 'default',
   deputy_district_manager: 'default',
   principal_agent: 'secondary',
@@ -115,7 +118,8 @@ export default function SalesDashboard() {
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
 
   const userSalesRole = (profile as any)?.sales_role;
-  const isDM = userSalesRole === 'district_manager';
+  const isWebmaster = userSalesRole === 'webmaster';
+  const isDM = userSalesRole === 'district_manager' || isWebmaster;
   const isDeputyDM = userSalesRole === 'deputy_district_manager';
   const canChangeRoles = isDM || isDeputyDM;
   useEffect(() => {
@@ -131,7 +135,7 @@ export default function SalesDashboard() {
     setLoading(true);
 
     const currentRole = (profile as any)?.sales_role;
-    const isDMUser = currentRole === 'district_manager';
+    const isDMUser = currentRole === 'district_manager' || currentRole === 'webmaster';
 
     let downlineData: DownlineMember[];
 
@@ -212,6 +216,7 @@ export default function SalesDashboard() {
   }
 
   const ROLE_LEVELS: Record<string, number> = {
+    webmaster: 0,
     district_manager: 1,
     deputy_district_manager: 2,
     principal_agent: 3,

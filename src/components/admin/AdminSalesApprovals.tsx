@@ -38,6 +38,7 @@ interface SalesProfile {
 type ViewMode = 'all' | 'pending' | 'active' | 'suspended' | 'rejected';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
+  webmaster: { en: 'Webmaster', ko: '웹마스터' },
   district_manager: { en: 'General Manager', ko: '총괄관리' },
   deputy_district_manager: { en: 'Deputy General Manager', ko: '부총괄관리' },
   principal_agent: { en: 'Principal Agent', ko: '수석 에이전트' },
@@ -46,6 +47,7 @@ const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
 };
 
 const ROLE_ICONS: Record<string, typeof Building2> = {
+  webmaster: Building2,
   district_manager: Building2,
   deputy_district_manager: Building2,
   principal_agent: UserCog,
@@ -57,6 +59,7 @@ function RoleBadge({ role, language }: { role: string | null; language: string }
   if (!role) return <Badge variant="outline">—</Badge>;
   const label = ROLE_LABELS[role];
   const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
+    webmaster: 'default',
     district_manager: 'default',
     deputy_district_manager: 'default',
     principal_agent: 'secondary',

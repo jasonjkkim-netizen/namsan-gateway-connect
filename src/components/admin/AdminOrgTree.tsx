@@ -25,6 +25,7 @@ interface TreeNode {
 }
 
 const ROLE_LEVELS: Record<string, number> = {
+  webmaster: 0,
   district_manager: 1,
   deputy_district_manager: 2,
   principal_agent: 3,
@@ -33,6 +34,7 @@ const ROLE_LEVELS: Record<string, number> = {
 };
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
+  webmaster: { en: 'Webmaster', ko: '웹마스터' },
   district_manager: { en: 'General Manager', ko: '총괄관리' },
   deputy_district_manager: { en: 'Deputy General Manager', ko: '부총괄관리' },
   principal_agent: { en: 'Principal Agent', ko: '수석 에이전트' },
@@ -41,6 +43,7 @@ const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
 };
 
 const ROLE_ICONS: Record<string, typeof Building2> = {
+  webmaster: Building2,
   district_manager: Building2,
   deputy_district_manager: Building2,
   principal_agent: UserCog,
@@ -49,6 +52,7 @@ const ROLE_ICONS: Record<string, typeof Building2> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
+  webmaster: 'bg-primary text-primary-foreground',
   district_manager: 'bg-primary text-primary-foreground',
   deputy_district_manager: 'bg-primary/80 text-primary-foreground',
   principal_agent: 'bg-secondary text-secondary-foreground',
