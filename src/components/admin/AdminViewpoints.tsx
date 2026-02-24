@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown, Search, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendContentNotification } from '@/lib/send-content-notification';
 import { RichPasteEditor } from './RichPasteEditor';
@@ -35,6 +39,8 @@ export function AdminViewpoints() {
   const [editingItem, setEditingItem] = useState<Viewpoint | null>(null);
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [formData, setFormData] = useState({
     title_ko: '',
     title_en: '',
@@ -280,14 +286,44 @@ export function AdminViewpoints() {
           <p className="text-center text-muted-foreground py-8">{language === 'ko' ? '등록된 뷰 포인트가 없습니다' : 'No viewpoints yet'}</p>
         ) : (
           <>
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={language === 'ko' ? '제목 또는 내용 검색...' : 'Search title or content...'}
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-9 max-w-sm"
-              />
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={language === 'ko' ? '제목 또는 내용 검색...' : 'Search title or content...'}
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
+                    <CalendarIcon className="h-4 w-4 mr-1" />
+                    {dateFrom ? format(dateFrom, 'yyyy-MM-dd') : (language === 'ko' ? '시작일' : 'From')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
+                    <CalendarIcon className="h-4 w-4 mr-1" />
+                    {dateTo ? format(dateTo, 'yyyy-MM-dd') : (language === 'ko' ? '종료일' : 'To')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={dateTo} onSelect={setDateTo} className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
+              {(searchTerm || dateFrom || dateTo) && (
+                <Button variant="ghost" size="sm" onClick={() => { setSearchTerm(''); setDateFrom(undefined); setDateTo(undefined); }}>
+                  <X className="h-4 w-4 mr-1" />
+                  {language === 'ko' ? '초기화' : 'Clear'}
+                </Button>
+              )}
             </div>
           <Tabs defaultValue="active" className="w-full">
             <TabsList className="mb-4">
@@ -311,6 +347,12 @@ export function AdminViewpoints() {
               const searchLower = searchTerm.toLowerCase();
               const filtered = (tab === 'all' ? items : items.filter(i => tab === 'active' ? i.is_active : !i.is_active))
                 .filter(i => !searchTerm || i.title_ko.toLowerCase().includes(searchLower) || i.title_en.toLowerCase().includes(searchLower) || i.content_ko.toLowerCase().includes(searchLower) || i.content_en.toLowerCase().includes(searchLower))
+                .filter(i => {
+                  const d = new Date(i.created_at);
+                  if (dateFrom && d < dateFrom) return false;
+                  if (dateTo) { const end = new Date(dateTo); end.setHours(23, 59, 59, 999); if (d > end) return false; }
+                  return true;
+                })
                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
               
               // Group by month
