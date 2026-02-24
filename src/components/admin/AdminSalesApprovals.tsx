@@ -102,11 +102,13 @@ export function AdminSalesApprovals() {
   async function fetchProfiles() {
     setLoading(true);
 
-    // Build query based on view mode - show ALL approved members
+    // Build query based on view mode - show ALL approved members (exclude deleted/rejected)
     let query = supabase
       .from('profiles')
       .select('*')
-      .eq('is_approved', true);
+      .eq('is_approved', true)
+      .or('is_deleted.is.null,is_deleted.eq.false')
+      .or('is_rejected.is.null,is_rejected.eq.false');
 
     if (viewMode === 'pending') {
       query = query.eq('sales_status', 'pending');
@@ -123,12 +125,13 @@ export function AdminSalesApprovals() {
     setProfiles((data || []) as SalesProfile[]);
 
     // Fetch counts for badges
+    const baseFilter = (q: any) => q.eq('is_approved', true).or('is_deleted.is.null,is_deleted.eq.false').or('is_rejected.is.null,is_rejected.eq.false');
     const [allRes, pendingRes, activeRes, suspendedRes, rejectedRes] = await Promise.all([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true).eq('sales_status', 'pending'),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true).eq('sales_status', 'active'),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true).eq('sales_status', 'suspended'),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true).eq('sales_status', 'rejected'),
+      baseFilter(supabase.from('profiles').select('id', { count: 'exact', head: true })),
+      baseFilter(supabase.from('profiles').select('id', { count: 'exact', head: true })).eq('sales_status', 'pending'),
+      baseFilter(supabase.from('profiles').select('id', { count: 'exact', head: true })).eq('sales_status', 'active'),
+      baseFilter(supabase.from('profiles').select('id', { count: 'exact', head: true })).eq('sales_status', 'suspended'),
+      baseFilter(supabase.from('profiles').select('id', { count: 'exact', head: true })).eq('sales_status', 'rejected'),
     ]);
 
     setCounts({
