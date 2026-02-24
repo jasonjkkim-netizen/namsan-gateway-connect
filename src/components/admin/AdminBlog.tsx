@@ -399,7 +399,9 @@ export function AdminBlog() {
                     {language === 'ko' ? post.title_ko : post.title_en}
                   </TableCell>
                   <TableCell className="text-sm">{post.author}</TableCell>
-                  <TableCell className="text-sm">{post.published_at.split('T')[0]}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">
+                    {new Date(post.published_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </TableCell>
                   <TableCell>
                     <Switch
                       checked={post.is_active}
@@ -442,6 +444,7 @@ export function AdminBlog() {
                 <TableHead>{language === 'ko' ? '제목' : 'Subject'}</TableHead>
                 <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
                 <TableHead>{language === 'ko' ? '수신자 수' : 'Recipients'}</TableHead>
+                <TableHead>{language === 'ko' ? '생성일' : 'Created'}</TableHead>
                 <TableHead>{language === 'ko' ? '발송일' : 'Sent At'}</TableHead>
               </TableRow>
             </TableHeader>
@@ -457,14 +460,17 @@ export function AdminBlog() {
                     </Badge>
                   </TableCell>
                   <TableCell>{nl.recipient_count || 0}{language === 'ko' ? '명' : ''}</TableCell>
-                  <TableCell className="text-sm">
-                    {nl.sent_at ? new Date(nl.sent_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US') : '-'}
+                  <TableCell className="text-sm whitespace-nowrap">
+                    {new Date(nl.created_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">
+                    {nl.sent_at ? new Date(nl.sent_at).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
                   </TableCell>
                 </TableRow>
               ))}
               {newsletters.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     {language === 'ko' ? '발송 기록이 없습니다.' : 'No newsletters sent.'}
                   </TableCell>
                 </TableRow>
