@@ -141,12 +141,39 @@ Deno.serve(async (req) => {
       .eq("is_override", false);
 
     const ratesByRole: Record<string, { upfront_rate: number; performance_rate: number }> = {};
-    if (rates) {
+    if (rates && rates.length > 0) {
+      // Use manually configured rates
       for (const r of rates) {
         ratesByRole[r.sales_role] = {
           upfront_rate: Number(r.upfront_rate),
           performance_rate: Number(r.performance_rate),
         };
+      }
+    } else {
+      // No manual rates found — auto-generate defaults from product's upfront_commission_percent
+      const { data: productData } = await supabase
+        .from("investment_products")
+        .select("upfront_commission_percent, performance_fee_percent")
+        .eq("id", productId)
+        .single();
+
+      if (productData?.upfront_commission_percent) {
+        const totalUpfront = Number(productData.upfront_commission_percent);
+        const totalPerformance = Number(productData.performance_fee_percent) || 0;
+        // Default split: upper hierarchy favored (40%, 25%, 20%, 15%)
+        const defaultSplits: Record<string, number> = {
+          district_manager: 0.40,
+          deputy_district_manager: 0.25,
+          principal_agent: 0.20,
+          agent: 0.15,
+        };
+        for (const [role, ratio] of Object.entries(defaultSplits)) {
+          ratesByRole[role] = {
+            upfront_rate: Math.round(totalUpfront * ratio * 100) / 100,
+            performance_rate: Math.round(totalPerformance * ratio * 100) / 100,
+          };
+        }
+        console.log("Using default auto-distribution rates:", ratesByRole);
       }
     }
 
