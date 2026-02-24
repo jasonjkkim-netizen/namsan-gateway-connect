@@ -461,6 +461,60 @@ export function AdminCommissions() {
 
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null);
 
+  const exportAttribution = async () => {
+    const wb = new ExcelJS.Workbook();
+    const summarySheet = wb.addWorksheet(language === 'ko' ? '개인별 요약' : 'Attribution Summary');
+    summarySheet.columns = [
+      { header: language === 'ko' ? '영업사원' : 'Sales Person', key: 'name', width: 25 },
+      { header: language === 'ko' ? '역할' : 'Role', key: 'role', width: 18 },
+      { header: language === 'ko' ? '선취 합계' : 'Upfront Total', key: 'upfront', width: 18 },
+      { header: language === 'ko' ? '성과 합계' : 'Performance Total', key: 'performance', width: 18 },
+      { header: language === 'ko' ? '총 합계' : 'Grand Total', key: 'total', width: 18 },
+      { header: language === 'ko' ? '건수' : 'Count', key: 'count', width: 10 },
+    ];
+    summarySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    summarySheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+    personAttribution.forEach(([, data]) => {
+      summarySheet.addRow({
+        name: data.name, role: data.role || '—', upfront: data.totalUpfront,
+        performance: data.totalPerformance, total: data.totalUpfront + data.totalPerformance, count: data.sources.length,
+      });
+    });
+
+    const detailSheet = wb.addWorksheet(language === 'ko' ? '귀속 상세' : 'Attribution Detail');
+    detailSheet.columns = [
+      { header: language === 'ko' ? '수취인' : 'Recipient', key: 'recipient', width: 22 },
+      { header: language === 'ko' ? '역할' : 'Role', key: 'role', width: 18 },
+      { header: language === 'ko' ? '투자자' : 'Investor', key: 'investor', width: 22 },
+      { header: language === 'ko' ? '선취' : 'Upfront', key: 'upfront', width: 15 },
+      { header: language === 'ko' ? '성과' : 'Performance', key: 'performance', width: 15 },
+      { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 15 },
+      { header: language === 'ko' ? '통화' : 'Currency', key: 'currency', width: 8 },
+      { header: language === 'ko' ? '상태' : 'Status', key: 'status', width: 12 },
+      { header: language === 'ko' ? '일자' : 'Date', key: 'date', width: 14 },
+    ];
+    detailSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    detailSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+    personAttribution.forEach(([, data]) => {
+      data.sources.forEach((src) => {
+        detailSheet.addRow({
+          recipient: data.name, role: data.role || '—', investor: src.investorName,
+          upfront: src.upfront, performance: src.performance, total: src.upfront + src.performance,
+          currency: src.currency, status: src.status, date: format(new Date(src.date), 'yyyy-MM-dd'),
+        });
+      });
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attribution-report-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleRecalculate = async (investmentId: string) => {
     setRecalculating(prev => ({ ...prev, [investmentId]: true }));
     try {
@@ -1128,11 +1182,17 @@ export function AdminCommissions() {
         {/* Per-Person Attribution Tab */}
         <TabsContent value="attribution">
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {language === 'ko'
-                ? '개인별 커미션 귀속 내역입니다. 각 영업사원을 클릭하면 출처별 상세 내역을 확인할 수 있습니다.'
-                : 'Per-person commission attribution. Click on each salesperson to see detailed breakdown by source.'}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {language === 'ko'
+                  ? '개인별 커미션 귀속 내역입니다. 각 영업사원을 클릭하면 출처별 상세 내역을 확인할 수 있습니다.'
+                  : 'Per-person commission attribution. Click on each salesperson to see detailed breakdown by source.'}
+              </p>
+              <Button size="sm" onClick={exportAttribution} disabled={personAttribution.length === 0}>
+                <Download className="h-4 w-4 mr-1" />
+                {language === 'ko' ? 'Excel 다운로드' : 'Export Excel'}
+              </Button>
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
