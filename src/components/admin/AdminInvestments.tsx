@@ -262,6 +262,7 @@ export function AdminInvestments() {
 
   const ROLE_LABELS: Record<string, string> = {
     district_manager: language === 'ko' ? 'DM' : 'DM',
+    deputy_district_manager: language === 'ko' ? '부DM' : 'DDM',
     principal_agent: language === 'ko' ? 'PA' : 'PA',
     agent: language === 'ko' ? 'AG' : 'AG',
     client: language === 'ko' ? '고객' : 'Client',

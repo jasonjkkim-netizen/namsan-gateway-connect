@@ -15,11 +15,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { Users, Coins, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown } from 'lucide-react';
+import { Users, Coins, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown, UserCog } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
 import { MemberDetailDialog } from '@/components/sales/MemberDetailDialog';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import ExcelJS from 'exceljs';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface DownlineMember {
   user_id: string;
@@ -66,12 +71,14 @@ interface Profile {
 const ROLE_LABELS: Record<string, Record<string, string>> = {
   ko: {
     district_manager: '총괄관리',
+    deputy_district_manager: '부총괄관리',
     principal_agent: '수석 에이전트',
     agent: '에이전트',
     client: '고객',
   },
   en: {
     district_manager: 'General Manager',
+    deputy_district_manager: 'Deputy GM',
     principal_agent: 'Principal Agent',
     agent: 'Agent',
     client: 'Client',
@@ -80,6 +87,7 @@ const ROLE_LABELS: Record<string, Record<string, string>> = {
 
 const ROLE_COLORS: Record<string, string> = {
   district_manager: 'default',
+  deputy_district_manager: 'default',
   principal_agent: 'secondary',
   agent: 'outline',
   client: 'outline',
@@ -99,6 +107,14 @@ export default function SalesDashboard() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState<string>('KRW');
   const [usdKrwRate, setUsdKrwRate] = useState<number>(1350);
+  const [roleChangeDialog, setRoleChangeDialog] = useState<{
+    open: boolean;
+    member: DownlineMember | null;
+    newRole: string;
+  }>({ open: false, member: null, newRole: '' });
+  const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
+
+  const isDM = (profile as any)?.sales_role === 'district_manager';
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -160,6 +176,61 @@ export default function SalesDashboard() {
 
     setLoading(false);
   }
+
+  const ROLE_LEVELS: Record<string, number> = {
+    district_manager: 1,
+    deputy_district_manager: 2,
+    principal_agent: 3,
+    agent: 4,
+    client: 5,
+  };
+
+  const handleRoleChange = async (member: DownlineMember, newRole: string) => {
+    if (newRole === member.sales_role) return;
+    setChangingRoleId(member.user_id);
+    try {
+      const newLevel = ROLE_LEVELS[newRole] || 0;
+
+      // Update profile role and level
+      const { error } = await supabase
+        .from('profiles')
+        .update({ sales_role: newRole, sales_level: newLevel })
+        .eq('user_id', member.user_id);
+
+      if (error) throw error;
+
+      // Recalculate commissions
+      const { data: investments } = await supabase
+        .from('client_investments')
+        .select('id')
+        .eq('user_id', member.user_id);
+
+      if (investments && investments.length > 0) {
+        for (const inv of investments) {
+          try {
+            await supabase.functions.invoke('calculate-commissions', {
+              body: { investment_id: inv.id },
+            });
+          } catch (e) {
+            console.error('Commission recalc failed for', inv.id, e);
+          }
+        }
+      }
+
+      toast.success(
+        language === 'ko'
+          ? `${member.full_name} 님의 역할이 ${getRoleLabel(newRole)}(으)로 변경되었습니다`
+          : `${member.full_name}'s role changed to ${getRoleLabel(newRole)}`
+      );
+      fetchAll();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(language === 'ko' ? '역할 변경 실패' : 'Failed to change role');
+    } finally {
+      setChangingRoleId(null);
+      setRoleChangeDialog({ open: false, member: null, newRole: '' });
+    }
+  };
 
   const getName = (userId: string) => {
     const p = profiles.find((pr) => pr.user_id === userId);
@@ -482,23 +553,49 @@ export default function SalesDashboard() {
                               {members.map((m) => (
                                 <div
                                   key={m.user_id}
-                                  onClick={() => setSelectedMemberId(m.user_id)}
-                                  className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
+                                  className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-muted/30 transition-colors"
                                   style={{ marginLeft: `${(depth + 1) * 24}px` }}
                                 >
-                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                  <span className="font-medium">
-                                    {m.full_name}
-                                  </span>
-                                  <Badge
-                                    variant={
-                                      (ROLE_COLORS[m.sales_role] as any) ||
-                                      'secondary'
-                                    }
-                                    className="text-xs"
+                                  <div
+                                    className="flex items-center gap-3 flex-1 cursor-pointer"
+                                    onClick={() => setSelectedMemberId(m.user_id)}
                                   >
-                                    {getRoleLabel(m.sales_role)}
-                                  </Badge>
+                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-medium">
+                                      {m.full_name}
+                                    </span>
+                                    <Badge
+                                      variant={
+                                        (ROLE_COLORS[m.sales_role] as any) ||
+                                        'secondary'
+                                      }
+                                      className="text-xs"
+                                    >
+                                      {getRoleLabel(m.sales_role)}
+                                    </Badge>
+                                  </div>
+                                  {isDM && m.sales_role !== 'district_manager' && (
+                                    <Select
+                                      value={m.sales_role}
+                                      onValueChange={(newRole) => {
+                                        if (newRole !== m.sales_role) {
+                                          setRoleChangeDialog({ open: true, member: m, newRole });
+                                        }
+                                      }}
+                                      disabled={changingRoleId === m.user_id}
+                                    >
+                                      <SelectTrigger className="w-[130px] h-7 text-xs" onClick={(e) => e.stopPropagation()}>
+                                        <UserCog className="h-3 w-3 mr-1" />
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-popover z-50">
+                                        <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>
+                                        <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
+                                        <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
+                                        <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -751,6 +848,35 @@ export default function SalesDashboard() {
           onOpenChange={(open) => { if (!open) setSelectedMemberId(null); }}
           userId={selectedMemberId}
         />
+
+        {/* Role Change Confirmation Dialog */}
+        <AlertDialog open={roleChangeDialog.open} onOpenChange={(open) => setRoleChangeDialog({ ...roleChangeDialog, open })}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {language === 'ko' ? '역할 변경 확인' : 'Confirm Role Change'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {language === 'ko'
+                  ? `${roleChangeDialog.member?.full_name} 님의 역할을 "${getRoleLabel(roleChangeDialog.member?.sales_role || '')}"에서 "${getRoleLabel(roleChangeDialog.newRole)}"(으)로 변경하시겠습니까? 관련 커미션이 자동으로 재계산됩니다.`
+                  : `Change ${roleChangeDialog.member?.full_name}'s role from "${getRoleLabel(roleChangeDialog.member?.sales_role || '')}" to "${getRoleLabel(roleChangeDialog.newRole)}"? Related commissions will be recalculated automatically.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{language === 'ko' ? '취소' : 'Cancel'}</AlertDialogCancel>
+              <AlertDialogAction
+                className="btn-gold"
+                onClick={() => {
+                  if (roleChangeDialog.member) {
+                    handleRoleChange(roleChangeDialog.member, roleChangeDialog.newRole);
+                  }
+                }}
+              >
+                {language === 'ko' ? '변경' : 'Change'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

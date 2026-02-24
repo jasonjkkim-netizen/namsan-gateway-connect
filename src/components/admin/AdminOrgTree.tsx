@@ -26,13 +26,15 @@ interface TreeNode {
 
 const ROLE_LEVELS: Record<string, number> = {
   district_manager: 1,
-  principal_agent: 2,
-  agent: 3,
-  client: 4,
+  deputy_district_manager: 2,
+  principal_agent: 3,
+  agent: 4,
+  client: 5,
 };
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
   district_manager: { en: 'General Manager', ko: '총괄관리' },
+  deputy_district_manager: { en: 'Deputy General Manager', ko: '부총괄관리' },
   principal_agent: { en: 'Principal Agent', ko: '수석 에이전트' },
   agent: { en: 'Agent', ko: '에이전트' },
   client: { en: 'Client', ko: '고객' },
@@ -40,6 +42,7 @@ const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
 
 const ROLE_ICONS: Record<string, typeof Building2> = {
   district_manager: Building2,
+  deputy_district_manager: Building2,
   principal_agent: UserCog,
   agent: Users,
   client: User,
@@ -47,6 +50,7 @@ const ROLE_ICONS: Record<string, typeof Building2> = {
 
 const ROLE_COLORS: Record<string, string> = {
   district_manager: 'bg-primary text-primary-foreground',
+  deputy_district_manager: 'bg-primary/80 text-primary-foreground',
   principal_agent: 'bg-secondary text-secondary-foreground',
   agent: 'border border-border bg-background text-foreground',
   client: 'border border-border bg-muted text-muted-foreground',
@@ -309,7 +313,7 @@ export function AdminOrgTree() {
       }
     });
 
-    const ROLE_ORDER: Record<string, number> = { district_manager: 1, principal_agent: 2, agent: 3, client: 4 };
+    const ROLE_ORDER: Record<string, number> = { district_manager: 1, deputy_district_manager: 2, principal_agent: 3, agent: 4, client: 5 };
     const sortChildren = (nodes: TreeNode[]) => {
       nodes.sort((a, b) => {
         const aO = ROLE_ORDER[a.sales_role || 'client'] || 5;
@@ -374,7 +378,7 @@ export function AdminOrgTree() {
         } else if (msg.includes('cycle')) {
           toast.error(language === 'ko' ? '순환 참조가 감지되었습니다.' : 'Cycle detected in hierarchy.');
         } else if (msg.includes('depth')) {
-          toast.error(language === 'ko' ? '최대 4단계 깊이를 초과합니다.' : 'Maximum hierarchy depth of 4 exceeded.');
+          toast.error(language === 'ko' ? '최대 5단계 깊이를 초과합니다.' : 'Maximum hierarchy depth of 5 exceeded.');
         } else {
           toast.error(language === 'ko' ? `재배치 실패: ${msg}` : `Reassignment failed: ${msg}`);
         }
