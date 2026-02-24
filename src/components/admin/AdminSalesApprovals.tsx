@@ -35,7 +35,7 @@ interface SalesProfile {
   created_at: string;
 }
 
-type ViewMode = 'pending' | 'active' | 'suspended' | 'rejected';
+type ViewMode = 'all' | 'pending' | 'active' | 'suspended' | 'rejected';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
   district_manager: { en: 'General Manager', ko: '총괄관리' },
@@ -76,7 +76,7 @@ export function AdminSalesApprovals() {
   const [profiles, setProfiles] = useState<SalesProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('pending');
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -90,7 +90,7 @@ export function AdminSalesApprovals() {
     newRole: string;
   }>({ open: false, profile: null, newRole: '' });
 
-  const [counts, setCounts] = useState({ pending: 0, active: 0, suspended: 0, rejected: 0 });
+  const [counts, setCounts] = useState({ all: 0, pending: 0, active: 0, suspended: 0, rejected: 0 });
 
   useEffect(() => {
     fetchProfiles();
@@ -99,11 +99,11 @@ export function AdminSalesApprovals() {
   async function fetchProfiles() {
     setLoading(true);
 
-    // Build query based on view mode
+    // Build query based on view mode - show ALL approved members
     let query = supabase
       .from('profiles')
       .select('*')
-      .not('sales_role', 'is', null);
+      .eq('is_approved', true);
 
     if (viewMode === 'pending') {
       query = query.eq('sales_status', 'pending');
@@ -114,19 +114,22 @@ export function AdminSalesApprovals() {
     } else if (viewMode === 'rejected') {
       query = query.eq('sales_status', 'rejected');
     }
+    // 'all' mode: no additional filter
 
     const { data } = await query.order('created_at', { ascending: false });
     setProfiles((data || []) as SalesProfile[]);
 
     // Fetch counts for badges
-    const [pendingRes, activeRes, suspendedRes, rejectedRes] = await Promise.all([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).not('sales_role', 'is', null).eq('sales_status', 'pending'),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).not('sales_role', 'is', null).eq('sales_status', 'active'),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).not('sales_role', 'is', null).eq('sales_status', 'suspended'),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).not('sales_role', 'is', null).eq('sales_status', 'rejected'),
+    const [allRes, pendingRes, activeRes, suspendedRes, rejectedRes] = await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true).eq('sales_status', 'pending'),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true).eq('sales_status', 'active'),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true).eq('sales_status', 'suspended'),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_approved', true).eq('sales_status', 'rejected'),
     ]);
 
     setCounts({
+      all: allRes.count || 0,
       pending: pendingRes.count || 0,
       active: activeRes.count || 0,
       suspended: suspendedRes.count || 0,
@@ -188,7 +191,8 @@ export function AdminSalesApprovals() {
   };
 
   const handleRoleChange = async (profile: SalesProfile, newRole: string) => {
-    if (newRole === profile.sales_role) return;
+    const effectiveNewRole = newRole === '' || newRole === 'none' ? null : newRole;
+    if (effectiveNewRole === profile.sales_role) return;
     setChangingRoleId(profile.id);
 
     try {
@@ -201,11 +205,11 @@ export function AdminSalesApprovals() {
         client: 5,
       };
 
-      const newLevel = ROLE_LEVELS[newRole] || 0;
+      const newLevel = effectiveNewRole ? (ROLE_LEVELS[effectiveNewRole] || 0) : 0;
       const oldLevel = ROLE_LEVELS[profile.sales_role || ''] || 0;
 
       // Admin users can freely change roles. Only restriction: client cannot have downline.
-      if (newRole === 'client') {
+      if (effectiveNewRole === 'client') {
         const { data: downline } = await supabase.rpc('get_sales_subtree', {
           _user_id: profile.user_id,
         });
@@ -225,7 +229,7 @@ export function AdminSalesApprovals() {
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          sales_role: newRole,
+          sales_role: effectiveNewRole,
           sales_level: newLevel,
         })
         .eq('id', profile.id);
@@ -271,10 +275,11 @@ export function AdminSalesApprovals() {
         }
       }
 
+      const roleLabel = effectiveNewRole ? (ROLE_LABELS[effectiveNewRole]?.[language === 'ko' ? 'ko' : 'en'] || effectiveNewRole) : (language === 'ko' ? '미지정' : 'None');
       toast.success(
         language === 'ko'
-          ? `${profile.full_name} 님의 역할이 ${ROLE_LABELS[newRole]?.ko || newRole}(으)로 변경되었습니다`
-          : `${profile.full_name}'s role changed to ${ROLE_LABELS[newRole]?.en || newRole}`
+          ? `${profile.full_name} 님의 역할이 ${roleLabel}(으)로 변경되었습니다`
+          : `${profile.full_name}'s role changed to ${roleLabel}`
       );
       fetchProfiles();
     } catch (err) {
@@ -290,7 +295,7 @@ export function AdminSalesApprovals() {
     const matchesSearch =
       p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.full_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || p.sales_role === roleFilter;
+    const matchesRole = roleFilter === 'all' || (roleFilter === 'none' ? p.sales_role === null : p.sales_role === roleFilter);
     return matchesSearch && matchesRole;
   });
 
@@ -318,9 +323,10 @@ export function AdminSalesApprovals() {
 
         <div className="flex items-center gap-3 mt-4 flex-wrap">
           <div className="flex gap-2 flex-wrap">
-            {(['pending', 'active', 'suspended', 'rejected'] as ViewMode[]).map((mode) => {
-              const icons = { pending: Clock, active: UserCheck, suspended: UserX, rejected: X };
+            {(['all', 'pending', 'active', 'suspended', 'rejected'] as ViewMode[]).map((mode) => {
+              const icons = { all: Users, pending: Clock, active: UserCheck, suspended: UserX, rejected: X };
               const labels = {
+                all: { en: 'All', ko: '전체' },
                 pending: { en: 'Pending', ko: '대기 중' },
                 active: { en: 'Active', ko: '활성' },
                 suspended: { en: 'Suspended', ko: '정지' },
@@ -348,6 +354,7 @@ export function AdminSalesApprovals() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{language === 'ko' ? '모든 역할' : 'All Roles'}</SelectItem>
+              <SelectItem value="none">{language === 'ko' ? '미지정' : 'No Role'}</SelectItem>
               <SelectItem value="district_manager">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>
               <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>
               <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
@@ -412,10 +419,11 @@ export function AdminSalesApprovals() {
                   <TableCell className="text-sm">{profile.email}</TableCell>
                   <TableCell>
                     <Select
-                      value={profile.sales_role || ''}
+                      value={profile.sales_role || 'none'}
                       onValueChange={(newRole) => {
-                        if (newRole !== profile.sales_role) {
-                          setRoleChangeDialog({ open: true, profile, newRole });
+                        const actualRole = newRole === 'none' ? null : newRole;
+                        if (actualRole !== profile.sales_role) {
+                          setRoleChangeDialog({ open: true, profile, newRole: actualRole || '' });
                         }
                       }}
                       disabled={changingRoleId === profile.id}
@@ -424,6 +432,7 @@ export function AdminSalesApprovals() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-popover z-50">
+                        <SelectItem value="none">{language === 'ko' ? '미지정' : 'None'}</SelectItem>
                         <SelectItem value="district_manager">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>
                         <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>
                         <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
