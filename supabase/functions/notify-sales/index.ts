@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
                 method: "POST",
                 headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  from: "Namsan Partners <alert@namsan-partners.com>",
+                  from: "Namsan Partners <noreply@namsan-partners.com>",
                   to: [profile.email],
                   subject: isKo
                     ? `[남산파트너스] ${payload.investor_name}님의 신규 투자`
@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
                 method: "POST",
                 headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  from: "Namsan Partners <alert@namsan-partners.com>",
+                  from: "Namsan Partners <noreply@namsan-partners.com>",
                   to: [profile.email],
                   subject: isKo
                     ? `[남산파트너스] 수수료 상태 변경: ${label.ko}`
