@@ -1,0 +1,1 @@
+ALTER TABLE public.alert_settings DROP CONSTRAINT IF EXISTS alert_settings_category_key;

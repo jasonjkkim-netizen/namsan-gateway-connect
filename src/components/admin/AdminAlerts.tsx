@@ -19,12 +19,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { RefreshCw, Send, Bell, BellOff, Search, Eye, BookOpen, Star, PlayCircle, Briefcase, DollarSign } from 'lucide-react';
+import { RefreshCw, Send, Bell, BellOff, Search, Eye, BookOpen, Star, PlayCircle, Briefcase, DollarSign, Mail, MessageSquare, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface AlertSetting {
   id: string;
   category: string;
+  channel: string;
   is_enabled: boolean;
   updated_at: string;
 }
@@ -32,6 +33,7 @@ interface AlertSetting {
 interface AlertLogEntry {
   id: string;
   category: string;
+  channel: string;
   recipient_user_id: string;
   recipient_name: string | null;
   recipient_email: string | null;
@@ -46,6 +48,7 @@ interface ClientProfile {
   full_name: string;
   full_name_ko: string | null;
   email: string;
+  phone: string | null;
   is_approved: boolean;
 }
 
@@ -58,6 +61,12 @@ const CATEGORY_LABELS: Record<string, { ko: string; en: string; icon: typeof Bel
   commission: { ko: '수수료', en: 'Commission', icon: DollarSign },
 };
 
+const CHANNEL_LABELS: Record<string, { ko: string; en: string; icon: typeof Mail; color: string }> = {
+  email: { ko: '이메일', en: 'Email', icon: Mail, color: 'text-blue-500' },
+  kakao: { ko: '카카오톡', en: 'KakaoTalk', icon: MessageSquare, color: 'text-yellow-500' },
+  sms: { ko: 'SMS', en: 'SMS', icon: Phone, color: 'text-green-500' },
+};
+
 export function AdminAlerts() {
   const { language } = useLanguage();
   const { user } = useAuth();
@@ -67,12 +76,14 @@ export function AdminAlerts() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [filterChannel, setFilterChannel] = useState('all');
 
   // Manual send dialog
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendForm, setSendForm] = useState({
     recipient_user_id: '',
     category: 'viewpoint',
+    channel: 'email',
     subject: '',
     message: '',
   });
@@ -83,9 +94,9 @@ export function AdminAlerts() {
   async function fetchAll() {
     setLoading(true);
     const [settingsRes, logsRes, clientsRes] = await Promise.all([
-      supabase.from('alert_settings').select('*').order('category'),
+      supabase.from('alert_settings').select('*').order('category').order('channel'),
       supabase.from('alert_log').select('*').order('sent_at', { ascending: false }).limit(200),
-      supabase.from('profiles').select('user_id, full_name, full_name_ko, email, is_approved').eq('is_approved', true),
+      supabase.from('profiles').select('user_id, full_name, full_name_ko, email, phone, is_approved').eq('is_approved', true),
     ]);
 
     if (settingsRes.data) setSettings(settingsRes.data as AlertSetting[]);
@@ -94,8 +105,20 @@ export function AdminAlerts() {
     setLoading(false);
   }
 
-  async function toggleCategory(setting: AlertSetting) {
+  async function toggleSetting(setting: AlertSetting) {
     const newVal = !setting.is_enabled;
+
+    // Kakao and SMS are not yet connected
+    if (newVal && (setting.channel === 'kakao' || setting.channel === 'sms')) {
+      const channelName = CHANNEL_LABELS[setting.channel];
+      toast.error(
+        language === 'ko'
+          ? `${channelName.ko} 채널은 아직 연동되지 않았습니다. 대행사 설정 후 활성화할 수 있습니다.`
+          : `${channelName.en} channel is not yet connected. You can enable it after configuring the provider.`
+      );
+      return;
+    }
+
     const { error } = await supabase
       .from('alert_settings')
       .update({ is_enabled: newVal, updated_at: new Date().toISOString(), updated_by: user?.id })
@@ -107,11 +130,12 @@ export function AdminAlerts() {
     }
 
     setSettings(prev => prev.map(s => s.id === setting.id ? { ...s, is_enabled: newVal } : s));
-    const label = CATEGORY_LABELS[setting.category];
+    const catLabel = CATEGORY_LABELS[setting.category];
+    const chLabel = CHANNEL_LABELS[setting.channel];
     toast.success(
       language === 'ko'
-        ? `${label?.ko} 알림이 ${newVal ? '활성화' : '비활성화'}되었습니다`
-        : `${label?.en} alerts ${newVal ? 'enabled' : 'disabled'}`
+        ? `${catLabel?.ko} (${chLabel?.ko}) 알림이 ${newVal ? '활성화' : '비활성화'}되었습니다`
+        : `${catLabel?.en} (${chLabel?.en}) alerts ${newVal ? 'enabled' : 'disabled'}`
     );
   }
 
@@ -121,12 +145,22 @@ export function AdminAlerts() {
       return;
     }
 
+    // Block kakao/sms for now
+    if (sendForm.channel !== 'email') {
+      const chLabel = CHANNEL_LABELS[sendForm.channel];
+      toast.error(
+        language === 'ko'
+          ? `${chLabel?.ko} 채널은 아직 연동되지 않았습니다.`
+          : `${chLabel?.en} channel is not yet connected.`
+      );
+      return;
+    }
+
     setSending(true);
     try {
       const recipient = clients.find(c => c.user_id === sendForm.recipient_user_id);
       if (!recipient) throw new Error('Recipient not found');
 
-      // Send email via send-newsletter function
       const { error } = await supabase.functions.invoke('send-newsletter', {
         body: {
           subject: `[Namsan Partners] ${sendForm.subject}`,
@@ -149,9 +183,9 @@ export function AdminAlerts() {
 
       if (error) throw error;
 
-      // Log the alert
       await supabase.from('alert_log').insert({
         category: sendForm.category,
+        channel: sendForm.channel,
         recipient_user_id: recipient.user_id,
         recipient_name: recipient.full_name,
         recipient_email: recipient.email,
@@ -162,7 +196,7 @@ export function AdminAlerts() {
 
       toast.success(language === 'ko' ? `${recipient.full_name}에게 알림을 발송했습니다` : `Alert sent to ${recipient.full_name}`);
       setSendDialogOpen(false);
-      setSendForm({ recipient_user_id: '', category: 'viewpoint', subject: '', message: '' });
+      setSendForm({ recipient_user_id: '', category: 'viewpoint', channel: 'email', subject: '', message: '' });
       fetchAll();
     } catch (err: any) {
       toast.error(language === 'ko' ? `발송 실패: ${err.message}` : `Send failed: ${err.message}`);
@@ -174,6 +208,7 @@ export function AdminAlerts() {
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
       if (filterCategory !== 'all' && log.category !== filterCategory) return false;
+      if (filterChannel !== 'all' && log.channel !== filterChannel) return false;
       if (searchTerm) {
         const term = searchTerm.toLowerCase();
         return (
@@ -184,54 +219,92 @@ export function AdminAlerts() {
       }
       return true;
     });
-  }, [logs, filterCategory, searchTerm]);
+  }, [logs, filterCategory, filterChannel, searchTerm]);
 
   const getClientName = (c: ClientProfile) => {
     return language === 'ko' && c.full_name_ko ? c.full_name_ko : c.full_name;
   };
 
+  // Group settings by category
+  const settingsByCategory = useMemo(() => {
+    const map: Record<string, AlertSetting[]> = {};
+    for (const s of settings) {
+      if (!map[s.category]) map[s.category] = [];
+      map[s.category].push(s);
+    }
+    return map;
+  }, [settings]);
+
   return (
     <div className="space-y-6">
-      {/* Category Toggles */}
+      {/* Category × Channel Toggles */}
       <div className="card-elevated p-6">
         <h3 className="text-lg font-serif font-semibold mb-4">
-          {language === 'ko' ? '카테고리별 알림 설정' : 'Alert Settings by Category'}
+          {language === 'ko' ? '카테고리별 알림 채널 설정' : 'Alert Channel Settings by Category'}
         </h3>
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {settings.map(setting => {
-              const meta = CATEGORY_LABELS[setting.category];
-              const Icon = meta?.icon || Bell;
-              return (
-                <div
-                  key={setting.id}
-                  className="flex items-center justify-between p-4 rounded-lg border border-border bg-card"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <Label className="font-medium">
-                        {language === 'ko' ? meta?.ko : meta?.en}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {setting.is_enabled
-                          ? (language === 'ko' ? '활성' : 'Active')
-                          : (language === 'ko' ? '비활성' : 'Disabled')
-                        }
-                      </p>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={setting.is_enabled}
-                    onCheckedChange={() => toggleCategory(setting)}
-                  />
-                </div>
-              );
-            })}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{language === 'ko' ? '카테고리' : 'Category'}</TableHead>
+                  {Object.entries(CHANNEL_LABELS).map(([key, ch]) => {
+                    const Icon = ch.icon;
+                    return (
+                      <TableHead key={key} className="text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Icon className={`h-4 w-4 ${ch.color}`} />
+                          <span>{language === 'ko' ? ch.ko : ch.en}</span>
+                        </div>
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Object.entries(CATEGORY_LABELS).map(([catKey, catMeta]) => {
+                  const Icon = catMeta.icon;
+                  const channelSettings = settingsByCategory[catKey] || [];
+                  return (
+                    <TableRow key={catKey}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{language === 'ko' ? catMeta.ko : catMeta.en}</span>
+                        </div>
+                      </TableCell>
+                      {Object.keys(CHANNEL_LABELS).map(chKey => {
+                        const setting = channelSettings.find(s => s.channel === chKey);
+                        const isKakaoOrSms = chKey === 'kakao' || chKey === 'sms';
+                        return (
+                          <TableCell key={chKey} className="text-center">
+                            {setting ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <Switch
+                                  checked={setting.is_enabled}
+                                  onCheckedChange={() => toggleSetting(setting)}
+                                />
+                                {isKakaoOrSms && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {language === 'ko' ? '미연동' : 'Not connected'}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
@@ -243,7 +316,7 @@ export function AdminAlerts() {
             {language === 'ko' ? '알림 발송 기록' : 'Alert Send Log'}
             <span className="text-sm font-normal text-muted-foreground ml-2">({filteredLogs.length})</span>
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -254,10 +327,19 @@ export function AdminAlerts() {
               />
             </div>
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{language === 'ko' ? '전체' : 'All'}</SelectItem>
                 {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{language === 'ko' ? label.ko : label.en}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterChannel} onValueChange={setFilterChannel}>
+              <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{language === 'ko' ? '전체 채널' : 'All Channels'}</SelectItem>
+                {Object.entries(CHANNEL_LABELS).map(([key, label]) => (
                   <SelectItem key={key} value={key}>{language === 'ko' ? label.ko : label.en}</SelectItem>
                 ))}
               </SelectContent>
@@ -279,6 +361,7 @@ export function AdminAlerts() {
                 <TableHead>{language === 'ko' ? '수신자' : 'Recipient'}</TableHead>
                 <TableHead>{language === 'ko' ? '이메일' : 'Email'}</TableHead>
                 <TableHead>{language === 'ko' ? '카테고리' : 'Category'}</TableHead>
+                <TableHead>{language === 'ko' ? '채널' : 'Channel'}</TableHead>
                 <TableHead>{language === 'ko' ? '제목' : 'Subject'}</TableHead>
                 <TableHead>{language === 'ko' ? '유형' : 'Type'}</TableHead>
                 <TableHead>{language === 'ko' ? '발송일시' : 'Sent At'}</TableHead>
@@ -288,14 +371,14 @@ export function AdminAlerts() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filteredLogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                     <BellOff className="h-8 w-8 mx-auto mb-2 opacity-40" />
                     {language === 'ko' ? '알림 기록이 없습니다' : 'No alert records found'}
                   </TableCell>
@@ -303,6 +386,8 @@ export function AdminAlerts() {
               ) : (
                 filteredLogs.map(log => {
                   const catLabel = CATEGORY_LABELS[log.category];
+                  const chLabel = CHANNEL_LABELS[log.channel];
+                  const ChIcon = chLabel?.icon || Mail;
                   return (
                     <TableRow key={log.id}>
                       <TableCell className="font-medium">{log.recipient_name || '—'}</TableCell>
@@ -311,6 +396,12 @@ export function AdminAlerts() {
                         <Badge variant="outline" className="text-xs">
                           {language === 'ko' ? catLabel?.ko : catLabel?.en || log.category}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <ChIcon className={`h-3.5 w-3.5 ${chLabel?.color || ''}`} />
+                          <span className="text-xs">{language === 'ko' ? chLabel?.ko : chLabel?.en || log.channel}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate text-sm">{log.subject}</TableCell>
                       <TableCell>
@@ -361,6 +452,27 @@ export function AdminAlerts() {
                   {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>{language === 'ko' ? label.ko : label.en}</SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>{language === 'ko' ? '발송 채널' : 'Channel'}</Label>
+              <Select value={sendForm.channel} onValueChange={v => setSendForm(f => ({ ...f, channel: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CHANNEL_LABELS).map(([key, label]) => {
+                    const Icon = label.icon;
+                    const disabled = key !== 'email';
+                    return (
+                      <SelectItem key={key} value={key} disabled={disabled}>
+                        <div className="flex items-center gap-2">
+                          <Icon className={`h-4 w-4 ${label.color}`} />
+                          <span>{language === 'ko' ? label.ko : label.en}</span>
+                          {disabled && <span className="text-xs text-muted-foreground ml-1">({language === 'ko' ? '미연동' : 'N/A'})</span>}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

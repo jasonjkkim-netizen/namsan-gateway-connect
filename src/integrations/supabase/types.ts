@@ -17,6 +17,7 @@ export type Database = {
       alert_log: {
         Row: {
           category: string
+          channel: string
           id: string
           is_manual: boolean
           recipient_email: string | null
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           category: string
+          channel?: string
           id?: string
           is_manual?: boolean
           recipient_email?: string | null
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          channel?: string
           id?: string
           is_manual?: boolean
           recipient_email?: string | null
@@ -53,6 +56,7 @@ export type Database = {
       alert_settings: {
         Row: {
           category: string
+          channel: string
           id: string
           is_enabled: boolean
           updated_at: string
@@ -60,6 +64,7 @@ export type Database = {
         }
         Insert: {
           category: string
+          channel?: string
           id?: string
           is_enabled?: boolean
           updated_at?: string
@@ -67,6 +72,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          channel?: string
           id?: string
           is_enabled?: boolean
           updated_at?: string
