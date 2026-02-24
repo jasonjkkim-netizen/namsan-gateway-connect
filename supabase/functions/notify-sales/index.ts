@@ -19,6 +19,45 @@ interface NotificationPayload {
   recipient_ids?: string[];
 }
 
+async function isAlertEnabled(supabase: any, category: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("alert_settings")
+    .select("is_enabled")
+    .eq("category", category)
+    .maybeSingle();
+  return data?.is_enabled !== false;
+}
+
+async function logAlerts(supabase: any, category: string, subject: string, recipients: { user_id: string; name: string; email: string }[]) {
+  if (recipients.length === 0) return;
+  const rows = recipients.map(r => ({
+    category,
+    recipient_user_id: r.user_id,
+    recipient_name: r.name,
+    recipient_email: r.email,
+    subject,
+    is_manual: false,
+  }));
+  await supabase.from("alert_log").insert(rows);
+}
+
+// Get supervisor chain (ancestors) for a user, excluding admins
+async function getSupervisorChain(supabase: any, userId: string): Promise<string[]> {
+  const { data: ancestors } = await supabase.rpc("get_sales_ancestors", { _user_id: userId });
+  if (!ancestors) return [];
+
+  // Filter out admin users
+  const ancestorIds = ancestors.map((a: any) => a.user_id);
+  const { data: adminRoles } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .eq("role", "admin")
+    .in("user_id", ancestorIds);
+
+  const adminIds = new Set((adminRoles || []).map((r: any) => r.user_id));
+  return ancestorIds.filter((id: string) => !adminIds.has(id));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,9 +71,15 @@ Deno.serve(async (req) => {
     const payload: NotificationPayload = await req.json();
 
     if (payload.type === "investment_created") {
-      // Notify all ancestors of the investor
+      // Check toggle
+      if (!(await isAlertEnabled(supabase, "investment"))) {
+        return new Response(JSON.stringify({ success: true, notified: 0, disabled: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: ancestors } = await supabase.rpc("get_sales_ancestors", {
-        _user_id: payload.recipient_ids?.[0], // investor's user_id used to find ancestors
+        _user_id: payload.recipient_ids?.[0],
       });
 
       if (!ancestors || ancestors.length === 0) {
@@ -47,8 +92,28 @@ Deno.serve(async (req) => {
         ? `${payload.currency || "USD"} ${payload.amount.toLocaleString()}`
         : "";
 
-      const notifications = ancestors.map((a: any) => ({
-        user_id: a.user_id,
+      // Filter out admins from notification recipients
+      const ancestorIds = ancestors.map((a: any) => a.user_id);
+      const { data: adminRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin")
+        .in("user_id", ancestorIds);
+      const adminIds = new Set((adminRoles || []).map((r: any) => r.user_id));
+
+      const nonAdminAncestors = ancestors.filter((a: any) => !adminIds.has(a.user_id));
+
+      // Build notification list: direct recipients + their supervisor chains
+      const allRecipientIds = new Set<string>();
+      for (const a of nonAdminAncestors) {
+        allRecipientIds.add(a.user_id);
+        // Cascade: also notify the supervisors of each ancestor (excluding admins)
+        const supervisors = await getSupervisorChain(supabase, a.user_id);
+        supervisors.forEach((id) => allRecipientIds.add(id));
+      }
+
+      const notifications = Array.from(allRecipientIds).map((uid) => ({
+        user_id: uid,
         type: "investment",
         title_en: "New Investment Created",
         title_ko: "신규 투자 등록",
@@ -57,22 +122,29 @@ Deno.serve(async (req) => {
         link: "/sales-dashboard",
       }));
 
-      const { error: insertErr } = await supabase
-        .from("notifications")
-        .insert(notifications);
+      const { error: insertErr } = await supabase.from("notifications").insert(notifications);
+      if (insertErr) console.error("Error inserting notifications:", insertErr);
 
-      if (insertErr) {
-        console.error("Error inserting notifications:", insertErr);
+      // Log alerts
+      const logSubject = `[Investment] ${payload.investor_name} - ${payload.product_name_en}`;
+      const { data: recipientProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", Array.from(allRecipientIds));
+      if (recipientProfiles) {
+        await logAlerts(supabase, "investment", logSubject,
+          recipientProfiles.map((p: any) => ({ user_id: p.user_id, name: p.full_name, email: p.email }))
+        );
       }
 
       // Send email notifications via Resend
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (resendKey) {
-        for (const ancestor of ancestors) {
+        for (const uid of allRecipientIds) {
           const { data: profile } = await supabase
             .from("profiles")
             .select("email, preferred_language")
-            .eq("user_id", ancestor.user_id)
+            .eq("user_id", uid)
             .single();
 
           if (profile?.email) {
@@ -80,10 +152,7 @@ Deno.serve(async (req) => {
             try {
               await fetch("https://api.resend.com/emails", {
                 method: "POST",
-                headers: {
-                  Authorization: `Bearer ${resendKey}`,
-                  "Content-Type": "application/json",
-                },
+                headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                   from: "Namsan Partners <newsletter@namsan-partners.com>",
                   to: [profile.email],
@@ -103,12 +172,19 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, notified: ancestors.length }),
+        JSON.stringify({ success: true, notified: allRecipientIds.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (payload.type === "commission_status_changed") {
+      // Check toggle
+      if (!(await isAlertEnabled(supabase, "commission"))) {
+        return new Response(JSON.stringify({ success: true, notified: 0, disabled: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       if (!payload.recipient_ids || payload.recipient_ids.length === 0) {
         return new Response(JSON.stringify({ success: true, notified: 0 }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -127,28 +203,43 @@ Deno.serve(async (req) => {
         ko: payload.new_status,
       };
 
-      const notifications = payload.recipient_ids.map((uid) => ({
+      // Expand recipients to include supervisor chain (excluding admins)
+      const allRecipientIds = new Set<string>();
+      for (const uid of payload.recipient_ids) {
+        allRecipientIds.add(uid);
+        const supervisors = await getSupervisorChain(supabase, uid);
+        supervisors.forEach((id) => allRecipientIds.add(id));
+      }
+
+      const notifications = Array.from(allRecipientIds).map((uid) => ({
         user_id: uid,
         type: "commission",
         title_en: "Commission Status Updated",
-        title_ko: "커미션 상태 변경",
+        title_ko: "수수료 상태 변경",
         body_en: `Your commission status has been updated to "${label.en}".`,
-        body_ko: `커미션 상태가 "${label.ko}"(으)로 변경되었습니다.`,
+        body_ko: `수수료 상태가 "${label.ko}"(으)로 변경되었습니다.`,
         link: "/sales-dashboard",
       }));
 
-      const { error: insertErr } = await supabase
-        .from("notifications")
-        .insert(notifications);
+      const { error: insertErr } = await supabase.from("notifications").insert(notifications);
+      if (insertErr) console.error("Error inserting notifications:", insertErr);
 
-      if (insertErr) {
-        console.error("Error inserting notifications:", insertErr);
+      // Log alerts
+      const logSubject = `[Commission] Status → ${label.en}`;
+      const { data: recipientProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", Array.from(allRecipientIds));
+      if (recipientProfiles) {
+        await logAlerts(supabase, "commission", logSubject,
+          recipientProfiles.map((p: any) => ({ user_id: p.user_id, name: p.full_name, email: p.email }))
+        );
       }
 
-      // Send email for status changes
+      // Send email
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (resendKey) {
-        for (const uid of payload.recipient_ids) {
+        for (const uid of allRecipientIds) {
           const { data: profile } = await supabase
             .from("profiles")
             .select("email, preferred_language")
@@ -160,18 +251,15 @@ Deno.serve(async (req) => {
             try {
               await fetch("https://api.resend.com/emails", {
                 method: "POST",
-                headers: {
-                  Authorization: `Bearer ${resendKey}`,
-                  "Content-Type": "application/json",
-                },
+                headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
                 body: JSON.stringify({
                   from: "Namsan Partners <newsletter@namsan-partners.com>",
                   to: [profile.email],
                   subject: isKo
-                    ? `[남산파트너스] 커미션 상태 변경: ${label.ko}`
+                    ? `[남산파트너스] 수수료 상태 변경: ${label.ko}`
                     : `[Namsan Partners] Commission Status: ${label.en}`,
                   html: isKo
-                    ? `<p>커미션 상태가 <strong>${label.ko}</strong>(으)로 변경되었습니다.</p><p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">영업 대시보드 바로가기</a></p>`
+                    ? `<p>수수료 상태가 <strong>${label.ko}</strong>(으)로 변경되었습니다.</p><p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">영업 대시보드 바로가기</a></p>`
                     : `<p>Your commission status has been updated to <strong>${label.en}</strong>.</p><p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">Go to Sales Dashboard</a></p>`,
                 }),
               });
@@ -183,7 +271,7 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, notified: payload.recipient_ids.length }),
+        JSON.stringify({ success: true, notified: allRecipientIds.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

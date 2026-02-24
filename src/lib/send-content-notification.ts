@@ -17,6 +17,36 @@ const actionLabels: Record<ActionType, { ko: string; en: string }> = {
   deleted: { ko: '콘텐츠가 삭제되었습니다', en: 'Content has been removed' },
 };
 
+async function isAlertEnabled(category: string): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from('alert_settings')
+      .select('is_enabled')
+      .eq('category', category)
+      .maybeSingle();
+    return data?.is_enabled !== false; // default to true if not found
+  } catch {
+    return true;
+  }
+}
+
+async function logAlerts(category: string, subject: string, recipients: { user_id: string; full_name: string; email: string }[]) {
+  if (recipients.length === 0) return;
+  try {
+    const rows = recipients.map(r => ({
+      category,
+      recipient_user_id: r.user_id,
+      recipient_name: r.full_name,
+      recipient_email: r.email,
+      subject,
+      is_manual: false,
+    }));
+    await supabase.from('alert_log').insert(rows);
+  } catch (err) {
+    console.error('[Alert Log] Failed to log alerts:', err);
+  }
+}
+
 export async function sendContentNotification({
   contentType,
   action,
@@ -33,6 +63,14 @@ export async function sendContentNotification({
   summaryEn?: string;
 }) {
   try {
+    // Check if this category is enabled
+    const enabled = await isAlertEnabled(contentType);
+    if (!enabled) {
+      console.log(`[Notification] ${contentType} alerts are disabled, skipping.`);
+      toast.info(`알림이 비활성화 상태입니다 / Alerts for ${contentType} are disabled`);
+      return { success: true, skipped: true };
+    }
+
     const label = contentLabels[contentType];
     const actionLabel = actionLabels[action];
 
@@ -75,6 +113,19 @@ export async function sendContentNotification({
       console.error('[Notification] Server error:', data.error);
       toast.error(`알림 이메일 발송 실패 / Notification email failed: ${data.error}`);
       return { success: false, error: data.error };
+    }
+
+    // Log alerts for all recipients
+    try {
+      const { data: approvedProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .eq('is_approved', true);
+      if (approvedProfiles) {
+        await logAlerts(contentType, subject, approvedProfiles);
+      }
+    } catch (logErr) {
+      console.error('[Notification] Failed to log:', logErr);
     }
 
     console.log(`[Notification] Sent: ${contentType} ${action}, ${data?.sentCount} recipients`);

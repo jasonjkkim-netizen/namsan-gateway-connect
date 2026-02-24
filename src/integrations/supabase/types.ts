@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_log: {
+        Row: {
+          category: string
+          id: string
+          is_manual: boolean
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_user_id: string
+          sent_at: string
+          sent_by: string | null
+          subject: string
+        }
+        Insert: {
+          category: string
+          id?: string
+          is_manual?: boolean
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_user_id: string
+          sent_at?: string
+          sent_by?: string | null
+          subject: string
+        }
+        Update: {
+          category?: string
+          id?: string
+          is_manual?: boolean
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_user_id?: string
+          sent_at?: string
+          sent_by?: string | null
+          subject?: string
+        }
+        Relationships: []
+      }
+      alert_settings: {
+        Row: {
+          category: string
+          id: string
+          is_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       blog_posts: {
         Row: {
           author: string
