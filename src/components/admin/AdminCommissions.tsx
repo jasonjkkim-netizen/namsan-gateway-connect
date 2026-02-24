@@ -533,6 +533,19 @@ export function AdminCommissions() {
       });
     });
 
+    // Exchange rate info sheet
+    const fxSheet = wb.addWorksheet(language === 'ko' ? '환율 정보' : 'Exchange Rate');
+    fxSheet.columns = [
+      { header: language === 'ko' ? '항목' : 'Item', key: 'item', width: 30 },
+      { header: language === 'ko' ? '값' : 'Value', key: 'value', width: 25 },
+    ];
+    fxSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    fxSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+    fxSheet.addRow({ item: language === 'ko' ? '적용 환율 (USD/KRW)' : 'Applied Rate (USD/KRW)', value: usdKrwRate.toLocaleString() });
+    fxSheet.addRow({ item: language === 'ko' ? '표시 통화' : 'Display Currency', value: displayCurrency });
+    fxSheet.addRow({ item: language === 'ko' ? '리포트 생성일' : 'Report Date', value: format(new Date(), 'yyyy-MM-dd HH:mm:ss') });
+    fxSheet.addRow({ item: language === 'ko' ? '비고' : 'Note', value: language === 'ko' ? '환율은 시장 지수(USDKRW=X) 기준 최신 값입니다' : 'Rate is the latest value from market indices (USDKRW=X)' });
+
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
