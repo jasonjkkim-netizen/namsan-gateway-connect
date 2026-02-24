@@ -25,6 +25,7 @@ import { Plus, Edit, Search, Upload, Trash2, Calculator } from 'lucide-react';
 interface Investment {
   id: string;
   user_id: string;
+  product_id: string | null;
   product_name_en: string;
   product_name_ko: string;
   investment_amount: number;
@@ -33,12 +34,18 @@ interface Investment {
   maturity_date: string | null;
   expected_return: number | null;
   status: string | null;
-  // New fields
   invested_currency: string | null;
   realized_return_amount: number | null;
   realized_return_percent: number | null;
   created_by: string | null;
   date_invested: string | null;
+}
+
+interface ProductOption {
+  id: string;
+  name_en: string;
+  name_ko: string;
+  default_currency: string | null;
 }
 
 interface Profile {
@@ -60,9 +67,11 @@ export function AdminInvestments() {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [parsedData, setParsedData] = useState<Record<string, any>[]>([]);
+  const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
 
   const [formData, setFormData] = useState({
     user_id: '',
+    product_id: '',
     product_name_en: '',
     product_name_ko: '',
     investment_amount: '',
@@ -71,7 +80,6 @@ export function AdminInvestments() {
     maturity_date: '',
     expected_return: '',
     status: 'active',
-    // New fields
     invested_currency: 'USD',
     realized_return_amount: '',
     realized_return_percent: '',
@@ -83,13 +91,15 @@ export function AdminInvestments() {
   }, []);
 
   async function fetchData() {
-    const [investmentsRes, profilesRes] = await Promise.all([
+    const [investmentsRes, profilesRes, productsRes] = await Promise.all([
       supabase.from('client_investments').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('id, user_id, email, full_name, sales_role').or('is_deleted.is.null,is_deleted.eq.false').or('is_rejected.is.null,is_rejected.eq.false'),
+      supabase.from('investment_products').select('id, name_en, name_ko, default_currency').eq('is_active', true).order('name_en'),
     ]);
 
     if (investmentsRes.data) setInvestments(investmentsRes.data as Investment[]);
     if (profilesRes.data) setProfiles(profilesRes.data as Profile[]);
+    if (productsRes.data) setProductOptions(productsRes.data as ProductOption[]);
     setLoading(false);
   }
 
@@ -97,6 +107,7 @@ export function AdminInvestments() {
     setEditingInvestment(investment);
     setFormData({
       user_id: investment.user_id,
+      product_id: investment.product_id || '',
       product_name_en: investment.product_name_en,
       product_name_ko: investment.product_name_ko,
       investment_amount: String(investment.investment_amount),
@@ -116,7 +127,7 @@ export function AdminInvestments() {
   const handleAdd = () => {
     setEditingInvestment(null);
     setFormData({
-      user_id: '', product_name_en: '', product_name_ko: '',
+      user_id: '', product_id: '', product_name_en: '', product_name_ko: '',
       investment_amount: '', current_value: '',
       start_date: new Date().toISOString().split('T')[0],
       maturity_date: '', expected_return: '', status: 'active',
@@ -152,6 +163,7 @@ export function AdminInvestments() {
 
     const payload = {
       user_id: validationResult.data.user_id!,
+      product_id: formData.product_id || null,
       product_name_en: validationResult.data.product_name_en!,
       product_name_ko: validationResult.data.product_name_ko!,
       investment_amount: validationResult.data.investment_amount!,
@@ -160,7 +172,6 @@ export function AdminInvestments() {
       maturity_date: validationResult.data.maturity_date ?? null,
       expected_return: validationResult.data.expected_return ?? null,
       status: validationResult.data.status!,
-      // New fields
       invested_currency: formData.invested_currency,
       realized_return_amount: parseNum(formData.realized_return_amount),
       realized_return_percent: parseNum(formData.realized_return_percent),
@@ -169,10 +180,14 @@ export function AdminInvestments() {
     };
 
     let error;
+    let newInvestmentId: string | null = null;
     if (editingInvestment) {
       ({ error } = await supabase.from('client_investments').update(payload).eq('id', editingInvestment.id));
+      newInvestmentId = editingInvestment.id;
     } else {
-      ({ error } = await supabase.from('client_investments').insert(payload));
+      const { data: inserted, error: insertErr } = await supabase.from('client_investments').insert(payload).select('id').single();
+      error = insertErr;
+      newInvestmentId = inserted?.id || null;
     }
 
     if (error) {
@@ -180,6 +195,27 @@ export function AdminInvestments() {
       console.error(error);
     } else {
       toast.success(language === 'ko' ? '저장 완료' : 'Saved successfully');
+
+      // Auto-trigger commission calculation if product_id is set
+      if (newInvestmentId && formData.product_id) {
+        try {
+          const { data: commResult, error: commErr } = await supabase.functions.invoke('calculate-commissions', {
+            body: { investment_id: newInvestmentId },
+          });
+          if (commErr) throw commErr;
+          if (commResult?.distributions_created > 0) {
+            toast.success(
+              language === 'ko'
+                ? `${commResult.distributions_created}건 커미션 자동 배분 완료`
+                : `${commResult.distributions_created} commission distributions created`
+            );
+          }
+        } catch (commErr) {
+          console.error('Auto commission calc error:', commErr);
+          toast.warning(language === 'ko' ? '커미션 자동 계산 실패' : 'Auto commission calculation failed');
+        }
+      }
+
       setDialogOpen(false);
       fetchData();
     }
@@ -415,6 +451,39 @@ export function AdminInvestments() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            {/* Product Selector */}
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '상품 선택' : 'Select Product'}</Label>
+              <Select
+                value={formData.product_id}
+                onValueChange={(v) => {
+                  const product = productOptions.find(p => p.id === v);
+                  if (product) {
+                    setFormData({
+                      ...formData,
+                      product_id: v,
+                      product_name_en: product.name_en,
+                      product_name_ko: product.name_ko,
+                      invested_currency: product.default_currency || formData.invested_currency,
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={language === 'ko' ? '상품 선택 (선택사항)' : 'Select product (optional)'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {productOptions.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {language === 'ko' ? p.name_ko : p.name_en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {language === 'ko' ? '상품을 선택하면 커미션이 자동 배분됩니다' : 'Selecting a product enables automatic commission distribution'}
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
