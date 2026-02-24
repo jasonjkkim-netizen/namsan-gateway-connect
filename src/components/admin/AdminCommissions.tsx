@@ -79,8 +79,8 @@ interface Product {
 }
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
-  ko: { district_manager: '총괄관리', principal_agent: '수석 에이전트', agent: '에이전트', client: '고객' },
-  en: { district_manager: 'General Manager', principal_agent: 'Principal Agent', agent: 'Agent', client: 'Client' },
+  ko: { district_manager: '총괄관리', deputy_district_manager: '부총괄관리', principal_agent: '수석 에이전트', agent: '에이전트', client: '고객' },
+  en: { district_manager: 'General Manager', deputy_district_manager: 'Deputy GM', principal_agent: 'Principal Agent', agent: 'Agent', client: 'Client' },
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -90,8 +90,8 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'destructive',
 };
 
-const SALES_ROLES = ['district_manager', 'principal_agent', 'agent'] as const;
-const ROLE_LEVELS: Record<string, number> = { district_manager: 1, principal_agent: 2, agent: 3 };
+const SALES_ROLES = ['district_manager', 'deputy_district_manager', 'principal_agent', 'agent'] as const;
+const ROLE_LEVELS: Record<string, number> = { district_manager: 1, deputy_district_manager: 2, principal_agent: 3, agent: 4 };
 
 // Reports sub-component
 function AdminCommissionReports({

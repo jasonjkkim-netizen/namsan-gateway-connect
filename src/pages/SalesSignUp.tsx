@@ -19,7 +19,7 @@ import logo from '@/assets/logo.jpg';
 import { z } from 'zod';
 import { ArrowLeft, Building2, UserCog, Users, User } from 'lucide-react';
 
-type SalesRole = 'district_manager' | 'principal_agent' | 'agent' | 'client';
+type SalesRole = 'district_manager' | 'deputy_district_manager' | 'principal_agent' | 'agent' | 'client';
 
 const ROLE_CONFIG: Record<SalesRole, {
   labelEn: string;
@@ -36,6 +36,14 @@ const ROLE_CONFIG: Record<SalesRole, {
     descKo: '팀과 지역을 관리하는 최상위 영업 리더',
     icon: Building2,
     color: 'text-blue-600',
+  },
+  deputy_district_manager: {
+    labelEn: 'Deputy General Manager',
+    labelKo: '부총괄관리',
+    descEn: 'Assist the General Manager and oversee teams',
+    descKo: '총괄관리를 보좌하고 팀을 관리',
+    icon: Building2,
+    color: 'text-indigo-600',
   },
   principal_agent: {
     labelEn: 'Principal Agent',
@@ -180,7 +188,7 @@ export default function SalesSignUp() {
   }
 
   const roleConfig = ROLE_CONFIG[selectedRole];
-  const needsSponsor = selectedRole !== 'district_manager';
+  const needsSponsor = selectedRole !== 'district_manager' && selectedRole !== 'deputy_district_manager';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,9 +210,10 @@ export default function SalesSignUp() {
       // Validate sponsor exists if required
       const ROLE_LEVELS: Record<string, number> = {
         district_manager: 1,
-        principal_agent: 2,
-        agent: 3,
-        client: 4,
+        deputy_district_manager: 2,
+        principal_agent: 3,
+        agent: 4,
+        client: 5,
       };
 
       let sponsorUserId: string | null = null;

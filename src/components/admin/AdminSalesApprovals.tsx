@@ -39,6 +39,7 @@ type ViewMode = 'pending' | 'active' | 'suspended' | 'rejected';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
   district_manager: { en: 'General Manager', ko: '총괄관리' },
+  deputy_district_manager: { en: 'Deputy General Manager', ko: '부총괄관리' },
   principal_agent: { en: 'Principal Agent', ko: '수석 에이전트' },
   agent: { en: 'Agent', ko: '에이전트' },
   client: { en: 'Client', ko: '고객' },
@@ -46,6 +47,7 @@ const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
 
 const ROLE_ICONS: Record<string, typeof Building2> = {
   district_manager: Building2,
+  deputy_district_manager: Building2,
   principal_agent: UserCog,
   agent: Users,
   client: User,
@@ -56,6 +58,7 @@ function RoleBadge({ role, language }: { role: string | null; language: string }
   const label = ROLE_LABELS[role];
   const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
     district_manager: 'default',
+    deputy_district_manager: 'default',
     principal_agent: 'secondary',
     agent: 'outline',
     client: 'outline',
@@ -192,9 +195,10 @@ export function AdminSalesApprovals() {
       // Role level map
       const ROLE_LEVELS: Record<string, number> = {
         district_manager: 1,
-        principal_agent: 2,
-        agent: 3,
-        client: 4,
+        deputy_district_manager: 2,
+        principal_agent: 3,
+        agent: 4,
+        client: 5,
       };
 
       const newLevel = ROLE_LEVELS[newRole] || 0;
@@ -391,6 +395,7 @@ export function AdminSalesApprovals() {
             <SelectContent>
               <SelectItem value="all">{language === 'ko' ? '모든 역할' : 'All Roles'}</SelectItem>
               <SelectItem value="district_manager">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>
+              <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>
               <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
               <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
               <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
@@ -466,6 +471,7 @@ export function AdminSalesApprovals() {
                       </SelectTrigger>
                       <SelectContent className="bg-popover z-50">
                         <SelectItem value="district_manager">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>
+                        <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>
                         <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
                         <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
                         <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
