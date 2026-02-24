@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon } from 'lucide-react';
+import { Users, DollarSign, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import ExcelJS from 'exceljs';
@@ -421,6 +421,18 @@ export default function SalesDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-2">
+                    {/* Root: current user (self) */}
+                    <div className="flex items-center gap-3 rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3">
+                      <Crown className="h-4 w-4 text-primary" />
+                      <span className="font-semibold">
+                        {profile?.full_name || user?.email}
+                      </span>
+                      <Badge variant="default" className="text-xs">
+                        {(profile as any)?.sales_role
+                          ? getRoleLabel((profile as any).sales_role)
+                          : 'Admin'}
+                      </Badge>
+                    </div>
                     {Object.keys(downlineByDepth)
                       .sort((a, b) => Number(a) - Number(b))
                       .map((depthStr) => {
@@ -438,7 +450,7 @@ export default function SalesDashboard() {
                                 <div
                                   key={m.user_id}
                                   className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-muted/30 transition-colors"
-                                  style={{ marginLeft: `${depth * 24}px` }}
+                                  style={{ marginLeft: `${(depth + 1) * 24}px` }}
                                 >
                                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                                   <span className="font-medium">
