@@ -73,7 +73,7 @@ serve(async (req: Request) => {
       for (const email of batch) {
         try {
           const result = await resend.emails.send({
-            from: "Namsan Partners <newsletter@namsan-partners.com>",
+            from: "Namsan Partners <noreply@namsan-partners.com>",
             to: [email],
             subject: subject,
             html: `
