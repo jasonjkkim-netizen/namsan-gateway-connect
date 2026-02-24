@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Bell, ExternalLink } from 'lucide-react';
+import { Bell, ExternalLink, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Table,
   TableBody,
@@ -100,9 +102,18 @@ export function InterestNewsSection({ language }: Props) {
       }));
 
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      return items.slice(0, 15);
+      
+      // Filter to today's items only
+      const today = new Date().toDateString();
+      const todayItems = items.filter(item => new Date(item.created_at).toDateString() === today);
+      return todayItems;
     },
   });
+
+  const [expanded, setExpanded] = useState(false);
+  const VISIBLE_COUNT = 5;
+  const hasMore = (updates?.length || 0) > VISIBLE_COUNT;
+  const visibleUpdates = hasMore && !expanded ? updates?.slice(0, VISIBLE_COUNT) : updates;
 
   const handleRowClick = (item: UpdateItem) => {
     const typeRoutes: Record<string, string> = {
@@ -146,8 +157,9 @@ export function InterestNewsSection({ language }: Props) {
                     <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                   </TableRow>
                 ))
-              ) : updates && updates.length > 0 ? (
-                updates.map((item) => {
+              ) : visibleUpdates && visibleUpdates.length > 0 ? (
+                <>
+                {visibleUpdates.map((item) => {
                   const date = new Date(item.created_at);
                   const config = TYPE_CONFIG[item.type];
                   const isToday = new Date().toDateString() === date.toDateString();
@@ -197,7 +209,35 @@ export function InterestNewsSection({ language }: Props) {
                       </TableCell>
                     </TableRow>
                   );
-                })
+                })}
+                {hasMore && !expanded && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-2">
+                      <button
+                        onClick={() => setExpanded(true)}
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5" />
+                        {language === 'ko' 
+                          ? `${(updates?.length || 0) - VISIBLE_COUNT}개 더 보기` 
+                          : `Show ${(updates?.length || 0) - VISIBLE_COUNT} more`}
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {hasMore && expanded && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-2">
+                      <button
+                        onClick={() => setExpanded(false)}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:underline"
+                      >
+                        {language === 'ko' ? '접기' : 'Collapse'}
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </>
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-xs">
