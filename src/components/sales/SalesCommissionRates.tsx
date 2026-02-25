@@ -193,18 +193,90 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
     return { upfront: 0, performance: 0, source: 'default' as const, id: null };
   };
 
+  // Get the current display value for a role (edited or effective)
+  const getCurrentRateValue = (productId: string, role: string, field: 'upfront' | 'performance', excludeEdited?: Record<string, { upfront: string; performance: string }>): number => {
+    const key = `${productId}_${role}_default`;
+    const edited = (excludeEdited || editedRates)[key];
+    if (edited && edited[field] !== '') {
+      const val = parseFloat(edited[field]);
+      if (!isNaN(val)) return val;
+    }
+    const effective = getEffectiveRate(productId, role);
+    return field === 'upfront' ? effective.upfront : effective.performance;
+  };
+
+  // Waterfall: when a role's rate changes, auto-distribute remaining to roles below
   const handleRateChange = (
     key: string,
     field: 'upfront' | 'performance',
     value: string
   ) => {
-    setEditedRates((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key] || { upfront: '', performance: '' },
-        [field]: value,
-      },
-    }));
+    const [productId, role, targetUserId] = key.split('_');
+
+    // For individual overrides, just set normally
+    if (targetUserId && targetUserId !== 'default') {
+      setEditedRates((prev) => ({
+        ...prev,
+        [key]: {
+          ...prev[key] || { upfront: '', performance: '' },
+          [field]: value,
+        },
+      }));
+      return;
+    }
+
+    // Waterfall logic for role-level defaults
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const totalAvailable = field === 'upfront'
+      ? Number(product.upfront_commission_percent) || 0
+      : Number(product.performance_fee_percent) || 0;
+
+    const changedRoleIdx = SALES_ROLES_ORDERED.indexOf(role as typeof SALES_ROLES_ORDERED[number]);
+
+    // Start with current edited rates, apply the new change
+    const newEdited: Record<string, { upfront: string; performance: string }> = { ...editedRates };
+    newEdited[key] = {
+      ...newEdited[key] || { upfront: '', performance: '' },
+      [field]: value,
+    };
+
+    // Calculate sum of roles ABOVE and INCLUDING the changed role
+    let consumed = 0;
+    for (let i = 0; i <= changedRoleIdx; i++) {
+      const r = SALES_ROLES_ORDERED[i];
+      const rKey = `${productId}_${r}_default`;
+      if (i === changedRoleIdx) {
+        const val = parseFloat(value);
+        consumed += isNaN(val) ? 0 : val;
+      } else {
+        consumed += getCurrentRateValue(productId, r, field, newEdited);
+      }
+    }
+
+    let remaining = Math.max(0, totalAvailable - consumed);
+
+    // Distribute remaining: next role gets all remaining, rest get 0
+    for (let i = changedRoleIdx + 1; i < SALES_ROLES_ORDERED.length; i++) {
+      const r = SALES_ROLES_ORDERED[i];
+      const rKey = `${productId}_${r}_default`;
+      if (i === changedRoleIdx + 1) {
+        // Next role gets all remaining
+        newEdited[rKey] = {
+          ...newEdited[rKey] || { upfront: '', performance: '' },
+          [field]: remaining.toFixed(2),
+        };
+      } else {
+        // Roles further below get 0
+        newEdited[rKey] = {
+          ...newEdited[rKey] || { upfront: '', performance: '' },
+          [field]: '0',
+        };
+      }
+    }
+
+    setEditedRates(newEdited);
   };
 
   // Recalculate commissions for all investments linked to given product IDs
@@ -535,110 +607,194 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pb-4">
-                  {/* Role-level defaults */}
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[180px]">
-                          {language === 'ko' ? '역할' : 'Role'}
-                        </TableHead>
-                        <TableHead className="w-[120px]">
-                          {language === 'ko' ? '선취 수수료(%)' : 'Upfront (%)'}
-                        </TableHead>
-                        <TableHead className="w-[120px]">
-                          {language === 'ko' ? '성과 수수료(%)' : 'Performance (%)'}
-                        </TableHead>
-                        <TableHead>
-                          {language === 'ko' ? '출처' : 'Source'}
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {SALES_ROLES_ORDERED.map((role) => {
-                        const effective = getEffectiveRate(product.id, role);
-                        const key = `${product.id}_${role}_default`;
-                        const edited = editedRates[key];
-                        const canEdit = editableRoles.includes(role);
-                        const displayUpfront = edited?.upfront ?? effective.upfront.toString();
-                        const displayPerf = edited?.performance ?? effective.performance.toString();
+                  {/* Product total info */}
+                  {(() => {
+                    const totalUpfront = Number(product.upfront_commission_percent) || 0;
+                    const totalPerf = Number(product.performance_fee_percent) || 0;
+                    
+                    // Calculate each role's current value (with edits applied)
+                    const roleValues = SALES_ROLES_ORDERED.map((role) => {
+                      const key = `${product.id}_${role}_default`;
+                      const edited = editedRates[key];
+                      const effective = getEffectiveRate(product.id, role);
+                      const upfront = edited?.upfront !== undefined && edited.upfront !== '' 
+                        ? parseFloat(edited.upfront) || 0 
+                        : effective.upfront;
+                      const perf = edited?.performance !== undefined && edited.performance !== '' 
+                        ? parseFloat(edited.performance) || 0 
+                        : effective.performance;
+                      return { role, upfront, perf };
+                    });
 
-                        return (
-                          <TableRow key={role}>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs">
-                                {ROLE_LABELS[language]?.[role] || role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {canEdit ? (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  max="100"
-                                  value={displayUpfront}
-                                  onChange={(e) =>
-                                    handleRateChange(key, 'upfront', e.target.value)
-                                  }
-                                  className="w-20 h-8 text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm">{effective.upfront.toFixed(2)}%</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {canEdit ? (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  max="100"
-                                  value={displayPerf}
-                                  onChange={(e) =>
-                                    handleRateChange(key, 'performance', e.target.value)
-                                  }
-                                  className="w-20 h-8 text-sm"
-                                />
-                              ) : (
-                                <span className="text-sm">{effective.performance.toFixed(2)}%</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  effective.source === 'product'
-                                    ? 'default'
-                                    : effective.source === 'override'
-                                    ? 'secondary'
-                                    : 'outline'
-                                }
-                                className="text-xs"
-                              >
-                                {effective.source === 'product'
-                                  ? (language === 'ko' ? '수동설정' : 'Custom')
-                                  : effective.source === 'override'
-                                  ? (language === 'ko' ? '개인설정' : 'Override')
-                                  : (language === 'ko' ? '기본값' : 'Default')}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {/* Total row */}
-                      <TableRow className="bg-muted/30 font-semibold">
-                        <TableCell>
-                          {language === 'ko' ? '합계' : 'Total'}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {productTotal.totalUpfront.toFixed(2)}%
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {productTotal.totalPerformance.toFixed(2)}%
-                        </TableCell>
-                        <TableCell />
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                    // Running remaining for each row
+                    let remainingUpfront = totalUpfront;
+                    let remainingPerf = totalPerf;
+                    const rowsWithRemaining = roleValues.map((rv) => {
+                      remainingUpfront -= rv.upfront;
+                      remainingPerf -= rv.perf;
+                      return {
+                        ...rv,
+                        remainingUpfront: Math.max(0, parseFloat(remainingUpfront.toFixed(2))),
+                        remainingPerf: Math.max(0, parseFloat(remainingPerf.toFixed(2))),
+                      };
+                    });
+
+                    const allocatedUpfront = roleValues.reduce((s, r) => s + r.upfront, 0);
+                    const allocatedPerf = roleValues.reduce((s, r) => s + r.perf, 0);
+                    const overflowUpfront = allocatedUpfront > totalUpfront;
+                    const overflowPerf = allocatedPerf > totalPerf;
+
+                    return (
+                      <>
+                        {/* Product total banner */}
+                        <div className="flex items-center gap-4 mb-3 p-2.5 rounded-md bg-primary/5 border border-primary/20">
+                          <span className="text-xs font-semibold text-primary">
+                            {language === 'ko' ? '상품 총 커미션' : 'Product Total Commission'}
+                          </span>
+                          <span className="text-xs">
+                            {language === 'ko' ? '선취' : 'Upfront'}: <strong>{totalUpfront.toFixed(2)}%</strong>
+                          </span>
+                          <span className="text-xs">
+                            {language === 'ko' ? '성과' : 'Perf'}: <strong>{totalPerf.toFixed(2)}%</strong>
+                          </span>
+                        </div>
+
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[160px]">
+                                {language === 'ko' ? '역할' : 'Role'}
+                              </TableHead>
+                              <TableHead className="w-[110px]">
+                                {language === 'ko' ? '선취 수수료(%)' : 'Upfront (%)'}
+                              </TableHead>
+                              <TableHead className="w-[110px]">
+                                {language === 'ko' ? '성과 수수료(%)' : 'Performance (%)'}
+                              </TableHead>
+                              <TableHead className="w-[130px]">
+                                {language === 'ko' ? '잔여 (선취/성과)' : 'Remaining'}
+                              </TableHead>
+                              <TableHead>
+                                {language === 'ko' ? '출처' : 'Source'}
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {SALES_ROLES_ORDERED.map((role, idx) => {
+                              const effective = getEffectiveRate(product.id, role);
+                              const key = `${product.id}_${role}_default`;
+                              const edited = editedRates[key];
+                              const canEdit = editableRoles.includes(role);
+                              const displayUpfront = edited?.upfront ?? effective.upfront.toString();
+                              const displayPerf = edited?.performance ?? effective.performance.toString();
+                              const rowData = rowsWithRemaining[idx];
+
+                              return (
+                                <TableRow key={role}>
+                                  <TableCell>
+                                    <Badge variant="outline" className="text-xs">
+                                      {ROLE_LABELS[language]?.[role] || role}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {canEdit ? (
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        value={displayUpfront}
+                                        onChange={(e) =>
+                                          handleRateChange(key, 'upfront', e.target.value)
+                                        }
+                                        className="w-20 h-8 text-sm"
+                                      />
+                                    ) : (
+                                      <span className="text-sm">{effective.upfront.toFixed(2)}%</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {canEdit ? (
+                                      <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        value={displayPerf}
+                                        onChange={(e) =>
+                                          handleRateChange(key, 'performance', e.target.value)
+                                        }
+                                        className="w-20 h-8 text-sm"
+                                      />
+                                    ) : (
+                                      <span className="text-sm">{effective.performance.toFixed(2)}%</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className={`text-xs font-mono ${rowData.remainingUpfront === 0 && rowData.remainingPerf === 0 ? 'text-muted-foreground' : 'text-accent'}`}>
+                                      {rowData.remainingUpfront.toFixed(2)} / {rowData.remainingPerf.toFixed(2)}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        effective.source === 'product'
+                                          ? 'default'
+                                          : effective.source === 'override'
+                                          ? 'secondary'
+                                          : 'outline'
+                                      }
+                                      className="text-xs"
+                                    >
+                                      {effective.source === 'product'
+                                        ? (language === 'ko' ? '수동설정' : 'Custom')
+                                        : effective.source === 'override'
+                                        ? (language === 'ko' ? '개인설정' : 'Override')
+                                        : (language === 'ko' ? '기본값' : 'Default')}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                            {/* Allocated Total row */}
+                            <TableRow className="bg-muted/30 font-semibold border-t-2">
+                              <TableCell>
+                                {language === 'ko' ? '배분 합계' : 'Allocated'}
+                              </TableCell>
+                              <TableCell className={`text-sm ${overflowUpfront ? 'text-destructive' : ''}`}>
+                                {allocatedUpfront.toFixed(2)}%
+                                {overflowUpfront && <span className="text-xs ml-1">⚠</span>}
+                              </TableCell>
+                              <TableCell className={`text-sm ${overflowPerf ? 'text-destructive' : ''}`}>
+                                {allocatedPerf.toFixed(2)}%
+                                {overflowPerf && <span className="text-xs ml-1">⚠</span>}
+                              </TableCell>
+                              <TableCell />
+                              <TableCell />
+                            </TableRow>
+                            {/* Product Total row */}
+                            <TableRow className="bg-primary/5 font-semibold">
+                              <TableCell>
+                                {language === 'ko' ? '총 커미션' : 'Total Commission'}
+                              </TableCell>
+                              <TableCell className="text-sm text-primary">
+                                {totalUpfront.toFixed(2)}%
+                              </TableCell>
+                              <TableCell className="text-sm text-primary">
+                                {totalPerf.toFixed(2)}%
+                              </TableCell>
+                              <TableCell>
+                                <span className={`text-xs font-mono ${(totalUpfront - allocatedUpfront < 0 || totalPerf - allocatedPerf < 0) ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                  {Math.max(0, totalUpfront - allocatedUpfront).toFixed(2)} / {Math.max(0, totalPerf - allocatedPerf).toFixed(2)}
+                                </span>
+                              </TableCell>
+                              <TableCell />
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </>
+                    );
+                  })()}
 
                   {/* Per-member overrides */}
                   {salesDownline.length > 0 && (
