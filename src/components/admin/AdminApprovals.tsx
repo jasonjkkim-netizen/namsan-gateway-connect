@@ -40,6 +40,7 @@ interface PendingProfile {
   is_rejected: boolean | null;
   rejected_at: string | null;
   created_at: string;
+  sales_role: string | null;
 }
 
 type ViewMode = 'pending' | 'approved' | 'rejected';
@@ -118,6 +119,22 @@ export function AdminApprovals() {
           ? `${profile.full_name} 님이 승인되었습니다`
           : `${profile.full_name} has been approved`
       );
+
+      // Send role notification
+      try {
+        await supabase.functions.invoke('notify-sales', {
+          body: {
+            type: 'role_approved',
+            user_id: profile.user_id,
+            user_name: profile.full_name,
+            user_email: profile.email,
+            role: profile.sales_role || 'client',
+          },
+        });
+      } catch (e) {
+        console.error('Role notification failed:', e);
+      }
+
       fetchProfiles();
     }
     setConfirmDialog({ open: false, profile: null, action: 'approve' });

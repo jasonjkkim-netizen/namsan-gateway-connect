@@ -88,6 +88,7 @@ export function AdminAlerts() {
     message: '',
   });
   const [sending, setSending] = useState(false);
+  const [bulkSending, setBulkSending] = useState(false);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -347,6 +348,31 @@ export function AdminAlerts() {
             <Button size="sm" onClick={() => setSendDialogOpen(true)}>
               <Send className="h-4 w-4 mr-1" />
               {language === 'ko' ? '수동 발송' : 'Manual Send'}
+            </Button>
+            <Button size="sm" variant="secondary" disabled={bulkSending} onClick={async () => {
+              setBulkSending(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('notify-sales', {
+                  body: { type: 'bulk_role_notification' },
+                });
+                if (error) throw error;
+                toast.success(
+                  language === 'ko'
+                    ? `${data?.sent || 0}명에게 역할 안내 메일을 발송했습니다`
+                    : `Role notification sent to ${data?.sent || 0} users`
+                );
+                fetchAll();
+              } catch (e) {
+                console.error(e);
+                toast.error(language === 'ko' ? '일괄 발송 실패' : 'Bulk send failed');
+              } finally {
+                setBulkSending(false);
+              }
+            }}>
+              <Mail className="h-4 w-4 mr-1" />
+              {bulkSending 
+                ? (language === 'ko' ? '발송 중...' : 'Sending...') 
+                : (language === 'ko' ? '역할 일괄 안내' : 'Bulk Role Notify')}
             </Button>
             <Button variant="outline" size="sm" onClick={fetchAll} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
