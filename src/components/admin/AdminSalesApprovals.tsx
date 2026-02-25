@@ -191,6 +191,24 @@ export function AdminSalesApprovals() {
           ? `${profile.full_name} 님이 ${actionLabels[action].ko}`
           : `${profile.full_name} has been ${actionLabels[action].en}`
       );
+
+      // Send role notification on approval
+      if (action === 'approve' && profile.sales_role) {
+        try {
+          await supabase.functions.invoke('notify-sales', {
+            body: {
+              type: 'role_approved',
+              user_id: profile.user_id,
+              user_name: profile.full_name,
+              user_email: profile.email,
+              role: profile.sales_role,
+            },
+          });
+        } catch (e) {
+          console.error('Role notification failed:', e);
+        }
+      }
+
       fetchProfiles();
     }
     setConfirmDialog({ open: false, profile: null, action: 'approve' });
@@ -287,6 +305,24 @@ export function AdminSalesApprovals() {
           ? `${profile.full_name} 님의 역할이 ${roleLabel}(으)로 변경되었습니다`
           : `${profile.full_name}'s role changed to ${roleLabel}`
       );
+
+      // Send role change notification
+      if (effectiveNewRole) {
+        try {
+          await supabase.functions.invoke('notify-sales', {
+            body: {
+              type: 'role_changed',
+              user_id: profile.user_id,
+              user_name: profile.full_name,
+              role: effectiveNewRole,
+              old_role: profile.sales_role || '',
+            },
+          });
+        } catch (e) {
+          console.error('Role change notification failed:', e);
+        }
+      }
+
       fetchProfiles();
     } catch (err) {
       console.error(err);

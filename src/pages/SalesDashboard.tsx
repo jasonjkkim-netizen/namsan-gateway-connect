@@ -296,6 +296,22 @@ export default function SalesDashboard() {
           ? `${member.full_name} 님의 역할이 ${getRoleLabel(newRole)}(으)로 변경되었습니다`
           : `${member.full_name}'s role changed to ${getRoleLabel(newRole)}`
       );
+
+      // Send role change notification
+      try {
+        await supabase.functions.invoke('notify-sales', {
+          body: {
+            type: 'role_changed',
+            user_id: member.user_id,
+            user_name: member.full_name,
+            role: newRole,
+            old_role: member.sales_role || '',
+          },
+        });
+      } catch (e) {
+        console.error('Role change notification failed:', e);
+      }
+
       fetchAll();
     } catch (err: any) {
       console.error(err);
