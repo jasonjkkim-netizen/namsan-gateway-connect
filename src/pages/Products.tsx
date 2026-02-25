@@ -26,6 +26,7 @@ interface Product {
   minimum_investment: number | null;
   募集_deadline: string | null;
   status: string;
+  image_url: string | null;
 }
 
 interface ProductAccess {
@@ -191,6 +192,15 @@ export default function Products() {
                             }`}
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
+                            {product.image_url && (
+                              <div className="mb-3 -mx-5 -mt-5 overflow-hidden rounded-t-lg">
+                                <img
+                                  src={product.image_url}
+                                  alt={language === 'ko' ? product.name_ko : product.name_en}
+                                  className="w-full h-36 object-cover"
+                                />
+                              </div>
+                            )}
                             <div className="flex items-start justify-between mb-3">
                               <Badge className={getStatusColor(product.status)}>
                                 {t(product.status)}
