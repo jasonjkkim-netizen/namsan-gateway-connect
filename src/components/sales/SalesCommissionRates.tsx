@@ -355,14 +355,39 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
         toast.error(language === 'ko' ? '일부 요율 저장 실패' : 'Some rates failed to save');
       } else {
         toast.success(language === 'ko' ? '커미션 요율이 저장되었습니다' : 'Commission rates saved');
+        
+        // Collect affected info before clearing
+        const affectedProductIds = [
+          ...new Set(Object.keys(editedRates).map((k) => k.split('_')[0])),
+        ];
+        const affectedRoles = [
+          ...new Set(Object.keys(editedRates).map((k) => k.split('_')[1])),
+        ];
+        
         setEditedRates({});
         await fetchData();
 
         // Recalculate commissions for affected products
-        const affectedProductIds = [
-          ...new Set(Object.keys(editedRates).map((k) => k.split('_')[0])),
-        ];
         await recalculateCommissions(affectedProductIds);
+
+        // Notify all upper-level supervisors
+        try {
+          const affectedProducts = products
+            .filter((p) => affectedProductIds.includes(p.id))
+            .map((p) => ({ en: p.name_en, ko: p.name_ko }));
+
+          await supabase.functions.invoke('notify-sales', {
+            body: {
+              type: 'commission_rate_changed',
+              user_id: user.id,
+              changed_by_name: profile?.full_name || user.email,
+              product_names: affectedProducts,
+              affected_roles: affectedRoles,
+            },
+          });
+        } catch (notifyErr) {
+          console.error('Rate change notification failed (non-blocking):', notifyErr);
+        }
       }
     } catch (err) {
       console.error(err);

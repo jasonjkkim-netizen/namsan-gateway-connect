@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface NotificationPayload {
-  type: "investment_created" | "commission_status_changed" | "role_approved" | "role_changed" | "bulk_role_notification";
+  type: "investment_created" | "commission_status_changed" | "role_approved" | "role_changed" | "bulk_role_notification" | "commission_rate_changed";
   investment_id?: string;
   investor_name?: string;
   product_name_en?: string;
@@ -23,6 +23,10 @@ interface NotificationPayload {
   user_email?: string;
   role?: string;
   old_role?: string;
+  // Rate change fields
+  changed_by_name?: string;
+  product_names?: { en: string; ko: string }[];
+  affected_roles?: string[];
 }
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
@@ -509,6 +513,84 @@ Deno.serve(async (req) => {
               isKo
                 ? `<p>수수료 상태가 <strong>${label.ko}</strong>(으)로 변경되었습니다.</p><p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">영업 대시보드 바로가기</a></p>`
                 : `<p>Your commission status has been updated to <strong>${label.en}</strong>.</p><p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">Go to Sales Dashboard</a></p>`
+            );
+          }
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, notified: allRecipientIds.size }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Commission Rate Changed ──
+    if (payload.type === "commission_rate_changed") {
+      if (!payload.user_id || !payload.changed_by_name) {
+        return new Response(JSON.stringify({ error: "Missing fields" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Get ancestors of the user who changed rates
+      const allRecipientIds = new Set<string>();
+      const supervisors = await getSupervisorChain(supabase, payload.user_id);
+      supervisors.forEach((id) => allRecipientIds.add(id));
+
+      if (allRecipientIds.size === 0) {
+        return new Response(JSON.stringify({ success: true, notified: 0 }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const productNamesKo = (payload.product_names || []).map(p => p.ko).join(', ') || '—';
+      const productNamesEn = (payload.product_names || []).map(p => p.en).join(', ') || '—';
+      const rolesKo = (payload.affected_roles || []).map(r => getRoleLabel(r, 'ko')).join(', ');
+      const rolesEn = (payload.affected_roles || []).map(r => getRoleLabel(r, 'en')).join(', ');
+
+      const notifications = Array.from(allRecipientIds).map((uid) => ({
+        user_id: uid,
+        type: "commission",
+        title_en: "Commission Rates Updated",
+        title_ko: "수수료 요율 변경",
+        body_en: `${payload.changed_by_name} updated commission rates for ${productNamesEn}${rolesEn ? ` (${rolesEn})` : ''}.`,
+        body_ko: `${payload.changed_by_name}님이 ${productNamesKo}의 수수료 요율을 변경했습니다${rolesKo ? ` (${rolesKo})` : ''}.`,
+        link: "/sales-dashboard",
+      }));
+
+      await supabase.from("notifications").insert(notifications);
+
+      // Log
+      const logSubject = `[Rate Change] by ${payload.changed_by_name} - ${productNamesEn}`;
+      const { data: recipientProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", Array.from(allRecipientIds));
+      if (recipientProfiles) {
+        await logAlerts(supabase, "commission", logSubject,
+          recipientProfiles.map((p: any) => ({ user_id: p.user_id, name: p.full_name, email: p.email }))
+        );
+      }
+
+      // Email
+      if (resendKey) {
+        for (const uid of allRecipientIds) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("email, preferred_language, full_name")
+            .eq("user_id", uid)
+            .single();
+
+          if (prof?.email) {
+            const isKo = prof.preferred_language === "ko";
+            await sendEmail(
+              resendKey, prof.email,
+              isKo
+                ? `[남산파트너스] 수수료 요율 변경 알림`
+                : `[Namsan Partners] Commission Rate Update`,
+              isKo
+                ? `<p>${prof.full_name}님,</p><p><strong>${payload.changed_by_name}</strong>님이 다음 상품의 수수료 요율을 변경했습니다:</p><p><strong>${productNamesKo}</strong></p>${rolesKo ? `<p>변경 역할: ${rolesKo}</p>` : ''}<p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">영업 대시보드에서 확인하기</a></p>`
+                : `<p>Dear ${prof.full_name},</p><p><strong>${payload.changed_by_name}</strong> has updated commission rates for:</p><p><strong>${productNamesEn}</strong></p>${rolesEn ? `<p>Affected roles: ${rolesEn}</p>` : ''}<p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">View in Sales Dashboard</a></p>`
             );
           }
         }
