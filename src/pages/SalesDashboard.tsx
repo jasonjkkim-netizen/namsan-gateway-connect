@@ -116,12 +116,14 @@ export default function SalesDashboard() {
     newRole: string;
   }>({ open: false, member: null, newRole: '' });
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const userSalesRole = (profile as any)?.sales_role;
   const isWebmaster = userSalesRole === 'webmaster';
   const isDM = userSalesRole === 'district_manager' || isWebmaster;
   const isDeputyDM = userSalesRole === 'deputy_district_manager';
   const canChangeRoles = isDM || isDeputyDM;
+  const canSeeTotalCommissions = isWebmaster || isAdmin;
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -134,8 +136,19 @@ export default function SalesDashboard() {
     if (!user) return;
     setLoading(true);
 
+    // Check admin role
+    const { data: adminData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    const userIsAdmin = !!adminData;
+    setIsAdmin(userIsAdmin);
+
     const currentRole = (profile as any)?.sales_role;
     const isDMUser = currentRole === 'district_manager' || currentRole === 'webmaster';
+    const canSeeAll = currentRole === 'webmaster' || userIsAdmin;
 
     let downlineData: DownlineMember[];
 
@@ -165,12 +178,34 @@ export default function SalesDashboard() {
 
     setDownline(downlineData);
 
-    // Fetch commissions for this user
-    const { data: commData } = await supabase
-      .from('commission_distributions')
-      .select('*')
-      .eq('to_user_id', user.id)
-      .order('created_at', { ascending: false });
+    // Fetch commissions based on role visibility
+    let commQuery;
+    if (canSeeAll) {
+      // Webmaster/Admin: see ALL commissions
+      commQuery = supabase
+        .from('commission_distributions')
+        .select('*')
+        .order('created_at', { ascending: false });
+    } else if (isDMUser) {
+      // DM: see own + all subtree commissions
+      const downlineIds = downlineData.map((d) => d.user_id);
+      const allIds = [user.id, ...downlineIds];
+      commQuery = supabase
+        .from('commission_distributions')
+        .select('*')
+        .in('to_user_id', allIds)
+        .order('created_at', { ascending: false });
+    } else {
+      // Others: see own + subtree commissions
+      const downlineIds = downlineData.map((d) => d.user_id);
+      const allIds = [user.id, ...downlineIds];
+      commQuery = supabase
+        .from('commission_distributions')
+        .select('*')
+        .in('to_user_id', allIds)
+        .order('created_at', { ascending: false });
+    }
+    const { data: commData } = await commQuery;
     setCommissions((commData || []) as CommissionDist[]);
 
     // Fetch investments from downline members
@@ -459,7 +494,9 @@ export default function SalesDashboard() {
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
               <Coins className="h-4 w-4" />
-              {language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}
+              {language === 'ko' 
+                ? (canSeeTotalCommissions ? '총 선취 커미션' : '내 선취 커미션') 
+                : (canSeeTotalCommissions ? 'Total Upfront' : 'My Upfront')}
             </div>
             {loading ? <Skeleton className="h-8 w-24" /> : (
               <p className="text-2xl font-semibold text-success">{formatCommAmount(totalUpfront)}</p>
@@ -468,7 +505,9 @@ export default function SalesDashboard() {
           <div className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
               <TrendingUp className="h-4 w-4" />
-              {language === 'ko' ? '총 성과 커미션' : 'Total Performance'}
+              {language === 'ko' 
+                ? (canSeeTotalCommissions ? '총 성과 커미션' : '내 성과 커미션') 
+                : (canSeeTotalCommissions ? 'Total Performance' : 'My Performance')}
             </div>
             {loading ? <Skeleton className="h-8 w-24" /> : (
               <p className="text-2xl font-semibold text-success">{formatCommAmount(totalPerformance)}</p>
