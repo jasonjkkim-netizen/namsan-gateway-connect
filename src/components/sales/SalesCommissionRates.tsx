@@ -234,6 +234,7 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
       : Number(product.performance_fee_percent) || 0;
 
     const changedRoleIdx = SALES_ROLES_ORDERED.indexOf(role as typeof SALES_ROLES_ORDERED[number]);
+    const changedValue = parseFloat(value) || 0;
 
     // Start with current edited rates, apply the new change
     const newEdited: Record<string, { upfront: string; performance: string }> = { ...editedRates };
@@ -242,33 +243,56 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
       [field]: value,
     };
 
-    // Calculate sum of roles ABOVE and INCLUDING the changed role
-    let consumed = 0;
-    for (let i = 0; i <= changedRoleIdx; i++) {
-      const r = SALES_ROLES_ORDERED[i];
-      const rKey = `${productId}_${r}_default`;
-      if (i === changedRoleIdx) {
-        const val = parseFloat(value);
-        consumed += isNaN(val) ? 0 : val;
-      } else {
-        consumed += getCurrentRateValue(productId, r, field, newEdited);
-      }
+    // Calculate sum of roles ABOVE the changed role (using current values)
+    let sumAbove = 0;
+    for (let i = 0; i < changedRoleIdx; i++) {
+      sumAbove += getCurrentRateValue(productId, SALES_ROLES_ORDERED[i], field, newEdited);
     }
 
-    let remaining = Math.max(0, totalAvailable - consumed);
+    const consumed = sumAbove + changedValue;
 
-    // Distribute remaining: next role gets all remaining, rest get 0
-    for (let i = changedRoleIdx + 1; i < SALES_ROLES_ORDERED.length; i++) {
-      const r = SALES_ROLES_ORDERED[i];
-      const rKey = `${productId}_${r}_default`;
-      if (i === changedRoleIdx + 1) {
-        // Next role gets all remaining
-        newEdited[rKey] = {
-          ...newEdited[rKey] || { upfront: '', performance: '' },
-          [field]: remaining.toFixed(2),
-        };
-      } else {
-        // Roles further below get 0
+    if (consumed <= totalAvailable) {
+      // Normal downward waterfall: distribute remaining to next role below, rest get 0
+      const remaining = Math.max(0, totalAvailable - consumed);
+      for (let i = changedRoleIdx + 1; i < SALES_ROLES_ORDERED.length; i++) {
+        const r = SALES_ROLES_ORDERED[i];
+        const rKey = `${productId}_${r}_default`;
+        if (i === changedRoleIdx + 1) {
+          newEdited[rKey] = {
+            ...newEdited[rKey] || { upfront: '', performance: '' },
+            [field]: remaining.toFixed(2),
+          };
+        } else {
+          newEdited[rKey] = {
+            ...newEdited[rKey] || { upfront: '', performance: '' },
+            [field]: '0',
+          };
+        }
+      }
+    } else {
+      // Upward waterfall: changed role exceeds budget with roles above
+      // Zero out roles above, give remaining to the role directly above changed role
+      const remaining = Math.max(0, totalAvailable - changedValue);
+      for (let i = 0; i < changedRoleIdx; i++) {
+        const r = SALES_ROLES_ORDERED[i];
+        const rKey = `${productId}_${r}_default`;
+        if (i === changedRoleIdx - 1) {
+          // Role directly above gets remaining
+          newEdited[rKey] = {
+            ...newEdited[rKey] || { upfront: '', performance: '' },
+            [field]: remaining.toFixed(2),
+          };
+        } else {
+          newEdited[rKey] = {
+            ...newEdited[rKey] || { upfront: '', performance: '' },
+            [field]: '0',
+          };
+        }
+      }
+      // Zero out roles below
+      for (let i = changedRoleIdx + 1; i < SALES_ROLES_ORDERED.length; i++) {
+        const r = SALES_ROLES_ORDERED[i];
+        const rKey = `${productId}_${r}_default`;
         newEdited[rKey] = {
           ...newEdited[rKey] || { upfront: '', performance: '' },
           [field]: '0',
