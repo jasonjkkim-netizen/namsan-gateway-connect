@@ -52,12 +52,14 @@ interface SalesCommissionRatesProps {
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
   ko: {
+    webmaster: '웹마스터',
     district_manager: '총괄관리',
     deputy_district_manager: '부총괄관리',
     principal_agent: '수석 에이전트',
     agent: '에이전트',
   },
   en: {
+    webmaster: 'Webmaster',
     district_manager: 'General Manager',
     deputy_district_manager: 'Deputy GM',
     principal_agent: 'Principal Agent',
@@ -66,6 +68,7 @@ const ROLE_LABELS: Record<string, Record<string, string>> = {
 };
 
 const SALES_ROLES_ORDERED = [
+  'webmaster',
   'district_manager',
   'deputy_district_manager',
   'principal_agent',
@@ -83,6 +86,7 @@ const ROLE_LEVELS: Record<string, number> = {
 
 // Default splits when no rates are configured
 const DEFAULT_SPLITS: Record<string, number> = {
+  webmaster: 0.00,
   district_manager: 0.40,
   deputy_district_manager: 0.25,
   principal_agent: 0.20,
