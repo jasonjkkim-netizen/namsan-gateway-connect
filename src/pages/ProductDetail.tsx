@@ -213,11 +213,11 @@ export default function ProductDetail() {
             )}
           </div>
           
-          <h1 className="text-3xl md:text-4xl font-serif font-semibold text-foreground mb-3">
+          <h1 className="text-2xl md:text-3xl font-serif font-semibold text-foreground mb-2">
             {language === 'ko' ? product.name_ko : product.name_en}
           </h1>
           
-          <p className="text-lg text-muted-foreground max-w-3xl">
+          <p className="text-base text-muted-foreground max-w-3xl">
             {language === 'ko' ? product.description_ko : product.description_en}
           </p>
         </div>
