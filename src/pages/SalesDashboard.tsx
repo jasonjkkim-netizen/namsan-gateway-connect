@@ -15,8 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { Users, Coins, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown, UserCog } from 'lucide-react';
+import { Users, Coins, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown, UserCog, Settings } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
+import { SalesCommissionRates } from '@/components/sales/SalesCommissionRates';
 import { MemberDetailDialog } from '@/components/sales/MemberDetailDialog';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import ExcelJS from 'exceljs';
@@ -596,6 +597,10 @@ export default function SalesDashboard() {
               <Coins className="h-4 w-4" />
               {language === 'ko' ? '커미션' : 'Commissions'}
             </TabsTrigger>
+            <TabsTrigger value="rates" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              {language === 'ko' ? '수수료 설정' : 'Rate Settings'}
+            </TabsTrigger>
             <TabsTrigger value="pipeline" className="flex items-center gap-2">
               <Briefcase className="h-4 w-4" />
               {language === 'ko' ? '투자 파이프라인' : 'Pipeline'}
@@ -834,6 +839,13 @@ export default function SalesDashboard() {
                   </TableBody>
                 </Table>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Commission Rate Settings Tab */}
+          <TabsContent value="rates">
+            <div className="card-elevated p-6">
+              <SalesCommissionRates downline={downline} />
             </div>
           </TabsContent>
 
