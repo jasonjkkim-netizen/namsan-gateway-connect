@@ -28,6 +28,7 @@ interface Product {
   募集_deadline: string | null;
   status: string;
   created_at: string;
+  image_url: string | null;
 }
 
 interface ProductDocument {
@@ -185,6 +186,17 @@ export default function ProductDetail() {
 
         {/* Header Section */}
         <div className="mb-8 animate-fade-in">
+          {/* Product Image */}
+          {product.image_url && (
+            <div className="mb-6 overflow-hidden rounded-xl border border-border">
+              <img
+                src={product.image_url}
+                alt={language === 'ko' ? product.name_ko : product.name_en}
+                className="w-full max-h-80 object-cover"
+              />
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <Badge className={typeConfig.color}>
               <TypeIcon className="mr-1 h-3 w-3" />
