@@ -203,6 +203,60 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
     }));
   };
 
+  // Recalculate commissions for all investments linked to given product IDs
+  const recalculateCommissions = async (productIds: string[]) => {
+    if (productIds.length === 0) return;
+
+    // Fetch investments for affected products
+    const { data: investments } = await supabase
+      .from('client_investments')
+      .select('id')
+      .in('product_id', productIds);
+
+    if (!investments || investments.length === 0) return;
+
+    const toastId = toast.loading(
+      language === 'ko'
+        ? `${investments.length}건 커미션 재계산 중...`
+        : `Recalculating ${investments.length} commissions...`
+    );
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const inv of investments) {
+      try {
+        const { error } = await supabase.functions.invoke('calculate-commissions', {
+          body: { investment_id: inv.id },
+        });
+        if (error) {
+          failCount++;
+          console.error('Recalc failed for', inv.id, error);
+        } else {
+          successCount++;
+        }
+      } catch (e) {
+        failCount++;
+        console.error('Recalc error for', inv.id, e);
+      }
+    }
+
+    toast.dismiss(toastId);
+    if (failCount === 0) {
+      toast.success(
+        language === 'ko'
+          ? `${successCount}건 커미션이 재계산되었습니다`
+          : `${successCount} commissions recalculated`
+      );
+    } else {
+      toast.warning(
+        language === 'ko'
+          ? `${successCount}건 성공, ${failCount}건 실패`
+          : `${successCount} succeeded, ${failCount} failed`
+      );
+    }
+  };
+
   const saveRates = async () => {
     if (!user) return;
     setSaving(true);
@@ -303,6 +357,12 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
         toast.success(language === 'ko' ? '커미션 요율이 저장되었습니다' : 'Commission rates saved');
         setEditedRates({});
         await fetchData();
+
+        // Recalculate commissions for affected products
+        const affectedProductIds = [
+          ...new Set(Object.keys(editedRates).map((k) => k.split('_')[0])),
+        ];
+        await recalculateCommissions(affectedProductIds);
       }
     } catch (err) {
       console.error(err);
