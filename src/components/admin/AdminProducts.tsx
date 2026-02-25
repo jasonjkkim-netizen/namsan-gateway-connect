@@ -20,7 +20,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Search, Trash2 } from 'lucide-react';
+import { Plus, Edit, Search, Trash2, Upload, X, Image } from 'lucide-react';
 import { ProductDocuments } from './ProductDocuments';
 
 interface Product {
@@ -44,6 +44,7 @@ interface Product {
   upfront_commission_percent: number | null;
   min_investment_amount: number | null;
   default_currency: string | null;
+  image_url: string | null;
 }
 
 interface CommissionRate {
@@ -110,7 +111,9 @@ export function AdminProducts() {
     upfront_commission_percent: '',
     min_investment_amount: '',
     default_currency: 'USD',
+    image_url: '',
   });
+  const [imageUploading, setImageUploading] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -161,6 +164,7 @@ export function AdminProducts() {
       upfront_commission_percent: product.upfront_commission_percent ? String(product.upfront_commission_percent) : '',
       min_investment_amount: product.min_investment_amount ? String(product.min_investment_amount) : '',
       default_currency: product.default_currency || 'USD',
+      image_url: product.image_url || '',
     });
     fetchCommissionRates(product.id);
     setDialogOpen(true);
@@ -176,6 +180,7 @@ export function AdminProducts() {
       target_return_percent: '', fixed_return_percent: '',
       management_fee_percent: '', performance_fee_percent: '',
       upfront_commission_percent: '', min_investment_amount: '', default_currency: 'USD',
+      image_url: '',
     });
     setDialogOpen(true);
   };
@@ -224,6 +229,7 @@ export function AdminProducts() {
       upfront_commission_percent: parseNum(formData.upfront_commission_percent),
       min_investment_amount: parseNum(formData.min_investment_amount),
       default_currency: formData.default_currency,
+      image_url: formData.image_url || null,
     };
 
     let error;
@@ -448,6 +454,67 @@ export function AdminProducts() {
               <Label>{language === 'ko' ? '설명 (한글)' : 'Description (KO)'}</Label>
               <Textarea value={formData.description_ko} onChange={(e) => setFormData({ ...formData, description_ko: e.target.value })} />
             </div>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '상품 이미지' : 'Product Image'}</Label>
+              {formData.image_url ? (
+                <div className="relative inline-block">
+                  <img src={formData.image_url} alt="Product" className="h-32 w-auto rounded-lg border border-border object-cover" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
+                    onClick={() => setFormData({ ...formData, image_url: '' })}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                    {imageUploading ? (
+                      <span className="text-sm text-muted-foreground">{language === 'ko' ? '업로드 중...' : 'Uploading...'}</span>
+                    ) : (
+                      <>
+                        <Image className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">{language === 'ko' ? '이미지 선택' : 'Select Image'}</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={imageUploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error(language === 'ko' ? '파일 크기는 5MB 이하여야 합니다' : 'File must be under 5MB');
+                          return;
+                        }
+                        setImageUploading(true);
+                        const ext = file.name.split('.').pop();
+                        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+                        const { error } = await supabase.storage.from('product-images').upload(fileName, file);
+                        if (error) {
+                          toast.error(language === 'ko' ? '이미지 업로드 실패' : 'Image upload failed');
+                          console.error(error);
+                        } else {
+                          const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(fileName);
+                          setFormData(prev => ({ ...prev, image_url: urlData.publicUrl }));
+                          toast.success(language === 'ko' ? '이미지 업로드 완료' : 'Image uploaded');
+                        }
+                        setImageUploading(false);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '목표수익률 (기존)' : 'Target Return (legacy %)'}</Label>
