@@ -129,8 +129,14 @@ export default function SalesDashboard() {
       navigate('/login');
       return;
     }
+    // Block clients (lowest level) from accessing sales dashboard
+    const salesRole = (profile as any)?.sales_role;
+    if (!salesRole || salesRole === 'client') {
+      navigate('/dashboard');
+      return;
+    }
     fetchAll();
-  }, [user]);
+  }, [user, profile]);
 
   async function fetchAll() {
     if (!user) return;
