@@ -489,6 +489,7 @@ export type Database = {
           description_ko: string | null
           fixed_return_percent: number | null
           id: string
+          image_url: string | null
           is_active: boolean | null
           management_fee_percent: number | null
           min_investment_amount: number | null
@@ -512,6 +513,7 @@ export type Database = {
           description_ko?: string | null
           fixed_return_percent?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           management_fee_percent?: number | null
           min_investment_amount?: number | null
@@ -535,6 +537,7 @@ export type Database = {
           description_ko?: string | null
           fixed_return_percent?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           management_fee_percent?: number | null
           min_investment_amount?: number | null
