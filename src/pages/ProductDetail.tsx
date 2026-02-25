@@ -186,7 +186,7 @@ export default function ProductDetail() {
 
         {/* Header Section */}
         <div className="mb-8 animate-fade-in">
-          {/* Product Image */}
+          {/* Full-width image if uploaded */}
           {product.image_url && (
             <div className="mb-6 overflow-hidden rounded-xl border border-border">
               <img
@@ -213,13 +213,22 @@ export default function ProductDetail() {
             )}
           </div>
           
-          <h1 className="text-2xl md:text-3xl font-serif font-semibold text-foreground mb-2">
-            {language === 'ko' ? product.name_ko : product.name_en}
-          </h1>
-          
-          <p className="text-base text-muted-foreground max-w-3xl">
-            {language === 'ko' ? product.description_ko : product.description_en}
-          </p>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1">
+              <h1 className="text-2xl md:text-3xl font-serif font-semibold text-foreground mb-2">
+                {language === 'ko' ? product.name_ko : product.name_en}
+              </h1>
+              <p className="text-base text-muted-foreground">
+                {language === 'ko' ? product.description_ko : product.description_en}
+              </p>
+            </div>
+            {!product.image_url && (
+              <div className="shrink-0 w-full md:w-56 h-40 rounded-xl border border-border bg-muted/30 flex flex-col items-center justify-center text-muted-foreground/50">
+                <TypeIcon className="h-12 w-12 mb-2" />
+                <span className="text-xs">{language === 'ko' ? typeConfig.labelKo : typeConfig.labelEn}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Key Metrics */}
