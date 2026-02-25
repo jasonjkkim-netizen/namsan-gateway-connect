@@ -1,0 +1,636 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from '@/components/ui/accordion';
+import { toast } from 'sonner';
+import { Settings, Save, RotateCcw, ChevronDown } from 'lucide-react';
+
+interface Product {
+  id: string;
+  name_en: string;
+  name_ko: string;
+  upfront_commission_percent: number | null;
+  performance_fee_percent: number | null;
+}
+
+interface CommissionRate {
+  id: string;
+  product_id: string;
+  sales_role: string;
+  sales_level: number;
+  upfront_rate: number;
+  performance_rate: number;
+  is_override: boolean | null;
+  override_user_id: string | null;
+  set_by: string | null;
+}
+
+interface DownlineMember {
+  user_id: string;
+  full_name: string;
+  sales_role: string;
+  sales_level: number;
+  depth: number;
+}
+
+interface SalesCommissionRatesProps {
+  downline: DownlineMember[];
+}
+
+const ROLE_LABELS: Record<string, Record<string, string>> = {
+  ko: {
+    district_manager: '총괄관리',
+    deputy_district_manager: '부총괄관리',
+    principal_agent: '수석 에이전트',
+    agent: '에이전트',
+  },
+  en: {
+    district_manager: 'General Manager',
+    deputy_district_manager: 'Deputy GM',
+    principal_agent: 'Principal Agent',
+    agent: 'Agent',
+  },
+};
+
+const SALES_ROLES_ORDERED = [
+  'district_manager',
+  'deputy_district_manager',
+  'principal_agent',
+  'agent',
+] as const;
+
+const ROLE_LEVELS: Record<string, number> = {
+  webmaster: 0,
+  district_manager: 1,
+  deputy_district_manager: 2,
+  principal_agent: 3,
+  agent: 4,
+  client: 5,
+};
+
+// Default splits when no rates are configured
+const DEFAULT_SPLITS: Record<string, number> = {
+  district_manager: 0.40,
+  deputy_district_manager: 0.25,
+  principal_agent: 0.20,
+  agent: 0.15,
+};
+
+export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
+  const { language } = useLanguage();
+  const { user, profile } = useAuth();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [rates, setRates] = useState<CommissionRate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  // Edited values: key = `${productId}_${role}_${userId || 'default'}`, value = { upfront, performance }
+  const [editedRates, setEditedRates] = useState<Record<string, { upfront: string; performance: string }>>({});
+  const [selectedProductId, setSelectedProductId] = useState<string>('all');
+
+  const userSalesRole = (profile as any)?.sales_role;
+  const userLevel = ROLE_LEVELS[userSalesRole] ?? 99;
+
+  // Roles this user can edit (own level and below)
+  const editableRoles = SALES_ROLES_ORDERED.filter(
+    (r) => ROLE_LEVELS[r] >= userLevel
+  );
+
+  // Downline members who are sales (not clients)
+  const salesDownline = useMemo(
+    () => downline.filter((m) => m.sales_role && m.sales_role !== 'client'),
+    [downline]
+  );
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  async function fetchData() {
+    setLoading(true);
+    const [productsRes, ratesRes] = await Promise.all([
+      supabase
+        .from('investment_products')
+        .select('id, name_en, name_ko, upfront_commission_percent, performance_fee_percent')
+        .eq('is_active', true)
+        .order('name_en'),
+      supabase
+        .from('commission_rates')
+        .select('*')
+        .order('sales_level', { ascending: true }),
+    ]);
+    if (productsRes.data) setProducts(productsRes.data as Product[]);
+    if (ratesRes.data) setRates(ratesRes.data as CommissionRate[]);
+    setLoading(false);
+  }
+
+  // Get the effective rate for a role on a product
+  const getEffectiveRate = (productId: string, role: string, userId?: string) => {
+    // Check user-specific override first
+    if (userId) {
+      const override = rates.find(
+        (r) =>
+          r.product_id === productId &&
+          r.is_override &&
+          r.override_user_id === userId
+      );
+      if (override) {
+        return {
+          upfront: Number(override.upfront_rate),
+          performance: Number(override.performance_rate),
+          source: 'override' as const,
+          id: override.id,
+        };
+      }
+    }
+
+    // Check product-level role rate
+    const roleRate = rates.find(
+      (r) =>
+        r.product_id === productId &&
+        !r.is_override &&
+        r.sales_role === role
+    );
+    if (roleRate) {
+      return {
+        upfront: Number(roleRate.upfront_rate),
+        performance: Number(roleRate.performance_rate),
+        source: 'product' as const,
+        id: roleRate.id,
+      };
+    }
+
+    // Fall back to default calculation from product
+    const product = products.find((p) => p.id === productId);
+    if (product?.upfront_commission_percent) {
+      const totalUpfront = Number(product.upfront_commission_percent);
+      const totalPerf = Number(product.performance_fee_percent) || 0;
+      const split = DEFAULT_SPLITS[role] || 0;
+      return {
+        upfront: Math.round(totalUpfront * split * 100) / 100,
+        performance: Math.round(totalPerf * split * 100) / 100,
+        source: 'default' as const,
+        id: null,
+      };
+    }
+
+    return { upfront: 0, performance: 0, source: 'default' as const, id: null };
+  };
+
+  const handleRateChange = (
+    key: string,
+    field: 'upfront' | 'performance',
+    value: string
+  ) => {
+    setEditedRates((prev) => ({
+      ...prev,
+      [key]: {
+        ...prev[key] || { upfront: '', performance: '' },
+        [field]: value,
+      },
+    }));
+  };
+
+  const saveRates = async () => {
+    if (!user) return;
+    setSaving(true);
+
+    try {
+      const operations: PromiseLike<any>[] = [];
+
+      for (const [key, values] of Object.entries(editedRates)) {
+        const [productId, role, targetUserId] = key.split('_');
+        const upfront = parseFloat(values.upfront);
+        const performance = parseFloat(values.performance);
+
+        if (isNaN(upfront) && isNaN(performance)) continue;
+
+        const isUserOverride = targetUserId && targetUserId !== 'default';
+
+        if (isUserOverride) {
+          // User-specific override
+          const existing = rates.find(
+            (r) =>
+              r.product_id === productId &&
+              r.is_override &&
+              r.override_user_id === targetUserId
+          );
+
+          if (existing) {
+            operations.push(
+              supabase
+                .from('commission_rates')
+                .update({
+                  upfront_rate: isNaN(upfront) ? existing.upfront_rate : upfront,
+                  performance_rate: isNaN(performance) ? existing.performance_rate : performance,
+                  set_by: user.id,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existing.id)
+                .then()
+            );
+          } else {
+            const effectiveRate = getEffectiveRate(productId, role);
+            operations.push(
+              supabase.from('commission_rates').insert({
+                product_id: productId,
+                sales_role: role,
+                sales_level: ROLE_LEVELS[role] || 0,
+                upfront_rate: isNaN(upfront) ? effectiveRate.upfront : upfront,
+                performance_rate: isNaN(performance) ? effectiveRate.performance : performance,
+                is_override: true,
+                override_user_id: targetUserId,
+                set_by: user.id,
+              }).then()
+            );
+          }
+        } else {
+          // Role-level default rate
+          const existing = rates.find(
+            (r) =>
+              r.product_id === productId &&
+              !r.is_override &&
+              r.sales_role === role
+          );
+
+          if (existing) {
+            operations.push(
+              supabase
+                .from('commission_rates')
+                .update({
+                  upfront_rate: isNaN(upfront) ? existing.upfront_rate : upfront,
+                  performance_rate: isNaN(performance) ? existing.performance_rate : performance,
+                  set_by: user.id,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existing.id)
+                .then()
+            );
+          } else {
+            operations.push(
+              supabase.from('commission_rates').insert({
+                product_id: productId,
+                sales_role: role,
+                sales_level: ROLE_LEVELS[role] || 0,
+                upfront_rate: isNaN(upfront) ? 0 : upfront,
+                performance_rate: isNaN(performance) ? 0 : performance,
+                is_override: false,
+                set_by: user.id,
+              }).then()
+            );
+          }
+        }
+      }
+
+      const results = await Promise.all(operations);
+      const errors = results.filter((r) => r.error);
+      if (errors.length > 0) {
+        console.error('Rate save errors:', errors);
+        toast.error(language === 'ko' ? '일부 요율 저장 실패' : 'Some rates failed to save');
+      } else {
+        toast.success(language === 'ko' ? '커미션 요율이 저장되었습니다' : 'Commission rates saved');
+        setEditedRates({});
+        await fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(language === 'ko' ? '저장 실패' : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Products to display
+  const displayProducts = selectedProductId === 'all'
+    ? products
+    : products.filter((p) => p.id === selectedProductId);
+
+  // Calculate total commission for a product (sum of all role rates)
+  const getProductTotalRate = (productId: string) => {
+    let totalUpfront = 0;
+    let totalPerformance = 0;
+    for (const role of SALES_ROLES_ORDERED) {
+      const rate = getEffectiveRate(productId, role);
+      totalUpfront += rate.upfront;
+      totalPerformance += rate.performance;
+    }
+    return { totalUpfront, totalPerformance };
+  };
+
+  // Grand total across all products
+  const grandTotal = useMemo(() => {
+    let upfront = 0;
+    let performance = 0;
+    for (const product of products) {
+      const t = getProductTotalRate(product.id);
+      upfront += t.totalUpfront;
+      performance += t.totalPerformance;
+    }
+    return { upfront, performance };
+  }, [products, rates]);
+
+  const hasEdits = Object.keys(editedRates).length > 0;
+
+  if (loading) {
+    return (
+      <div className="space-y-4 p-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-base font-semibold">
+            {language === 'ko' ? '커미션 요율 설정' : 'Commission Rate Settings'}
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                {language === 'ko' ? '전체 상품' : 'All Products'}
+              </SelectItem>
+              {products.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {language === 'ko' ? p.name_ko : p.name_en}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hasEdits && (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditedRates({})}
+              >
+                <RotateCcw className="h-4 w-4 mr-1" />
+                {language === 'ko' ? '초기화' : 'Reset'}
+              </Button>
+              <Button size="sm" onClick={saveRates} disabled={saving}>
+                <Save className="h-4 w-4 mr-1" />
+                {saving
+                  ? (language === 'ko' ? '저장중...' : 'Saving...')
+                  : (language === 'ko' ? '저장' : 'Save')}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Grand Total Summary */}
+      <div className="rounded-lg border border-border bg-muted/30 p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">
+            {language === 'ko' ? '총 수수료 합계' : 'Total Commission Rate'}
+          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm">
+              {language === 'ko' ? '선취' : 'Upfront'}:{' '}
+              <strong>{grandTotal.upfront.toFixed(2)}%</strong>
+            </span>
+            <span className="text-sm">
+              {language === 'ko' ? '성과' : 'Perf'}:{' '}
+              <strong>{grandTotal.performance.toFixed(2)}%</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Per-product rate tables */}
+      {displayProducts.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          {language === 'ko' ? '활성 상품이 없습니다' : 'No active products'}
+        </div>
+      ) : (
+        <Accordion type="multiple" defaultValue={displayProducts.map((p) => p.id)}>
+          {displayProducts.map((product) => {
+            const productTotal = getProductTotalRate(product.id);
+            return (
+              <AccordionItem key={product.id} value={product.id} className="border rounded-lg mb-3">
+                <AccordionTrigger className="px-4 hover:no-underline">
+                  <div className="flex items-center justify-between w-full mr-2">
+                    <span className="font-medium">
+                      {language === 'ko' ? product.name_ko : product.name_en}
+                    </span>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <span>
+                        {language === 'ko' ? '선취' : 'Up'}: {productTotal.totalUpfront.toFixed(2)}%
+                      </span>
+                      <span>
+                        {language === 'ko' ? '성과' : 'Perf'}: {productTotal.totalPerformance.toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  {/* Role-level defaults */}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[180px]">
+                          {language === 'ko' ? '역할' : 'Role'}
+                        </TableHead>
+                        <TableHead className="w-[120px]">
+                          {language === 'ko' ? '선취 수수료(%)' : 'Upfront (%)'}
+                        </TableHead>
+                        <TableHead className="w-[120px]">
+                          {language === 'ko' ? '성과 수수료(%)' : 'Performance (%)'}
+                        </TableHead>
+                        <TableHead>
+                          {language === 'ko' ? '출처' : 'Source'}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {SALES_ROLES_ORDERED.map((role) => {
+                        const effective = getEffectiveRate(product.id, role);
+                        const key = `${product.id}_${role}_default`;
+                        const edited = editedRates[key];
+                        const canEdit = editableRoles.includes(role);
+                        const displayUpfront = edited?.upfront ?? effective.upfront.toString();
+                        const displayPerf = edited?.performance ?? effective.performance.toString();
+
+                        return (
+                          <TableRow key={role}>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {ROLE_LABELS[language]?.[role] || role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="100"
+                                  value={displayUpfront}
+                                  onChange={(e) =>
+                                    handleRateChange(key, 'upfront', e.target.value)
+                                  }
+                                  className="w-20 h-8 text-sm"
+                                />
+                              ) : (
+                                <span className="text-sm">{effective.upfront.toFixed(2)}%</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {canEdit ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="100"
+                                  value={displayPerf}
+                                  onChange={(e) =>
+                                    handleRateChange(key, 'performance', e.target.value)
+                                  }
+                                  className="w-20 h-8 text-sm"
+                                />
+                              ) : (
+                                <span className="text-sm">{effective.performance.toFixed(2)}%</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  effective.source === 'product'
+                                    ? 'default'
+                                    : effective.source === 'override'
+                                    ? 'secondary'
+                                    : 'outline'
+                                }
+                                className="text-xs"
+                              >
+                                {effective.source === 'product'
+                                  ? (language === 'ko' ? '수동설정' : 'Custom')
+                                  : effective.source === 'override'
+                                  ? (language === 'ko' ? '개인설정' : 'Override')
+                                  : (language === 'ko' ? '기본값' : 'Default')}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {/* Total row */}
+                      <TableRow className="bg-muted/30 font-semibold">
+                        <TableCell>
+                          {language === 'ko' ? '합계' : 'Total'}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {productTotal.totalUpfront.toFixed(2)}%
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {productTotal.totalPerformance.toFixed(2)}%
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+
+                  {/* Per-member overrides */}
+                  {salesDownline.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">
+                        {language === 'ko' ? '개인별 수수료 조정' : 'Individual Rate Overrides'}
+                      </p>
+                      <div className="space-y-1">
+                        {salesDownline
+                          .filter((m) => editableRoles.includes(m.sales_role as typeof SALES_ROLES_ORDERED[number]))
+                          .map((member) => {
+                            const effective = getEffectiveRate(
+                              product.id,
+                              member.sales_role,
+                              member.user_id
+                            );
+                            const key = `${product.id}_${member.sales_role}_${member.user_id}`;
+                            const edited = editedRates[key];
+                            const displayUpfront =
+                              edited?.upfront ?? effective.upfront.toString();
+                            const displayPerf =
+                              edited?.performance ?? effective.performance.toString();
+
+                            return (
+                              <div
+                                key={member.user_id}
+                                className="flex items-center gap-3 py-2 px-3 rounded-md hover:bg-muted/20"
+                              >
+                                <span className="text-sm min-w-[120px] truncate">
+                                  {member.full_name}
+                                </span>
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                  {ROLE_LABELS[language]?.[member.sales_role] || member.sales_role}
+                                </Badge>
+                                <div className="flex items-center gap-2 ml-auto">
+                                  <span className="text-xs text-muted-foreground">
+                                    {language === 'ko' ? '선취' : 'Up'}
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max="100"
+                                    value={displayUpfront}
+                                    onChange={(e) =>
+                                      handleRateChange(key, 'upfront', e.target.value)
+                                    }
+                                    className="w-20 h-7 text-xs"
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    {language === 'ko' ? '성과' : 'Perf'}
+                                  </span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max="100"
+                                    value={displayPerf}
+                                    onChange={(e) =>
+                                      handleRateChange(key, 'performance', e.target.value)
+                                    }
+                                    className="w-20 h-7 text-xs"
+                                  />
+                                  {effective.source === 'override' && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {language === 'ko' ? '조정됨' : 'Custom'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
+      )}
+    </div>
+  );
+}
