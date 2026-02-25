@@ -129,10 +129,13 @@ export default function SalesDashboard() {
       navigate('/login');
       return;
     }
+    // Wait for profile to load before checking role
+    if (!profile) return;
+    
     // Block clients (lowest level) from accessing sales dashboard
     const salesRole = (profile as any)?.sales_role;
     if (!salesRole || salesRole === 'client') {
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
       return;
     }
     fetchAll();
