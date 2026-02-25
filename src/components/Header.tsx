@@ -74,7 +74,7 @@ export function Header() {
                   <span className="hidden md:inline">{language === 'ko' ? '영업' : 'Sales'}</span>
                 </Button>
               )}
-              {(isAdmin || salesRole === 'district_manager' || salesRole === 'webmaster') && (
+              {(isAdmin || salesRole === 'webmaster') && (
                 <Button
                   variant="outline"
                   size="sm"
