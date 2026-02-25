@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +13,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, Trash2, FileText, Download } from 'lucide-react';
+import { Upload, Trash2, FileText, Download, Eye, Loader2 } from 'lucide-react';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 
 interface ProductDocument {
   id: string;
@@ -41,19 +45,27 @@ const DOC_TYPES = [
 
 export function ProductDocuments({ productId }: ProductDocumentsProps) {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<ProductDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [nameKo, setNameKo] = useState('');
   const [nameEn, setNameEn] = useState('');
   const [docType, setDocType] = useState('termsheet');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function fetchDocuments() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('product_documents')
       .select('*')
       .eq('product_id', productId)
+      .order('document_type', { ascending: true })
       .order('display_order', { ascending: true });
+    if (error) {
+      console.error('Fetch documents error:', error);
+    }
     if (data) setDocuments(data as ProductDocument[]);
     setLoading(false);
   }
@@ -63,65 +75,88 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
   }, [productId]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    if (!file.type.includes('pdf')) {
+    // Validate all files are PDF
+    const fileArray = Array.from(files);
+    const nonPdf = fileArray.find(f => !f.type.includes('pdf'));
+    if (nonPdf) {
       toast.error(language === 'ko' ? 'PDF 파일만 업로드 가능합니다' : 'Only PDF files are allowed');
       return;
     }
 
-    if (!nameKo && !nameEn) {
-      toast.error(language === 'ko' ? '문서 이름을 입력해주세요' : 'Document name is required');
-      return;
-    }
-
     setUploading(true);
+    let successCount = 0;
+
     try {
-      const path = `${productId}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('product-documents')
-        .upload(path, file);
+      for (const file of fileArray) {
+        const baseName = file.name.replace(/\.pdf$/i, '');
+        const docNameKo = nameKo || baseName;
+        const docNameEn = nameEn || baseName;
 
-      if (uploadError) throw uploadError;
+        const path = `${productId}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('product-documents')
+          .upload(path, file);
 
-      // Store the storage path, not a public URL
-      const storagePath = path;
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          toast.error(`${file.name}: ${uploadError.message}`);
+          continue;
+        }
 
-      const { error: insertError } = await supabase
-        .from('product_documents')
-        .insert({
-          product_id: productId,
-          name_ko: nameKo || nameEn,
-          name_en: nameEn || nameKo,
-          document_type: docType,
-          file_url: storagePath,
-          file_size: file.size,
-          display_order: documents.length,
-        });
+        const { error: insertError } = await supabase
+          .from('product_documents')
+          .insert({
+            product_id: productId,
+            name_ko: fileArray.length > 1 ? baseName : docNameKo,
+            name_en: fileArray.length > 1 ? baseName : docNameEn,
+            document_type: docType,
+            file_url: path,
+            file_size: file.size,
+            display_order: documents.length + successCount,
+            uploaded_by: user?.id || null,
+          });
 
-      if (insertError) throw insertError;
+        if (insertError) {
+          console.error('DB insert error:', insertError);
+          // Try to clean up the uploaded file
+          await supabase.storage.from('product-documents').remove([path]);
+          toast.error(`${file.name}: ${insertError.message}`);
+          continue;
+        }
 
-      toast.success(language === 'ko' ? '문서 업로드 완료' : 'Document uploaded');
-      setNameKo('');
-      setNameEn('');
-      setDocType('termsheet');
-      fetchDocuments();
+        successCount++;
+      }
+
+      if (successCount > 0) {
+        toast.success(
+          language === 'ko'
+            ? `${successCount}개 문서 업로드 완료`
+            : `${successCount} document(s) uploaded`
+        );
+        setNameKo('');
+        setNameEn('');
+        setDocType('termsheet');
+        fetchDocuments();
+      }
     } catch (err: any) {
       console.error('Upload error:', err);
       toast.error(language === 'ko' ? '업로드 실패' : 'Upload failed');
     } finally {
       setUploading(false);
-      e.target.value = '';
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
 
   async function handleDelete(doc: ProductDocument) {
     if (!confirm(language === 'ko' ? '문서를 삭제하시겠습니까?' : 'Delete this document?')) return;
 
-    // Extract storage path from URL
-    const urlParts = doc.file_url.split('/product-documents/');
-    const storagePath = urlParts[1];
+    // file_url stores the storage path directly (e.g. "productId/timestamp_filename.pdf")
+    const storagePath = doc.file_url.startsWith('http')
+      ? doc.file_url.split('/product-documents/').pop()
+      : doc.file_url;
 
     if (storagePath) {
       await supabase.storage.from('product-documents').remove([storagePath]);
@@ -140,6 +175,24 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
     }
   }
 
+  async function getSignedUrl(doc: ProductDocument): Promise<string | null> {
+    if (doc.file_url.startsWith('http')) return doc.file_url;
+    const { data } = await supabase.storage
+      .from('product-documents')
+      .createSignedUrl(doc.file_url, 600);
+    return data?.signedUrl || null;
+  }
+
+  async function handlePreview(doc: ProductDocument) {
+    const url = await getSignedUrl(doc);
+    if (url) {
+      setPreviewUrl(url);
+      setPreviewName(language === 'ko' ? doc.name_ko : doc.name_en);
+    } else {
+      toast.error(language === 'ko' ? '미리보기 실패' : 'Preview failed');
+    }
+  }
+
   const getDocTypeLabel = (type: string) => {
     const dt = DOC_TYPES.find(d => d.value === type);
     return language === 'ko' ? dt?.ko || type : dt?.en || type;
@@ -152,11 +205,20 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
     return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   };
 
+  // Group documents by type
+  const groupedDocs = DOC_TYPES
+    .map(dt => ({
+      ...dt,
+      docs: documents.filter(d => d.document_type === dt.value),
+    }))
+    .filter(g => g.docs.length > 0);
+
   return (
     <div className="space-y-4 border-t border-border pt-4 mt-4">
       <h4 className="font-medium text-sm flex items-center gap-2">
         <FileText className="h-4 w-4" />
         {language === 'ko' ? '상품 문서 관리' : 'Product Documents'}
+        <span className="text-xs text-muted-foreground">({documents.length})</span>
       </h4>
 
       {/* Upload form */}
@@ -167,7 +229,7 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
             <Input
               value={nameKo}
               onChange={(e) => setNameKo(e.target.value)}
-              placeholder={language === 'ko' ? '예: 투자 제안서' : 'e.g. Investment Proposal'}
+              placeholder={language === 'ko' ? '미입력시 파일명 사용' : 'Defaults to filename'}
               className="h-8 text-sm"
             />
           </div>
@@ -176,7 +238,7 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
             <Input
               value={nameEn}
               onChange={(e) => setNameEn(e.target.value)}
-              placeholder="e.g. Investment Proposal"
+              placeholder={language === 'ko' ? '미입력시 파일명 사용' : 'Defaults to filename'}
               className="h-8 text-sm"
             />
           </div>
@@ -204,15 +266,21 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
                 uploading ? 'bg-muted text-muted-foreground pointer-events-none' : 'bg-primary text-primary-foreground hover:bg-primary/90'
               }`}
             >
-              <Upload className="h-3.5 w-3.5" />
+              {uploading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Upload className="h-3.5 w-3.5" />
+              )}
               {uploading
                 ? (language === 'ko' ? '업로드중...' : 'Uploading...')
-                : (language === 'ko' ? 'PDF 업로드' : 'Upload PDF')}
+                : (language === 'ko' ? 'PDF 업로드 (복수 가능)' : 'Upload PDFs')}
             </Label>
             <input
               id={`doc-upload-${productId}`}
+              ref={fileInputRef}
               type="file"
               accept=".pdf"
+              multiple
               className="hidden"
               onChange={handleUpload}
               disabled={uploading}
@@ -221,7 +289,7 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
         </div>
       </div>
 
-      {/* Document list */}
+      {/* Document list grouped by type */}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : documents.length === 0 ? (
@@ -229,45 +297,72 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
           {language === 'ko' ? '등록된 문서가 없습니다.' : 'No documents yet.'}
         </p>
       ) : (
-        <div className="space-y-2">
-          {documents.map(doc => (
-            <div key={doc.id} className="flex items-center justify-between p-2 rounded border border-border bg-background">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText className="h-4 w-4 text-red-500 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {language === 'ko' ? doc.name_ko : doc.name_en}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {getDocTypeLabel(doc.document_type)}
-                    {doc.file_size ? ` · ${formatFileSize(doc.file_size)}` : ''}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button variant="ghost" size="sm" title={language === 'ko' ? '다운로드' : 'Download'}
-                  onClick={async () => {
-                    // Support both legacy full URLs and storage paths
-                    if (doc.file_url.startsWith('http')) {
-                      window.open(doc.file_url, '_blank');
-                    } else {
-                      const { data } = await supabase.storage
-                        .from('product-documents')
-                        .createSignedUrl(doc.file_url, 300);
-                      if (data?.signedUrl) window.open(data.signedUrl, '_blank');
-                    }
-                  }}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(doc)}>
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
+        <div className="space-y-4">
+          {groupedDocs.map(group => (
+            <div key={group.value}>
+              <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                {language === 'ko' ? group.ko : group.en} ({group.docs.length})
+              </h5>
+              <div className="space-y-1.5">
+                {group.docs.map(doc => (
+                  <div key={doc.id} className="flex items-center justify-between p-2 rounded border border-border bg-background">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 text-destructive shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {language === 'ko' ? doc.name_ko : doc.name_en}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {doc.file_size ? formatFileSize(doc.file_size) : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" title={language === 'ko' ? '미리보기' : 'Preview'}
+                        onClick={() => handlePreview(doc)}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" title={language === 'ko' ? '다운로드' : 'Download'}
+                        onClick={async () => {
+                          const url = await getSignedUrl(doc);
+                          if (url) window.open(url, '_blank');
+                        }}
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(doc)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={!!previewUrl} onOpenChange={(open) => { if (!open) setPreviewUrl(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-destructive" />
+              {previewName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="w-full h-[70vh]">
+            {previewUrl && (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full rounded border border-border"
+                title="PDF Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

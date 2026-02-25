@@ -6,21 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { 
-  ArrowLeft, 
-  TrendingUp, 
-  Calendar, 
-  DollarSign, 
-  Briefcase, 
-  Building2, 
-  Landmark, 
-  LineChart, 
-  Layers,
-  Clock,
-  Target,
-  Shield,
-  FileText,
-  Download
+  ArrowLeft, TrendingUp, Calendar, DollarSign, Briefcase, Building2, 
+  Landmark, LineChart, Layers, Clock, Target, Shield, FileText, Download, Eye
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConsultationButton } from '@/components/ConsultationButton';
@@ -56,6 +47,15 @@ const TYPE_CONFIG: Record<string, { icon: typeof Landmark; labelEn: string; labe
   alternative: { icon: Layers, labelEn: 'Alternative', labelKo: '대체투자', color: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200' },
 };
 
+const DOC_SECTIONS = [
+  { type: 'termsheet', ko: '텀시트', en: 'Termsheet' },
+  { type: 'proposal', ko: '제안서', en: 'Proposal' },
+  { type: 'contract', ko: '계약서', en: 'Contract' },
+  { type: 'prospectus', ko: '투자설명서', en: 'Prospectus' },
+  { type: 'report', ko: '보고서', en: 'Report' },
+  { type: 'other', ko: '기타', en: 'Other' },
+];
+
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -63,6 +63,8 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<Product | null>(null);
   const [documents, setDocuments] = useState<ProductDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState('');
 
   useEffect(() => {
     async function fetchProduct() {
@@ -81,11 +83,11 @@ export default function ProductDetail() {
       
       setProduct(data as Product);
       
-      // Fetch documents
       const { data: docs } = await supabase
         .from('product_documents')
         .select('*')
         .eq('product_id', id)
+        .order('document_type', { ascending: true })
         .order('display_order', { ascending: true });
       if (docs) setDocuments(docs as ProductDocument[]);
       
@@ -94,6 +96,28 @@ export default function ProductDetail() {
 
     fetchProduct();
   }, [id, navigate]);
+
+  async function getSignedUrl(doc: ProductDocument): Promise<string | null> {
+    if (doc.file_url.startsWith('http')) return doc.file_url;
+    const { data } = await supabase.storage
+      .from('product-documents')
+      .createSignedUrl(doc.file_url, 600);
+    return data?.signedUrl || null;
+  }
+
+  async function handlePreview(doc: ProductDocument) {
+    const url = await getSignedUrl(doc);
+    if (url) {
+      setPreviewUrl(url);
+      setPreviewName(language === 'ko' ? doc.name_ko : doc.name_en);
+    }
+  }
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '';
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -136,6 +160,16 @@ export default function ProductDetail() {
   const typeConfig = TYPE_CONFIG[product.type] || TYPE_CONFIG.alternative;
   const TypeIcon = typeConfig.icon;
 
+  const groupedDocs = DOC_SECTIONS
+    .map(section => ({
+      ...section,
+      docs: documents.filter(d => d.document_type === section.type),
+    }))
+    .filter(section => section.docs.length > 0);
+
+  // Get first document for featured preview
+  const featuredDoc = documents[0] || null;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -161,6 +195,12 @@ export default function ProductDetail() {
             <Badge className={getStatusColor(product.status)}>
               {getStatusLabel(product.status)}
             </Badge>
+            {documents.length > 0 && (
+              <Badge variant="outline">
+                <FileText className="mr-1 h-3 w-3" />
+                {documents.length} {language === 'ko' ? '문서' : 'docs'}
+              </Badge>
+            )}
           </div>
           
           <h1 className="text-3xl md:text-4xl font-serif font-semibold text-foreground mb-3">
@@ -183,9 +223,7 @@ export default function ProductDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-accent">
-                  {formatPercent(product.target_return)}
-                </p>
+                <p className="text-3xl font-bold text-accent">{formatPercent(product.target_return)}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {language === 'ko' ? '연간 예상 수익률' : 'Expected annual return'}
                 </p>
@@ -202,9 +240,7 @@ export default function ProductDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">
-                  {formatCurrency(product.minimum_investment)}
-                </p>
+                <p className="text-3xl font-bold">{formatCurrency(product.minimum_investment)}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {language === 'ko' ? '최소 투자 가능 금액' : 'Minimum amount to invest'}
                 </p>
@@ -221,9 +257,7 @@ export default function ProductDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">
-                  {formatDate(product.募集_deadline)}
-                </p>
+                <p className="text-3xl font-bold">{formatDate(product.募集_deadline)}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {language === 'ko' ? '투자 신청 마감일' : 'Application deadline'}
                 </p>
@@ -231,6 +265,80 @@ export default function ProductDetail() {
             </Card>
           )}
         </div>
+
+        {/* Featured Document Preview + Documents List */}
+        {documents.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-5 mb-8 animate-fade-in" style={{ animationDelay: '350ms' }}>
+            {/* Featured PDF Preview */}
+            {featuredDoc && (
+              <Card className="card-elevated md:col-span-3">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-accent" />
+                    {language === 'ko' ? '대표 문서 미리보기' : 'Featured Document Preview'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FeaturedPreview doc={featuredDoc} getSignedUrl={getSignedUrl} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Documents by Type */}
+            <Card className="card-elevated md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-accent" />
+                  {language === 'ko' ? '상품 문서' : 'Documents'}
+                  <span className="text-xs font-normal text-muted-foreground">({documents.length})</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {groupedDocs.map(section => (
+                  <div key={section.type}>
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      {language === 'ko' ? section.ko : section.en}
+                    </h4>
+                    <div className="space-y-1.5">
+                      {section.docs.map(doc => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center justify-between p-2.5 rounded-lg border border-border hover:bg-muted/50 transition-colors group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <FileText className="h-4 w-4 text-destructive shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                                {language === 'ko' ? doc.name_ko : doc.name_en}
+                              </p>
+                              {doc.file_size && (
+                                <p className="text-xs text-muted-foreground">{formatFileSize(doc.file_size)}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <Button variant="ghost" size="sm" onClick={() => handlePreview(doc)} title={language === 'ko' ? '미리보기' : 'Preview'}>
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="sm"
+                              onClick={async () => {
+                                const url = await getSignedUrl(doc);
+                                if (url) window.open(url, '_blank');
+                              }}
+                              title={language === 'ko' ? '다운로드' : 'Download'}
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Investment Details */}
         <div className="grid gap-6 md:grid-cols-2 mb-8">
@@ -243,23 +351,15 @@ export default function ProductDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">
-                  {language === 'ko' ? '상품 유형' : 'Product Type'}
-                </span>
-                <span className="font-medium">
-                  {language === 'ko' ? typeConfig.labelKo : typeConfig.labelEn}
-                </span>
+                <span className="text-muted-foreground">{language === 'ko' ? '상품 유형' : 'Product Type'}</span>
+                <span className="font-medium">{language === 'ko' ? typeConfig.labelKo : typeConfig.labelEn}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-muted-foreground">
-                  {language === 'ko' ? '상태' : 'Status'}
-                </span>
+                <span className="text-muted-foreground">{language === 'ko' ? '상태' : 'Status'}</span>
                 <span className="font-medium">{getStatusLabel(product.status)}</span>
               </div>
               <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">
-                  {language === 'ko' ? '등록일' : 'Listed Date'}
-                </span>
+                <span className="text-muted-foreground">{language === 'ko' ? '등록일' : 'Listed Date'}</span>
                 <span className="font-medium">{formatDate(product.created_at)}</span>
               </div>
             </CardContent>
@@ -297,77 +397,6 @@ export default function ProductDetail() {
           </Card>
         </div>
 
-        {/* Product Documents - grouped by type */}
-        {documents.length > 0 && (() => {
-          const DOC_SECTIONS = [
-            { type: 'termsheet', ko: '텀시트', en: 'Termsheet' },
-            { type: 'proposal', ko: '제안서', en: 'Proposal' },
-            { type: 'contract', ko: '계약서', en: 'Contract' },
-            { type: 'prospectus', ko: '투자설명서', en: 'Prospectus' },
-            { type: 'report', ko: '보고서', en: 'Report' },
-            { type: 'other', ko: '기타', en: 'Other' },
-          ];
-          const groupedDocs = DOC_SECTIONS
-            .map(section => ({
-              ...section,
-              docs: documents.filter(d => d.document_type === section.type),
-            }))
-            .filter(section => section.docs.length > 0);
-
-          return (
-            <Card className="card-elevated animate-fade-in mb-8" style={{ animationDelay: '550ms' }}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-accent" />
-                  {language === 'ko' ? '상품 관련 문서' : 'Product Documents'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {groupedDocs.map(section => (
-                  <div key={section.type}>
-                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">
-                      {language === 'ko' ? section.ko : section.en}
-                    </h4>
-                    <div className="space-y-2">
-                      {section.docs.map(doc => (
-                        <button
-                          key={doc.id}
-                          onClick={async () => {
-                            if (doc.file_url.startsWith('http')) {
-                              window.open(doc.file_url, '_blank');
-                            } else {
-                              const { data } = await supabase.storage
-                                .from('product-documents')
-                                .createSignedUrl(doc.file_url, 300);
-                              if (data?.signedUrl) window.open(data.signedUrl, '_blank');
-                            }
-                          }}
-                          className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group w-full text-left"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <FileText className="h-5 w-5 text-destructive shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                                {language === 'ko' ? doc.name_ko : doc.name_en}
-                              </p>
-                              {doc.file_size && (
-                                <p className="text-xs text-muted-foreground">
-                                  {doc.file_size < 1024 * 1024 ? `${(doc.file_size / 1024).toFixed(0)}KB` : `${(doc.file_size / (1024 * 1024)).toFixed(1)}MB`}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <Download className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          );
-        })()}
-
         {/* CTA */}
         {product.status === 'open' && (
           <div className="text-center py-8 animate-fade-in" style={{ animationDelay: '600ms' }}>
@@ -385,6 +414,48 @@ export default function ProductDetail() {
           </div>
         )}
       </main>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={!!previewUrl} onOpenChange={(open) => { if (!open) setPreviewUrl(null); }}>
+        <DialogContent className="max-w-5xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-destructive" />
+              {previewName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="w-full h-[75vh]">
+            {previewUrl && (
+              <iframe
+                src={previewUrl}
+                className="w-full h-full rounded border border-border"
+                title="PDF Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+// Sub-component: auto-loads featured doc preview
+function FeaturedPreview({ doc, getSignedUrl }: { doc: ProductDocument; getSignedUrl: (d: ProductDocument) => Promise<string | null> }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    getSignedUrl(doc).then(setUrl);
+  }, [doc]);
+
+  if (!url) {
+    return <Skeleton className="w-full h-[400px]" />;
+  }
+
+  return (
+    <iframe
+      src={url}
+      className="w-full h-[400px] rounded border border-border"
+      title="Featured Document"
+    />
   );
 }
