@@ -15,7 +15,8 @@ export function Header() {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
-  const hasSalesRole = !!(profile as any)?.sales_role;
+  const salesRole = (profile as any)?.sales_role;
+  const hasSalesRole = !!salesRole && salesRole !== 'client';
 
   useEffect(() => {
     async function checkAdminRole() {
