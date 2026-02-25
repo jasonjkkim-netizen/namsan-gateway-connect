@@ -167,8 +167,6 @@ export default function ProductDetail() {
     }))
     .filter(section => section.docs.length > 0);
 
-  // Get first document for featured preview
-  const featuredDoc = documents[0] || null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -266,26 +264,10 @@ export default function ProductDetail() {
           )}
         </div>
 
-        {/* Featured Document Preview + Documents List */}
+        {/* Documents List */}
         {documents.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-5 mb-8 animate-fade-in" style={{ animationDelay: '350ms' }}>
-            {/* Featured PDF Preview */}
-            {featuredDoc && (
-              <Card className="card-elevated md:col-span-3">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-accent" />
-                    {language === 'ko' ? '대표 문서 미리보기' : 'Featured Document Preview'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <FeaturedPreview doc={featuredDoc} getSignedUrl={getSignedUrl} />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Documents by Type */}
-            <Card className="card-elevated md:col-span-2">
+          <div className="mb-8 animate-fade-in" style={{ animationDelay: '350ms' }}>
+            <Card className="card-elevated">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-accent" />
@@ -439,23 +421,3 @@ export default function ProductDetail() {
   );
 }
 
-// Sub-component: auto-loads featured doc preview
-function FeaturedPreview({ doc, getSignedUrl }: { doc: ProductDocument; getSignedUrl: (d: ProductDocument) => Promise<string | null> }) {
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    getSignedUrl(doc).then(setUrl);
-  }, [doc]);
-
-  if (!url) {
-    return <Skeleton className="w-full h-[400px]" />;
-  }
-
-  return (
-    <iframe
-      src={url}
-      className="w-full h-[400px] rounded border border-border"
-      title="Featured Document"
-    />
-  );
-}
