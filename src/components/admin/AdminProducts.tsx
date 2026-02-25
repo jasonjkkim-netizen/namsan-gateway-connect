@@ -342,7 +342,11 @@ export function AdminProducts() {
                   <TableCell className="font-medium">
                     {language === 'ko' ? product.name_ko : product.name_en}
                   </TableCell>
-                  <TableCell>{product.type}</TableCell>
+                  <TableCell>
+                    {language === 'ko'
+                      ? ({ bond: '채권', equity: '주식', fund: '펀드', real_estate: '부동산', alternative: '대안투자' }[product.type] || product.type)
+                      : ({ bond: 'Bond', equity: 'Equity', fund: 'Fund', real_estate: 'Real Estate', alternative: 'Alternative' }[product.type] || product.type)}
+                  </TableCell>
                   <TableCell>{product.default_currency || product.currency || 'KRW'}</TableCell>
                   <TableCell>
                     {product.target_return_percent ? `${product.target_return_percent}%` : product.target_return ? formatPercent(product.target_return) : '-'}

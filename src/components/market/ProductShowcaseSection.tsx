@@ -171,7 +171,9 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                       {language === 'ko' ? product.name_ko : product.name_en}
                     </TableCell>
                     <TableCell className="text-xs whitespace-nowrap">
-...
+                      <Badge className={TYPE_COLORS[product.type] || 'bg-muted text-muted-foreground'} variant="secondary">
+                        {(language === 'ko' ? TYPE_LABELS[product.type]?.ko : TYPE_LABELS[product.type]?.en) || product.type}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-xs whitespace-nowrap">
                       {CURRENCY_LABELS[product.currency || 'KRW'] || product.currency || 'KRW'}
