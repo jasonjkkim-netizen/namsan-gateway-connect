@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Users, Coins, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown, UserCog, Settings } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
 import { SalesCommissionRates } from '@/components/sales/SalesCommissionRates';
+import { SalesInvestmentManager } from '@/components/sales/SalesInvestmentManager';
 import { MemberDetailDialog } from '@/components/sales/MemberDetailDialog';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import ExcelJS from 'exceljs';
@@ -714,6 +715,9 @@ export default function SalesDashboard() {
                 )}
               </div>
             </div>
+
+            {/* Investment & Commission Manager below org tree */}
+            <SalesInvestmentManager downline={downline} onDataChange={fetchAll} />
           </TabsContent>
 
           {/* Commissions Tab */}
