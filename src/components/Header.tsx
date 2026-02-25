@@ -43,9 +43,18 @@ export function Header() {
     navigate('/login');
   };
 
-  const displayName = language === 'ko' && profile?.full_name_ko 
-    ? profile.full_name_ko 
-    : profile?.full_name || user?.email;
+  const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
+    webmaster: { en: 'Webmaster', ko: '웹마스터' },
+    district_manager: { en: 'General Manager', ko: '총괄관리' },
+    deputy_district_manager: { en: 'Deputy General Manager', ko: '부총괄관리' },
+    principal_agent: { en: 'Principal Agent', ko: '수석 에이전트' },
+    agent: { en: 'Agent', ko: '에이전트' },
+    client: { en: 'Client', ko: '고객' },
+  };
+
+  // Default to Korean name
+  const displayName = profile?.full_name_ko || profile?.full_name || user?.email;
+  const roleLabel = salesRole ? (language === 'ko' ? ROLE_LABELS[salesRole]?.ko : ROLE_LABELS[salesRole]?.en) : null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -85,9 +94,12 @@ export function Header() {
                   <span className="hidden md:inline">Admin</span>
                 </Button>
               )}
-              <span className="hidden md:block text-sm text-muted-foreground">
-                {displayName}
-              </span>
+              <div className="hidden md:flex flex-col items-end">
+                <span className="text-sm text-foreground font-medium">{displayName}</span>
+                {roleLabel && (
+                  <span className="text-[10px] text-muted-foreground">{roleLabel}</span>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
