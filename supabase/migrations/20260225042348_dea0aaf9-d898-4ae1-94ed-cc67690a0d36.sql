@@ -1,0 +1,1 @@
+UPDATE profiles SET sales_level = 5 WHERE email = 'jasonkimgs@yahoo.com' AND sales_role = 'client';
