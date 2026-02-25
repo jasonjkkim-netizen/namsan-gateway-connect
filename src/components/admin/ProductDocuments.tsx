@@ -95,7 +95,10 @@ export function ProductDocuments({ productId }: ProductDocumentsProps) {
         const docNameKo = nameKo || baseName;
         const docNameEn = nameEn || baseName;
 
-        const path = `${productId}/${Date.now()}_${file.name}`;
+        // Sanitize filename: replace non-ASCII and special chars with underscores
+        const ext = file.name.split('.').pop() || 'pdf';
+        const safeName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+        const path = `${productId}/${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from('product-documents')
           .upload(path, file);
