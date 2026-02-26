@@ -422,6 +422,17 @@ export default function SalesDashboard() {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet(language === 'ko' ? '커미션 리포트' : 'Commission Report');
 
+    // Helper: convert amount to USD and KRW
+    const toUsdExcel = (amt: number, cur?: string | null) => {
+      const src = cur || 'USD';
+      return src === 'KRW' ? amt / usdKrwRate : amt;
+    };
+    const toKrwExcel = (amt: number, cur?: string | null) => {
+      const src = cur || 'USD';
+      return src === 'USD' ? amt * usdKrwRate : amt;
+    };
+    const fxNote = `${language === 'ko' ? '적용 환율' : 'FX Rate'}: 1 USD = ${usdKrwRate.toLocaleString()} KRW`;
+
     ws.columns = [
       { header: language === 'ko' ? '수령자' : 'Recipient', key: 'recipient', width: 20 },
       { header: language === 'ko' ? '투자자' : 'Investor', key: 'investor', width: 20 },
@@ -429,6 +440,8 @@ export default function SalesDashboard() {
       { header: language === 'ko' ? '선취 커미션' : 'Upfront', key: 'upfront', width: 18 },
       { header: language === 'ko' ? '성과 커미션' : 'Performance', key: 'performance', width: 18 },
       { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 18 },
+      { header: language === 'ko' ? '합계(USD)' : 'Total(USD)', key: 'totalUsd', width: 18 },
+      { header: language === 'ko' ? '합계(KRW)' : 'Total(KRW)', key: 'totalKrw', width: 18 },
       { header: language === 'ko' ? '적용률' : 'Rate', key: 'rate', width: 10 },
       { header: language === 'ko' ? '통화' : 'Currency', key: 'currency', width: 10 },
       { header: language === 'ko' ? '상태' : 'Status', key: 'status', width: 12 },
@@ -443,13 +456,16 @@ export default function SalesDashboard() {
     filteredCommissions.forEach((c) => {
       const upfront = Number(c.upfront_amount) || 0;
       const perf = Number(c.performance_amount) || 0;
+      const total = upfront + perf;
       ws.addRow({
         recipient: getName(c.to_user_id),
         investor: c.from_user_id ? getName(c.from_user_id) : '—',
         layer: c.layer,
         upfront,
         performance: perf,
-        total: upfront + perf,
+        total,
+        totalUsd: Math.round(toUsdExcel(total, c.currency) * 100) / 100,
+        totalKrw: Math.round(toKrwExcel(total, c.currency)),
         rate: c.rate_used ? `${c.rate_used}%` : '—',
         currency: c.currency || 'USD',
         status: c.status,
@@ -460,13 +476,20 @@ export default function SalesDashboard() {
     // Summary row
     const totalUp = filteredCommissions.reduce((s, c) => s + (Number(c.upfront_amount) || 0), 0);
     const totalPerf = filteredCommissions.reduce((s, c) => s + (Number(c.performance_amount) || 0), 0);
+    const totalUsdSum = filteredCommissions.reduce((s, c) => s + toUsdExcel((Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), c.currency), 0);
+    const totalKrwSum = filteredCommissions.reduce((s, c) => s + toKrwExcel((Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), c.currency), 0);
     const summaryRow = ws.addRow({
       investor: language === 'ko' ? '합계' : 'TOTAL',
       upfront: totalUp,
       performance: totalPerf,
       total: totalUp + totalPerf,
+      totalUsd: Math.round(totalUsdSum * 100) / 100,
+      totalKrw: Math.round(totalKrwSum),
     });
     summaryRow.font = { bold: true };
+    // FX note row
+    ws.addRow({});
+    ws.addRow({ recipient: fxNote });
 
     // --- Sheet 2: Member Summary ---
     const wsMember = wb.addWorksheet(language === 'ko' ? '멤버별 요약' : 'By Member');
@@ -477,21 +500,29 @@ export default function SalesDashboard() {
       { header: language === 'ko' ? '선취 합계' : 'Upfront Total', key: 'upfront', width: 18 },
       { header: language === 'ko' ? '성과 합계' : 'Perf Total', key: 'performance', width: 18 },
       { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 18 },
+      { header: language === 'ko' ? '합계(USD)' : 'Total(USD)', key: 'totalUsd', width: 18 },
+      { header: language === 'ko' ? '합계(KRW)' : 'Total(KRW)', key: 'totalKrw', width: 18 },
     ];
     wsMember.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     wsMember.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
 
-    const memberAggExcel: Record<string, { upfront: number; performance: number; count: number; role: string }> = {};
+    const memberAggExcel: Record<string, { upfront: number; performance: number; upfrontUsd: number; perfUsd: number; upfrontKrw: number; perfKrw: number; count: number; role: string }> = {};
     const profileRoleMapExcel: Record<string, string> = {};
     profiles.forEach((p) => { profileRoleMapExcel[p.user_id] = p.sales_role || 'client'; });
     if (user && userRole) profileRoleMapExcel[user.id] = userRole;
 
     filteredCommissions.forEach((c) => {
       if (!memberAggExcel[c.to_user_id]) {
-        memberAggExcel[c.to_user_id] = { upfront: 0, performance: 0, count: 0, role: profileRoleMapExcel[c.to_user_id] || 'client' };
+        memberAggExcel[c.to_user_id] = { upfront: 0, performance: 0, upfrontUsd: 0, perfUsd: 0, upfrontKrw: 0, perfKrw: 0, count: 0, role: profileRoleMapExcel[c.to_user_id] || 'client' };
       }
-      memberAggExcel[c.to_user_id].upfront += Number(c.upfront_amount) || 0;
-      memberAggExcel[c.to_user_id].performance += Number(c.performance_amount) || 0;
+      const up = Number(c.upfront_amount) || 0;
+      const pf = Number(c.performance_amount) || 0;
+      memberAggExcel[c.to_user_id].upfront += up;
+      memberAggExcel[c.to_user_id].performance += pf;
+      memberAggExcel[c.to_user_id].upfrontUsd += toUsdExcel(up, c.currency);
+      memberAggExcel[c.to_user_id].perfUsd += toUsdExcel(pf, c.currency);
+      memberAggExcel[c.to_user_id].upfrontKrw += toKrwExcel(up, c.currency);
+      memberAggExcel[c.to_user_id].perfKrw += toKrwExcel(pf, c.currency);
       memberAggExcel[c.to_user_id].count++;
     });
 
@@ -506,15 +537,23 @@ export default function SalesDashboard() {
           upfront: agg.upfront,
           performance: agg.performance,
           total: agg.upfront + agg.performance,
+          totalUsd: Math.round((agg.upfrontUsd + agg.perfUsd) * 100) / 100,
+          totalKrw: Math.round(agg.upfrontKrw + agg.perfKrw),
         });
       });
+    const mTotalUsd = Object.values(memberAggExcel).reduce((s, a) => s + a.upfrontUsd + a.perfUsd, 0);
+    const mTotalKrw = Object.values(memberAggExcel).reduce((s, a) => s + a.upfrontKrw + a.perfKrw, 0);
     const memberTotalRow = wsMember.addRow({
       name: language === 'ko' ? '합계' : 'TOTAL',
       upfront: Object.values(memberAggExcel).reduce((s, a) => s + a.upfront, 0),
       performance: Object.values(memberAggExcel).reduce((s, a) => s + a.performance, 0),
       total: Object.values(memberAggExcel).reduce((s, a) => s + a.upfront + a.performance, 0),
+      totalUsd: Math.round(mTotalUsd * 100) / 100,
+      totalKrw: Math.round(mTotalKrw),
     });
     memberTotalRow.font = { bold: true };
+    wsMember.addRow({});
+    wsMember.addRow({ name: fxNote });
 
     // --- Sheet 3: Level Summary ---
     const wsLevel = wb.addWorksheet(language === 'ko' ? '레벨별 요약' : 'By Level');
@@ -525,19 +564,27 @@ export default function SalesDashboard() {
       { header: language === 'ko' ? '선취 합계' : 'Upfront Total', key: 'upfront', width: 18 },
       { header: language === 'ko' ? '성과 합계' : 'Perf Total', key: 'performance', width: 18 },
       { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 18 },
+      { header: language === 'ko' ? '합계(USD)' : 'Total(USD)', key: 'totalUsd', width: 18 },
+      { header: language === 'ko' ? '합계(KRW)' : 'Total(KRW)', key: 'totalKrw', width: 18 },
     ];
     wsLevel.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     wsLevel.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
 
     const ROLE_ORDER_EXCEL = ['webmaster', 'district_manager', 'deputy_district_manager', 'principal_agent', 'agent', 'client'];
-    const levelAgg: Record<string, { upfront: number; performance: number; count: number; members: Set<string> }> = {};
-    ROLE_ORDER_EXCEL.forEach((r) => { levelAgg[r] = { upfront: 0, performance: 0, count: 0, members: new Set() }; });
+    const levelAgg: Record<string, { upfront: number; performance: number; upfrontUsd: number; perfUsd: number; upfrontKrw: number; perfKrw: number; count: number; members: Set<string> }> = {};
+    ROLE_ORDER_EXCEL.forEach((r) => { levelAgg[r] = { upfront: 0, performance: 0, upfrontUsd: 0, perfUsd: 0, upfrontKrw: 0, perfKrw: 0, count: 0, members: new Set() }; });
 
     filteredCommissions.forEach((c) => {
       const role = profileRoleMapExcel[c.to_user_id] || 'client';
-      if (!levelAgg[role]) levelAgg[role] = { upfront: 0, performance: 0, count: 0, members: new Set() };
-      levelAgg[role].upfront += Number(c.upfront_amount) || 0;
-      levelAgg[role].performance += Number(c.performance_amount) || 0;
+      if (!levelAgg[role]) levelAgg[role] = { upfront: 0, performance: 0, upfrontUsd: 0, perfUsd: 0, upfrontKrw: 0, perfKrw: 0, count: 0, members: new Set() };
+      const up = Number(c.upfront_amount) || 0;
+      const pf = Number(c.performance_amount) || 0;
+      levelAgg[role].upfront += up;
+      levelAgg[role].performance += pf;
+      levelAgg[role].upfrontUsd += toUsdExcel(up, c.currency);
+      levelAgg[role].perfUsd += toUsdExcel(pf, c.currency);
+      levelAgg[role].upfrontKrw += toKrwExcel(up, c.currency);
+      levelAgg[role].perfKrw += toKrwExcel(pf, c.currency);
       levelAgg[role].count++;
       levelAgg[role].members.add(c.to_user_id);
     });
@@ -551,6 +598,8 @@ export default function SalesDashboard() {
         upfront: agg.upfront,
         performance: agg.performance,
         total: agg.upfront + agg.performance,
+        totalUsd: Math.round((agg.upfrontUsd + agg.perfUsd) * 100) / 100,
+        totalKrw: Math.round(agg.upfrontKrw + agg.perfKrw),
       });
     });
     const levelTotalRow = wsLevel.addRow({
@@ -559,8 +608,12 @@ export default function SalesDashboard() {
       upfront: totalUp,
       performance: totalPerf,
       total: totalUp + totalPerf,
+      totalUsd: Math.round(totalUsdSum * 100) / 100,
+      totalKrw: Math.round(totalKrwSum),
     });
     levelTotalRow.font = { bold: true };
+    wsLevel.addRow({});
+    wsLevel.addRow({ level: fxNote });
 
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
