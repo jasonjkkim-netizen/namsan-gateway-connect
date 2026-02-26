@@ -219,19 +219,19 @@ export default function ProductDetail() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-8">
           {product.target_return && (
             <Card className="card-elevated animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-accent" />
+              <CardHeader className="pb-1 pt-3 px-3">
+                <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+                  <TrendingUp className="h-3.5 w-3.5 text-accent" />
                   {language === 'ko' ? '목표 수익률' : 'Target Return'}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold text-accent">{formatPercent(product.target_return)}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {language === 'ko' ? '연간 예상 수익률' : 'Expected annual return'}
+              <CardContent className="px-3 pb-3">
+                <p className="text-xl font-bold text-accent whitespace-nowrap">{formatPercent(product.target_return)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {language === 'ko' ? '연간 예상' : 'Annual expected'}
                 </p>
               </CardContent>
             </Card>
@@ -239,16 +239,16 @@ export default function ProductDetail() {
 
           {product.fundraising_amount && (
             <Card className="card-elevated animate-fade-in" style={{ animationDelay: '150ms' }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-accent" />
-                  {language === 'ko' ? '모집 금액' : 'Fundraising Amount'}
+              <CardHeader className="pb-1 pt-3 px-3">
+                <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+                  <DollarSign className="h-3.5 w-3.5 text-accent" />
+                  {language === 'ko' ? '모집 금액' : 'Fundraising'}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{formatCurrency(product.fundraising_amount, product.default_currency || undefined)}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {language === 'ko' ? '총 모집 목표 금액' : 'Total fundraising target'}
+              <CardContent className="px-3 pb-3">
+                <p className="text-xl font-bold whitespace-nowrap">{formatCurrency(product.fundraising_amount, product.default_currency || undefined)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {language === 'ko' ? '총 모집 목표' : 'Total target'}
                 </p>
               </CardContent>
             </Card>
@@ -256,15 +256,15 @@ export default function ProductDetail() {
 
           {product.minimum_investment && (
             <Card className="card-elevated animate-fade-in" style={{ animationDelay: '200ms' }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {language === 'ko' ? '최소 투자 금액' : 'Minimum Investment'}
+              <CardHeader className="pb-1 pt-3 px-3">
+                <CardTitle className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                  {language === 'ko' ? '최소 투자금' : 'Min. Investment'}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{formatCurrency(product.minimum_investment, product.default_currency || undefined)}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {language === 'ko' ? '최소 투자 가능 금액' : 'Minimum amount to invest'}
+              <CardContent className="px-3 pb-3">
+                <p className="text-xl font-bold whitespace-nowrap">{formatCurrency(product.minimum_investment, product.default_currency || undefined)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {language === 'ko' ? '최소 가능 금액' : 'Minimum amount'}
                 </p>
               </CardContent>
             </Card>
@@ -272,16 +272,16 @@ export default function ProductDetail() {
 
           {product.募集_deadline && (
             <Card className="card-elevated animate-fade-in" style={{ animationDelay: '300ms' }}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+              <CardHeader className="pb-1 pt-3 px-3">
+                <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
+                  <Calendar className="h-3.5 w-3.5" />
                   {language === 'ko' ? '모집 마감일' : 'Deadline'}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{formatDate(product.募集_deadline)}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {language === 'ko' ? '투자 신청 마감일' : 'Application deadline'}
+              <CardContent className="px-3 pb-3">
+                <p className="text-xl font-bold whitespace-nowrap">{formatDate(product.募集_deadline)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {language === 'ko' ? '신청 마감' : 'Application deadline'}
                 </p>
               </CardContent>
             </Card>
