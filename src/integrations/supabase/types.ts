@@ -488,6 +488,7 @@ export type Database = {
           description_en: string | null
           description_ko: string | null
           fixed_return_percent: number | null
+          fundraising_amount: number | null
           id: string
           image_url: string | null
           is_active: boolean | null
@@ -512,6 +513,7 @@ export type Database = {
           description_en?: string | null
           description_ko?: string | null
           fixed_return_percent?: number | null
+          fundraising_amount?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
@@ -536,6 +538,7 @@ export type Database = {
           description_en?: string | null
           description_ko?: string | null
           fixed_return_percent?: number | null
+          fundraising_amount?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null

@@ -43,6 +43,7 @@ interface Product {
   performance_fee_percent: number | null;
   upfront_commission_percent: number | null;
   min_investment_amount: number | null;
+  fundraising_amount: number | null;
   default_currency: string | null;
   image_url: string | null;
 }
@@ -110,6 +111,7 @@ export function AdminProducts() {
     performance_fee_percent: '',
     upfront_commission_percent: '',
     min_investment_amount: '',
+    fundraising_amount: '',
     default_currency: 'USD',
     image_url: '',
   });
@@ -163,6 +165,7 @@ export function AdminProducts() {
       performance_fee_percent: product.performance_fee_percent ? String(product.performance_fee_percent) : '',
       upfront_commission_percent: product.upfront_commission_percent ? String(product.upfront_commission_percent) : '',
       min_investment_amount: product.min_investment_amount ? String(product.min_investment_amount) : '',
+      fundraising_amount: product.fundraising_amount ? String(product.fundraising_amount) : '',
       default_currency: product.default_currency || 'USD',
       image_url: product.image_url || '',
     });
@@ -179,7 +182,7 @@ export function AdminProducts() {
       minimum_investment: '', 募集_deadline: '', status: 'draft', is_active: true,
       target_return_percent: '', fixed_return_percent: '',
       management_fee_percent: '', performance_fee_percent: '',
-      upfront_commission_percent: '', min_investment_amount: '', default_currency: 'USD',
+      upfront_commission_percent: '', min_investment_amount: '', fundraising_amount: '', default_currency: 'USD',
       image_url: '',
     });
     setDialogOpen(true);
@@ -228,6 +231,7 @@ export function AdminProducts() {
       performance_fee_percent: parseNum(formData.performance_fee_percent),
       upfront_commission_percent: parseNum(formData.upfront_commission_percent),
       min_investment_amount: parseNum(formData.min_investment_amount),
+      fundraising_amount: parseNum(formData.fundraising_amount),
       default_currency: formData.default_currency,
       image_url: formData.image_url || null,
     };
@@ -571,6 +575,10 @@ export function AdminProducts() {
                 <div className="space-y-2">
                   <Label>{language === 'ko' ? '최소 투자금' : 'Min Investment Amount'}</Label>
                   <Input type="number" step="0.01" value={formData.min_investment_amount} onChange={(e) => setFormData({ ...formData, min_investment_amount: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>{language === 'ko' ? '모집 금액' : 'Fundraising Amount'}</Label>
+                  <Input type="number" step="0.01" value={formData.fundraising_amount} onChange={(e) => setFormData({ ...formData, fundraising_amount: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>{language === 'ko' ? '기본 통화' : 'Default Currency'}</Label>

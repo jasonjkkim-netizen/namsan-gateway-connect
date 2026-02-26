@@ -36,6 +36,7 @@ interface Product {
   performance_fee_percent: number | null;
   currency: string | null;
   min_investment_amount: number | null;
+  fundraising_amount: number | null;
 }
 
 interface ProductDocument {
@@ -374,9 +375,15 @@ export default function ProductDetail() {
                   <span className="font-medium">{formatPercent(product.performance_fee_percent)}</span>
                 </div>
               )}
+              {product.fundraising_amount != null && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '모집 금액' : 'Fundraising Amount'}</span>
+                  <span className="font-medium">{formatCurrency(product.fundraising_amount, product.default_currency || product.currency || undefined)}</span>
+                </div>
+              )}
               {product.min_investment_amount != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
-                  <span className="text-muted-foreground">{language === 'ko' ? '모집 금액' : 'Fund Size'}</span>
+                  <span className="text-muted-foreground">{language === 'ko' ? '최소 투자금' : 'Min Investment'}</span>
                   <span className="font-medium">{formatCurrency(product.min_investment_amount, product.default_currency || product.currency || undefined)}</span>
                 </div>
               )}
