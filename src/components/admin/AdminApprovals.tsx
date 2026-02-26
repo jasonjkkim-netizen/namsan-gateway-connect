@@ -199,70 +199,71 @@ export function AdminApprovals() {
 
   return (
     <div className="card-elevated">
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-serif font-semibold">
-              {language === 'ko' ? '가입 승인 관리' : 'Registration Approvals'}
-            </h2>
-            {pendingProfiles.length > 0 && (
-              <Badge variant="destructive" className="animate-pulse">
-                {pendingProfiles.length} {language === 'ko' ? '대기' : 'pending'}
-              </Badge>
-            )}
+      <div className="p-4 sm:p-6 border-b border-border space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base sm:text-xl font-serif font-semibold">
+            {language === 'ko' ? '가입 승인 관리' : 'Registration Approvals'}
+          </h2>
+          {pendingProfiles.length > 0 && (
+            <Badge variant="destructive" className="animate-pulse text-xs">
+              {pendingProfiles.length} {language === 'ko' ? '대기' : 'pending'}
+            </Badge>
+          )}
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="flex gap-1 sm:gap-2">
+            <Button
+              variant={viewMode === 'pending' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('pending')}
+              className="text-xs sm:text-sm px-2 sm:px-3 flex-1 sm:flex-none"
+            >
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 shrink-0" />
+              <span className="truncate">{language === 'ko' ? '대기' : 'Pending'}</span>
+              {pendingProfiles.length > 0 && <span className="ml-1">({pendingProfiles.length})</span>}
+            </Button>
+            <Button
+              variant={viewMode === 'approved' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('approved')}
+              className="text-xs sm:text-sm px-2 sm:px-3 flex-1 sm:flex-none"
+            >
+              <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 shrink-0" />
+              <span className="truncate">{language === 'ko' ? '승인' : 'Approved'}</span>
+            </Button>
+            <Button
+              variant={viewMode === 'rejected' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('rejected')}
+              className="text-xs sm:text-sm px-2 sm:px-3 flex-1 sm:flex-none"
+            >
+              <UserX className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 shrink-0" />
+              <span className="truncate">{language === 'ko' ? '거절' : 'Rejected'}</span>
+              {rejectedProfiles.length > 0 && <span className="ml-1">({rejectedProfiles.length})</span>}
+            </Button>
           </div>
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'pending' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('pending')}
-              >
-                <Clock className="h-4 w-4 mr-2" />
-                {language === 'ko' ? '대기 중' : 'Pending'}
-                {pendingProfiles.length > 0 && ` (${pendingProfiles.length})`}
-              </Button>
-              <Button
-                variant={viewMode === 'approved' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('approved')}
-              >
-                <UserCheck className="h-4 w-4 mr-2" />
-                {language === 'ko' ? '승인됨' : 'Approved'}
-              </Button>
-              <Button
-                variant={viewMode === 'rejected' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('rejected')}
-              >
-                <UserX className="h-4 w-4 mr-2" />
-                {language === 'ko' ? '거절됨' : 'Rejected'}
-                {rejectedProfiles.length > 0 && ` (${rejectedProfiles.length})`}
-              </Button>
-            </div>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={language === 'ko' ? '검색...' : 'Search...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={language === 'ko' ? '검색...' : 'Search...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 text-sm"
+            />
           </div>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="text-xs sm:text-sm">
           <TableHeader>
             <TableRow>
-              <TableHead>{language === 'ko' ? '이메일' : 'Email'}</TableHead>
-              <TableHead>{language === 'ko' ? '이름' : 'Name'}</TableHead>
-              <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
-              <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
-              <TableHead>{language === 'ko' ? (viewMode === 'rejected' ? '거절일' : '가입일') : (viewMode === 'rejected' ? 'Rejected' : 'Registered')}</TableHead>
-              {viewMode !== 'approved' && <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>}
+              <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
+              <TableHead className="whitespace-nowrap">{language === 'ko' ? '이름' : 'Name'}</TableHead>
+              <TableHead className="whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
+              <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
+              <TableHead className="whitespace-nowrap">{language === 'ko' ? (viewMode === 'rejected' ? '거절일' : '가입일') : (viewMode === 'rejected' ? 'Rejected' : 'Registered')}</TableHead>
+              {viewMode !== 'approved' && <TableHead className="whitespace-nowrap">{language === 'ko' ? '작업' : 'Actions'}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -299,36 +300,37 @@ export function AdminApprovals() {
             ) : (
               filteredProfiles.map((profile) => (
                 <TableRow key={profile.id}>
-                  <TableCell className="font-medium">{profile.email}</TableCell>
+                  <TableCell className="font-medium max-w-[120px] sm:max-w-none truncate">{profile.email}</TableCell>
                   <TableCell>
                     <div>
-                      <div>{profile.full_name}</div>
+                      <div className="text-xs sm:text-sm">{profile.full_name}</div>
                       {profile.full_name_ko && (
-                        <div className="text-sm text-muted-foreground">{profile.full_name_ko}</div>
+                        <div className="text-xs text-muted-foreground">{profile.full_name_ko}</div>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{profile.phone || '-'}</TableCell>
-                  <TableCell>{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
-                  <TableCell>{viewMode === 'rejected' && profile.rejected_at ? formatDate(profile.rejected_at) : formatDate(profile.created_at)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{profile.phone || '-'}</TableCell>
+                  <TableCell className="hidden md:table-cell">{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
+                  <TableCell className="whitespace-nowrap">{viewMode === 'rejected' && profile.rejected_at ? formatDate(profile.rejected_at) : formatDate(profile.created_at)}</TableCell>
                   {viewMode === 'pending' && (
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Button
                           size="sm"
-                          className="btn-gold"
+                          className="btn-gold text-xs px-2 sm:px-3"
                           onClick={() => setConfirmDialog({ open: true, profile, action: 'approve' })}
                         >
-                          <Check className="h-4 w-4 mr-1" />
-                          {language === 'ko' ? '승인' : 'Approve'}
+                          <Check className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                          <span className="hidden sm:inline">{language === 'ko' ? '승인' : 'Approve'}</span>
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
+                          className="text-xs px-2 sm:px-3"
                           onClick={() => setConfirmDialog({ open: true, profile, action: 'reject' })}
                         >
-                          <X className="h-4 w-4 mr-1" />
-                          {language === 'ko' ? '거절' : 'Reject'}
+                          <X className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                          <span className="hidden sm:inline">{language === 'ko' ? '거절' : 'Reject'}</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -338,10 +340,11 @@ export function AdminApprovals() {
                       <Button
                         size="sm"
                         variant="outline"
+                        className="text-xs px-2 sm:px-3"
                         onClick={() => setConfirmDialog({ open: true, profile, action: 'restore' })}
                       >
-                        <RotateCcw className="h-4 w-4 mr-1" />
-                        {language === 'ko' ? '복원' : 'Restore'}
+                        <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                        <span className="hidden sm:inline">{language === 'ko' ? '복원' : 'Restore'}</span>
                       </Button>
                     </TableCell>
                   )}

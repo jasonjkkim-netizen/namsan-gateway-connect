@@ -279,13 +279,19 @@ export function AdminClients() {
 
     return list.map((profile) => (
       <TableRow key={profile.id}>
-        <TableCell className="font-medium">{profile.email}</TableCell>
-        <TableCell>{profile.full_name}</TableCell>
-        <TableCell>{profile.full_name_ko || '-'}</TableCell>
-        <TableCell>{profile.phone || '-'}</TableCell>
-        <TableCell className="max-w-[200px] truncate">{profile.address || '-'}</TableCell>
-        <TableCell>{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
-        <TableCell>{isDeletedSection && profile.deleted_at ? formatDate(profile.deleted_at) : formatDate(profile.created_at)}</TableCell>
+        <TableCell className="font-medium max-w-[120px] sm:max-w-none truncate">{profile.email}</TableCell>
+        <TableCell>
+          <div>
+            <div className="text-xs sm:text-sm">{profile.full_name}</div>
+            {profile.full_name_ko && (
+              <div className="text-xs text-muted-foreground">{profile.full_name_ko}</div>
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="hidden md:table-cell">{profile.phone || '-'}</TableCell>
+        {!isDeletedSection && <TableCell className="hidden lg:table-cell max-w-[150px] truncate">{profile.address || '-'}</TableCell>}
+        <TableCell className="hidden md:table-cell">{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
+        <TableCell className="hidden sm:table-cell whitespace-nowrap">{isDeletedSection && profile.deleted_at ? formatDate(profile.deleted_at) : formatDate(profile.created_at)}</TableCell>
         {!isDeletedSection && (
           <TableCell className="text-center">
             <Switch
@@ -299,15 +305,15 @@ export function AdminClients() {
           <div className="flex items-center gap-1">
             {isDeletedSection ? (
               <Button variant="ghost" size="sm" onClick={() => handleRestore(profile)} title={language === 'ko' ? '복원' : 'Restore'}>
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             ) : (
               <>
                 <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
-                  <Edit className="h-4 w-4" />
+                  <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(profile)} className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </>
             )}
@@ -321,33 +327,32 @@ export function AdminClients() {
     <div className="space-y-6">
       {/* Active Clients */}
       <div className="card-elevated">
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <h2 className="text-xl font-serif font-semibold">
+        <div className="p-4 sm:p-6 border-b border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+          <h2 className="text-base sm:text-xl font-serif font-semibold">
             {language === 'ko' ? '고객 목록' : 'Client List'}
           </h2>
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={language === 'ko' ? '검색...' : 'Search...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-9 text-sm"
             />
           </div>
         </div>
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="text-xs sm:text-sm">
             <TableHeader>
               <TableRow>
-                <TableHead>{language === 'ko' ? '이메일' : 'Email'}</TableHead>
-                <TableHead>{language === 'ko' ? '이름 (영문)' : 'Name (EN)'}</TableHead>
-                <TableHead>{language === 'ko' ? '이름 (한글)' : 'Name (KO)'}</TableHead>
-                <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
-                <TableHead>{language === 'ko' ? '주소' : 'Address'}</TableHead>
-                <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
-                <TableHead>{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
-                <TableHead className="text-center">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>
-                <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
+                <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
+                <TableHead className="whitespace-nowrap">{language === 'ko' ? '이름' : 'Name'}</TableHead>
+                <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
+                <TableHead className="whitespace-nowrap hidden lg:table-cell">{language === 'ko' ? '주소' : 'Address'}</TableHead>
+                <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
+                <TableHead className="whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
+                <TableHead className="text-center whitespace-nowrap">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>
+                <TableHead className="whitespace-nowrap">{language === 'ko' ? '작업' : 'Actions'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -370,17 +375,15 @@ export function AdminClients() {
         </button>
         {showDeleted && (
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="text-xs sm:text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>{language === 'ko' ? '이메일' : 'Email'}</TableHead>
-                  <TableHead>{language === 'ko' ? '이름 (영문)' : 'Name (EN)'}</TableHead>
-                  <TableHead>{language === 'ko' ? '이름 (한글)' : 'Name (KO)'}</TableHead>
-                  <TableHead>{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
-                  <TableHead>{language === 'ko' ? '주소' : 'Address'}</TableHead>
-                  <TableHead>{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
-                  <TableHead>{language === 'ko' ? '삭제일' : 'Deleted'}</TableHead>
-                  <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
+                  <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
+                  <TableHead className="whitespace-nowrap">{language === 'ko' ? '이름' : 'Name'}</TableHead>
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '삭제일' : 'Deleted'}</TableHead>
+                  <TableHead className="whitespace-nowrap">{language === 'ko' ? '작업' : 'Actions'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
