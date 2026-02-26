@@ -30,6 +30,11 @@ interface Product {
   created_at: string;
   image_url: string | null;
   default_currency: string | null;
+  fixed_return_percent: number | null;
+  target_return_percent: number | null;
+  management_fee_percent: number | null;
+  performance_fee_percent: number | null;
+  currency: string | null;
 }
 
 interface ProductDocument {
@@ -331,16 +336,44 @@ export default function ProductDetail() {
                 {language === 'ko' ? '투자 개요' : 'Investment Overview'}
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between py-2 border-b border-border">
+            <CardContent className="space-y-0">
+              <div className="flex justify-between py-2.5 border-b border-border">
                 <span className="text-muted-foreground">{language === 'ko' ? '상품 유형' : 'Product Type'}</span>
                 <span className="font-medium">{language === 'ko' ? typeConfig.labelKo : typeConfig.labelEn}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
+              <div className="flex justify-between py-2.5 border-b border-border">
                 <span className="text-muted-foreground">{language === 'ko' ? '상태' : 'Status'}</span>
                 <span className="font-medium">{getStatusLabel(product.status)}</span>
               </div>
-              <div className="flex justify-between py-2">
+              <div className="flex justify-between py-2.5 border-b border-border">
+                <span className="text-muted-foreground">{language === 'ko' ? '통화' : 'Currency'}</span>
+                <span className="font-medium">{product.default_currency?.toUpperCase() || product.currency?.toUpperCase() || 'USD'}</span>
+              </div>
+              {product.fixed_return_percent != null && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '확정 수익률' : 'Fixed Return'}</span>
+                  <span className="font-medium text-accent">{formatPercent(product.fixed_return_percent)}</span>
+                </div>
+              )}
+              {product.target_return_percent != null && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '목표 수익률' : 'Target Return'}</span>
+                  <span className="font-medium text-accent">{formatPercent(product.target_return_percent)}</span>
+                </div>
+              )}
+              {product.management_fee_percent != null && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '운용 보수' : 'Management Fee'}</span>
+                  <span className="font-medium">{formatPercent(product.management_fee_percent)}</span>
+                </div>
+              )}
+              {product.performance_fee_percent != null && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '성과 보수' : 'Performance Fee'}</span>
+                  <span className="font-medium">{formatPercent(product.performance_fee_percent)}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-2.5">
                 <span className="text-muted-foreground">{language === 'ko' ? '등록일' : 'Listed Date'}</span>
                 <span className="font-medium">{formatDate(product.created_at)}</span>
               </div>
