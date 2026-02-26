@@ -254,8 +254,7 @@ export default function ProductDetail() {
           {product.minimum_investment && (
             <Card className="card-elevated animate-fade-in" style={{ animationDelay: '200ms' }}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {language === 'ko' ? '최소 투자 금액' : 'Minimum Investment'}
                 </CardTitle>
               </CardHeader>
