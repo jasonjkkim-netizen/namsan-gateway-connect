@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.send-kakao]
 verify_jwt = false
+
+[functions.register-quick-client]
+verify_jwt = false
