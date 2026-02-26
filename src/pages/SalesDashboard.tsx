@@ -611,36 +611,36 @@ export default function SalesDashboard() {
           {/* Downline Tree Tab */}
           <TabsContent value="downline">
             <div className="card-elevated">
-              <div className="p-6 border-b border-border">
-                <h2 className="text-lg font-serif font-semibold">
+              <div className="p-3 sm:p-6 border-b border-border">
+                <h2 className="text-sm sm:text-lg font-serif font-semibold">
                   {language === 'ko' ? '하위 영업 조직' : 'Sales Organization'}
                 </h2>
               </div>
-              <div className="p-6">
+              <div className="p-2 sm:p-6">
                 {loading ? (
                   <div className="space-y-3">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full" />
+                      <Skeleton key={i} className="h-8 sm:h-12 w-full" />
                     ))}
                   </div>
                 ) : downline.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-4 opacity-40" />
-                    <p>
+                  <div className="text-center py-8 sm:py-12 text-muted-foreground">
+                    <Users className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-40" />
+                    <p className="text-xs sm:text-sm">
                       {language === 'ko'
                         ? '하위 영업인이 없습니다'
                         : 'No downline members yet'}
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1 sm:space-y-2">
                     {/* Root: current user (self) */}
-                    <div className="flex items-center gap-3 rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3">
-                      <Crown className="h-4 w-4 text-primary" />
-                      <span className="font-semibold">
+                    <div className="flex items-center gap-1.5 sm:gap-3 rounded-lg border-2 border-primary/30 bg-primary/5 px-2 sm:px-4 py-1.5 sm:py-3">
+                      <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0" />
+                      <span className="font-semibold text-[10px] sm:text-sm truncate">
                         {profile?.full_name || user?.email}
                       </span>
-                      <Badge variant="default" className="text-xs">
+                      <Badge variant="default" className="text-[8px] sm:text-xs shrink-0">
                         {(profile as any)?.sales_role
                           ? getRoleLabel((profile as any).sales_role)
                           : 'Admin'}
@@ -653,24 +653,24 @@ export default function SalesDashboard() {
                         const members = downlineByDepth[depth];
                         return (
                           <div key={depth}>
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                            <p className="text-[9px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 sm:mb-2">
                               {language === 'ko'
                                 ? `${depth + 1}단계`
                                 : `Level ${depth + 1}`}
                             </p>
-                            <div className="space-y-1 mb-4">
+                            <div className="space-y-0.5 sm:space-y-1 mb-2 sm:mb-4">
                               {members.map((m) => (
                                 <div
                                   key={m.user_id}
-                                  className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 hover:bg-muted/30 transition-colors"
-                                  style={{ marginLeft: `${(depth + 1) * 24}px` }}
+                                  className="flex items-center gap-1.5 sm:gap-3 rounded-lg border border-border px-2 sm:px-4 py-1.5 sm:py-3 hover:bg-muted/30 transition-colors"
+                                  style={{ marginLeft: `${(depth + 1) * 12}px` }}
                                 >
                                   <div
-                                    className="flex items-center gap-3 flex-1 cursor-pointer"
+                                    className="flex items-center gap-1.5 sm:gap-3 flex-1 cursor-pointer min-w-0"
                                     onClick={() => setSelectedMemberId(m.user_id)}
                                   >
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium">
+                                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+                                    <span className="font-medium text-[10px] sm:text-sm truncate">
                                       {m.full_name}
                                     </span>
                                     <Badge
@@ -678,7 +678,7 @@ export default function SalesDashboard() {
                                         (ROLE_COLORS[m.sales_role] as any) ||
                                         'secondary'
                                       }
-                                      className="text-xs"
+                                      className="text-[8px] sm:text-xs shrink-0"
                                     >
                                       {getRoleLabel(m.sales_role)}
                                     </Badge>
@@ -693,15 +693,15 @@ export default function SalesDashboard() {
                                       }}
                                       disabled={changingRoleId === m.user_id}
                                     >
-                                      <SelectTrigger className="w-[130px] h-7 text-xs" onClick={(e) => e.stopPropagation()}>
-                                        <UserCog className="h-3 w-3 mr-1" />
+                                      <SelectTrigger className="w-[80px] sm:w-[130px] h-6 sm:h-7 text-[9px] sm:text-xs" onClick={(e) => e.stopPropagation()}>
+                                        <UserCog className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent className="bg-popover z-50">
-                                        {isDM && <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>}
-                                        <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
-                                        <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
-                                        <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
+                                        {isDM && <SelectItem value="deputy_district_manager" className="text-xs">{language === 'ko' ? '부총괄' : 'Deputy GM'}</SelectItem>}
+                                        <SelectItem value="principal_agent" className="text-xs">{language === 'ko' ? '수석' : 'Principal'}</SelectItem>
+                                        <SelectItem value="agent" className="text-xs">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
+                                        <SelectItem value="client" className="text-xs">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   )}
@@ -723,14 +723,14 @@ export default function SalesDashboard() {
           {/* Commissions Tab */}
           <TabsContent value="commissions">
             <div className="card-elevated">
-              <div className="p-6 border-b border-border space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-serif font-semibold">
+              <div className="p-3 sm:p-6 border-b border-border space-y-2 sm:space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-sm sm:text-lg font-serif font-semibold">
                     {language === 'ko' ? '커미션 내역' : 'Commission History'}
                   </h2>
-                  <Button size="sm" variant="outline" onClick={exportToExcel} disabled={filteredCommissions.length === 0}>
-                    <Download className="h-4 w-4 mr-1" />
-                    {language === 'ko' ? 'Excel 다운로드' : 'Export Excel'}
+                  <Button size="sm" variant="outline" onClick={exportToExcel} disabled={filteredCommissions.length === 0} className="text-[9px] sm:text-xs h-6 sm:h-8 px-2 sm:px-3">
+                    <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                    {language === 'ko' ? 'Excel' : 'Export'}
                   </Button>
                 </div>
                 {/* Filters */}
