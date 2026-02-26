@@ -255,7 +255,7 @@ export default function ProductDetail() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  {language === 'ko' ? '최소 투자금' : 'Minimum Investment'}
+                  {language === 'ko' ? '최소 투자 금액' : 'Minimum Investment'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
