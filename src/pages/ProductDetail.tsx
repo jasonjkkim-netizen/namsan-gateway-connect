@@ -35,6 +35,7 @@ interface Product {
   management_fee_percent: number | null;
   performance_fee_percent: number | null;
   currency: string | null;
+  min_investment_amount: number | null;
 }
 
 interface ProductDocument {
@@ -371,6 +372,24 @@ export default function ProductDetail() {
                 <div className="flex justify-between py-2.5 border-b border-border">
                   <span className="text-muted-foreground">{language === 'ko' ? '성과 보수' : 'Performance Fee'}</span>
                   <span className="font-medium">{formatPercent(product.performance_fee_percent)}</span>
+                </div>
+              )}
+              {product.min_investment_amount != null && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '모집 금액' : 'Fund Size'}</span>
+                  <span className="font-medium">{formatCurrency(product.min_investment_amount, product.default_currency || product.currency || undefined)}</span>
+                </div>
+              )}
+              {product.minimum_investment != null && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '최소 투자 금액' : 'Minimum Investment'}</span>
+                  <span className="font-medium">{formatCurrency(product.minimum_investment, product.default_currency || product.currency || undefined)}</span>
+                </div>
+              )}
+              {product.募集_deadline && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '만기일' : 'Maturity Date'}</span>
+                  <span className="font-medium">{formatDate(product.募集_deadline)}</span>
                 </div>
               )}
               <div className="flex justify-between py-2.5">
