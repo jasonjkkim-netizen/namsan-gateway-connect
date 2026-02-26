@@ -176,7 +176,7 @@ function TreeNodeComponent({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
-          flex items-center gap-2 group rounded-lg px-3 py-2.5 transition-all
+          flex items-center gap-1 sm:gap-2 group rounded-lg px-1.5 sm:px-3 py-1.5 sm:py-2.5 transition-all text-[10px] sm:text-sm
           ${isDragging ? 'opacity-40 scale-[0.97]' : ''}
           ${isDropTarget && canAcceptDrop
             ? 'bg-primary/10 ring-2 ring-primary/50 ring-inset shadow-sm'
@@ -185,21 +185,21 @@ function TreeNodeComponent({
           ${draggedNode && !isDragging && !canAcceptDrop ? 'opacity-60' : ''}
           cursor-grab active:cursor-grabbing
         `}
-        style={{ paddingLeft: `${depth * 28 + 12}px` }}
+        style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
         {/* Drag handle */}
-        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground flex-shrink-0" />
+        <GripVertical className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground flex-shrink-0" />
 
         {/* Expand/Collapse */}
         <div
-          className="w-5 h-5 flex items-center justify-center flex-shrink-0 cursor-pointer"
+          className="w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center flex-shrink-0 cursor-pointer"
           onClick={(e) => { e.stopPropagation(); hasChildren && setExpanded(!expanded); }}
         >
           {hasChildren ? (
             expanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             )
           ) : (
             <div className="w-1 h-1 rounded-full bg-muted-foreground/30" />
@@ -207,39 +207,39 @@ function TreeNodeComponent({
         </div>
 
         {/* Icon */}
-        <div className={`rounded-full p-1.5 flex-shrink-0 ${ROLE_COLORS[role]}`}>
-          <Icon className="h-3.5 w-3.5" />
+        <div className={`rounded-full p-1 sm:p-1.5 flex-shrink-0 ${ROLE_COLORS[role]}`}>
+          <Icon className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
         </div>
 
         {/* Name & Info */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="font-medium text-sm truncate">{displayName}</span>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 flex-shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+          <span className="font-medium text-[10px] sm:text-sm truncate">{displayName}</span>
+          <Badge variant="outline" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 hidden sm:inline-flex">
             {language === 'ko' ? roleLabel?.ko : roleLabel?.en}
           </Badge>
           {node.sales_status && (
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[node.sales_status] || 'bg-muted-foreground'}`} title={node.sales_status} />
+            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${STATUS_DOT[node.sales_status] || 'bg-muted-foreground'}`} title={node.sales_status} />
           )}
         </div>
 
         {/* Drop indicator */}
         {isDropTarget && canAcceptDrop && (
-          <span className="text-xs text-primary font-medium flex items-center gap-1 flex-shrink-0">
-            <ArrowRight className="h-3 w-3" />
+          <span className="text-[9px] sm:text-xs text-primary font-medium flex items-center gap-1 flex-shrink-0">
+            <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             {language === 'ko' ? '여기로 이동' : 'Drop here'}
           </span>
         )}
 
         {/* Email */}
         {!isDropTarget && (
-          <span className="text-xs text-muted-foreground hidden md:inline truncate max-w-[200px]">
+          <span className="text-[9px] sm:text-xs text-muted-foreground hidden md:inline truncate max-w-[200px]">
             {node.email}
           </span>
         )}
 
         {/* Children count */}
         {hasChildren && (
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 flex-shrink-0">
+          <Badge variant="secondary" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0">
             {node.children.length}
           </Badge>
         )}
@@ -250,7 +250,7 @@ function TreeNodeComponent({
         <div className="relative">
           <div
             className="absolute top-0 bottom-0 border-l border-border"
-            style={{ left: `${depth * 28 + 24}px` }}
+            style={{ left: `${depth * 16 + 16}px` }}
           />
           {node.children.map((child) => (
             <TreeNodeComponent
@@ -442,36 +442,35 @@ export function AdminOrgTree() {
   return (
     <div className="card-elevated">
       {/* Header */}
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-serif font-semibold">
+      <div className="p-3 sm:p-6 border-b border-border">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-xl font-serif font-semibold truncate">
               {language === 'ko' ? '영업 조직도' : 'Sales Organization Tree'}
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
               {language === 'ko'
                 ? `총 ${stats.total}명 · 드래그하여 스폰서를 변경할 수 있습니다`
                 : `${stats.total} users · Drag members to reassign sponsors`}
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            {language === 'ko' ? '새로고침' : 'Refresh'}
+          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="text-[10px] sm:text-sm px-2 sm:px-3 h-7 sm:h-9 shrink-0">
+            <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{language === 'ko' ? '새로고침' : 'Refresh'}</span>
           </Button>
         </div>
 
-        {/* Role breakdown */}
         {!loading && stats.total > 0 && (
-          <div className="flex gap-3 mt-4 flex-wrap">
+          <div className="flex gap-2 sm:gap-3 mt-2 sm:mt-4 flex-wrap">
             {Object.entries(ROLE_LABELS).map(([key, labels]) => {
               const count = stats.roles[key] || 0;
               if (count === 0) return null;
               const RIcon = ROLE_ICONS[key] || User;
               return (
-                <div key={key} className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <RIcon className="h-3.5 w-3.5" />
-                  <span>{language === 'ko' ? labels.ko : labels.en}</span>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">{count}</Badge>
+                <div key={key} className="flex items-center gap-1 text-[10px] sm:text-sm text-muted-foreground">
+                  <RIcon className="h-2.5 w-2.5 sm:h-3.5 sm:w-3.5" />
+                  <span className="hidden sm:inline">{language === 'ko' ? labels.ko : labels.en}</span>
+                  <Badge variant="secondary" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5">{count}</Badge>
                 </div>
               );
             })}
