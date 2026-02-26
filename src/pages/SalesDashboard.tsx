@@ -20,6 +20,8 @@ import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialo
 import { SalesCommissionRates } from '@/components/sales/SalesCommissionRates';
 import { SalesInvestmentManager } from '@/components/sales/SalesInvestmentManager';
 import { MemberDetailDialog } from '@/components/sales/MemberDetailDialog';
+import { AddMemberDialog } from '@/components/sales/AddMemberDialog';
+import { PendingMemberApprovals } from '@/components/sales/PendingMemberApprovals';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import ExcelJS from 'exceljs';
 import {
@@ -109,6 +111,7 @@ export default function SalesDashboard() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateInvestment, setShowCreateInvestment] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState<string>('KRW');
   const [usdKrwRate, setUsdKrwRate] = useState<number>(1350);
@@ -767,11 +770,20 @@ export default function SalesDashboard() {
 
           {/* Downline Tree Tab */}
           <TabsContent value="downline">
+            {/* Pending Member Approvals */}
+            <PendingMemberApprovals onDataChange={fetchAll} />
+
             <div className="card-elevated">
-              <div className="p-3 sm:p-6 border-b border-border">
+              <div className="p-3 sm:p-6 border-b border-border flex items-center justify-between">
                 <h2 className="text-sm sm:text-lg font-serif font-semibold">
                   {language === 'ko' ? '하위 영업 조직' : 'Sales Organization'}
                 </h2>
+                {userSalesRole && userSalesRole !== 'client' && (
+                  <Button size="sm" onClick={() => setShowAddMember(true)} className="text-[9px] sm:text-xs h-6 sm:h-8 px-2 sm:px-3">
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                    {language === 'ko' ? '멤버 추가' : 'Add Member'}
+                  </Button>
+                )}
               </div>
               <div className="p-2 sm:p-6">
                 {loading ? (
@@ -1305,6 +1317,12 @@ export default function SalesDashboard() {
           open={!!selectedMemberId}
           onOpenChange={(open) => { if (!open) setSelectedMemberId(null); }}
           userId={selectedMemberId}
+        />
+
+        <AddMemberDialog
+          open={showAddMember}
+          onOpenChange={setShowAddMember}
+          onSuccess={fetchAll}
         />
 
         {/* Role Change Confirmation Dialog */}

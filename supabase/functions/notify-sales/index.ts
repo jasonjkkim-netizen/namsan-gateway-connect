@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface NotificationPayload {
-  type: "investment_created" | "commission_status_changed" | "role_approved" | "role_changed" | "bulk_role_notification" | "commission_rate_changed";
+  type: "investment_created" | "commission_status_changed" | "role_approved" | "role_changed" | "bulk_role_notification" | "commission_rate_changed" | "member_added";
   investment_id?: string;
   investor_name?: string;
   product_name_en?: string;
@@ -27,6 +27,9 @@ interface NotificationPayload {
   changed_by_name?: string;
   product_names?: { en: string; ko: string }[];
   affected_roles?: string[];
+  // Member added fields
+  sponsor_id?: string;
+  sponsor_name?: string;
 }
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
@@ -598,6 +601,117 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true, notified: allRecipientIds.size }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Member Added (by sales user) ──
+    if (payload.type === "member_added") {
+      if (!payload.user_id || !payload.user_name || !payload.role || !payload.sponsor_id) {
+        return new Response(JSON.stringify({ error: "Missing fields" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const roleKo = getRoleLabel(payload.role, 'ko');
+      const roleEn = getRoleLabel(payload.role, 'en');
+
+      // Find immediate upper-level manager (parent of sponsor)
+      const { data: sponsorProfile } = await supabase
+        .from("profiles")
+        .select("parent_id")
+        .eq("user_id", payload.sponsor_id)
+        .single();
+
+      const recipientIds = new Set<string>();
+
+      // 1. Immediate upper manager of sponsor
+      if (sponsorProfile?.parent_id) {
+        recipientIds.add(sponsorProfile.parent_id);
+      }
+
+      // 2. All admins
+      const { data: adminRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "admin");
+      (adminRoles || []).forEach((a: any) => recipientIds.add(a.user_id));
+
+      // 3. All district managers (총괄관리자)
+      const { data: dmProfiles } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("sales_role", "district_manager")
+        .eq("is_approved", true);
+      (dmProfiles || []).forEach((p: any) => recipientIds.add(p.user_id));
+
+      // 4. All webmasters
+      const { data: wmProfiles } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("sales_role", "webmaster")
+        .eq("is_approved", true);
+      (wmProfiles || []).forEach((p: any) => recipientIds.add(p.user_id));
+
+      // Remove the sponsor themselves from recipients
+      recipientIds.delete(payload.sponsor_id);
+
+      if (recipientIds.size === 0) {
+        return new Response(JSON.stringify({ success: true, notified: 0 }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // In-app notifications
+      const notifications = Array.from(recipientIds).map((uid) => ({
+        user_id: uid,
+        type: "member",
+        title_en: "New Member Added",
+        title_ko: "새 멤버 추가",
+        body_en: `${payload.sponsor_name} added ${payload.user_name} as ${roleEn}. Approval required.`,
+        body_ko: `${payload.sponsor_name}님이 ${payload.user_name}님을 ${roleKo}(으)로 추가했습니다. 승인이 필요합니다.`,
+        link: "/sales-dashboard",
+      }));
+      await supabase.from("notifications").insert(notifications);
+
+      // Log
+      const logSubject = `[Member Added] ${payload.user_name} (${roleEn}) by ${payload.sponsor_name}`;
+      const { data: recipientProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email")
+        .in("user_id", Array.from(recipientIds));
+      if (recipientProfiles) {
+        await logAlerts(supabase, "member", logSubject,
+          recipientProfiles.map((p: any) => ({ user_id: p.user_id, name: p.full_name, email: p.email }))
+        );
+      }
+
+      // Email
+      if (resendKey) {
+        for (const uid of recipientIds) {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("email, preferred_language, full_name")
+            .eq("user_id", uid)
+            .single();
+
+          if (prof?.email) {
+            const isKo = prof.preferred_language === "ko";
+            await sendEmail(
+              resendKey, prof.email,
+              isKo
+                ? `[남산파트너스] 새 멤버 추가: ${payload.user_name} (${roleKo})`
+                : `[Namsan Partners] New Member: ${payload.user_name} (${roleEn})`,
+              isKo
+                ? `<p>${prof.full_name}님,</p><p><strong>${payload.sponsor_name}</strong>님이 새로운 멤버를 추가했습니다.</p><p>이름: <strong>${payload.user_name}</strong><br>역할: <strong>${roleKo}</strong><br>이메일: ${payload.user_email || '—'}</p><p>영업 대시보드에서 승인해주세요.</p><p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">영업 대시보드 바로가기</a></p>`
+                : `<p>Dear ${prof.full_name},</p><p><strong>${payload.sponsor_name}</strong> has added a new member.</p><p>Name: <strong>${payload.user_name}</strong><br>Role: <strong>${roleEn}</strong><br>Email: ${payload.user_email || '—'}</p><p>Please approve in the Sales Dashboard.</p><p><a href="https://namsan-gateway-connect.lovable.app/sales-dashboard">Go to Sales Dashboard</a></p>`
+            );
+          }
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, notified: recipientIds.size }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
