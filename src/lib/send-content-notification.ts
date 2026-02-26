@@ -103,6 +103,46 @@ export async function sendContentNotification({
 
     console.log(`[Notification] Sending ${contentType} ${action} notification (broadcast=${isBroadcast})...`);
 
+    // Check if kakao channel is enabled for this category
+    let kakaoEnabled = false;
+    try {
+      const { data: kakaoSetting } = await supabase
+        .from('alert_settings')
+        .select('is_enabled')
+        .eq('category', contentType)
+        .eq('channel', 'kakao')
+        .maybeSingle();
+      kakaoEnabled = kakaoSetting?.is_enabled === true;
+    } catch { /* ignore */ }
+
+    // Send KakaoTalk message if enabled
+    if (kakaoEnabled) {
+      try {
+        const kakaoMessage = `[남산파트너스] ${label.ko}\n${actionLabel.ko}\n\n${titleKo}${summaryKo ? '\n' + summaryKo.slice(0, 200) : ''}`;
+        const { error: kakaoError } = await supabase.functions.invoke('send-kakao', {
+          body: {
+            message: kakaoMessage,
+            templateObject: {
+              object_type: 'text',
+              text: kakaoMessage,
+              link: {
+                web_url: 'https://namsan-gateway-connect.lovable.app',
+                mobile_web_url: 'https://namsan-gateway-connect.lovable.app',
+              },
+              button_title: '포털 방문',
+            },
+          },
+        });
+        if (kakaoError) {
+          console.error('[Notification] Kakao send error:', kakaoError);
+        } else {
+          console.log('[Notification] Kakao message sent successfully');
+        }
+      } catch (kakaoErr) {
+        console.error('[Notification] Kakao send failed:', kakaoErr);
+      }
+    }
+
     if (isBroadcast) {
       // Send to ALL approved users via send-newsletter
       const { data, error } = await supabase.functions.invoke('send-newsletter', {
