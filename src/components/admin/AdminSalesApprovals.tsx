@@ -407,6 +407,7 @@ export function AdminSalesApprovals() {
             <SelectContent>
               <SelectItem value="all">{language === 'ko' ? '모든 역할' : 'All Roles'}</SelectItem>
               <SelectItem value="none">{language === 'ko' ? '미지정' : 'No Role'}</SelectItem>
+              <SelectItem value="webmaster">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>
               <SelectItem value="district_manager">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>
               <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>
               <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
@@ -485,6 +486,7 @@ export function AdminSalesApprovals() {
                       </SelectTrigger>
                       <SelectContent className="bg-popover z-50">
                         <SelectItem value="none">{language === 'ko' ? '미지정' : 'None'}</SelectItem>
+                        <SelectItem value="webmaster">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>
                         <SelectItem value="district_manager">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>
                         <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리' : 'Deputy GM'}</SelectItem>
                         <SelectItem value="principal_agent">{language === 'ko' ? '수석 에이전트' : 'Principal Agent'}</SelectItem>
