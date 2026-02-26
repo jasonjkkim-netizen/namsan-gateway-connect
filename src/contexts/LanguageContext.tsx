@@ -113,7 +113,7 @@ interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
-  formatCurrency: (amount: number) => string;
+  formatCurrency: (amount: number, currency?: string) => string;
   formatDate: (date: string) => string;
   formatPercent: (value: number) => string;
 }
@@ -139,11 +139,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return translation[language];
   };
 
-  const formatCurrency = (amount: number): string => {
-    if (language === 'ko') {
-      return `₩${amount.toLocaleString('ko-KR')}`;
-    }
-    return `₩${amount.toLocaleString('en-US')}`;
+  const formatCurrency = (amount: number, currency?: string): string => {
+    const cur = currency?.toUpperCase() || 'KRW';
+    const symbolMap: Record<string, string> = {
+      KRW: '₩',
+      USD: '$',
+      EUR: '€',
+      JPY: '¥',
+      HKD: 'HK$',
+      GBP: '£',
+      CNY: '¥',
+    };
+    const symbol = symbolMap[cur] || cur + ' ';
+    const locale = language === 'ko' ? 'ko-KR' : 'en-US';
+    return `${symbol}${amount.toLocaleString(locale)}`;
   };
 
   const formatDate = (date: string): string => {

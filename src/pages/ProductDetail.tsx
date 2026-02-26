@@ -29,6 +29,7 @@ interface Product {
   status: string;
   created_at: string;
   image_url: string | null;
+  default_currency: string | null;
 }
 
 interface ProductDocument {
@@ -259,7 +260,7 @@ export default function ProductDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">{formatCurrency(product.minimum_investment)}</p>
+                <p className="text-3xl font-bold">{formatCurrency(product.minimum_investment, product.default_currency || undefined)}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {language === 'ko' ? '최소 투자 가능 금액' : 'Minimum amount to invest'}
                 </p>
