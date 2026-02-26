@@ -210,10 +210,10 @@ export default function ProductDetail() {
             )}
           </div>
           
-          <h1 className="text-2xl md:text-3xl font-serif font-semibold text-foreground mb-2">
+          <h1 className="text-lg md:text-xl font-serif font-semibold text-foreground mb-2">
             {language === 'ko' ? product.name_ko : product.name_en}
           </h1>
-          <p className="text-base text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {language === 'ko' ? product.description_ko : product.description_en}
           </p>
         </div>
@@ -292,11 +292,11 @@ export default function ProductDetail() {
         {documents.length > 0 && (
           <div className="mb-8 animate-fade-in" style={{ animationDelay: '350ms' }}>
             <Card className="card-elevated">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-accent" />
+              <CardHeader className="pb-2 pt-4 px-4">
+                <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                  <FileText className="h-4 w-4 text-accent" />
                   {language === 'ko' ? '상품 문서' : 'Documents'}
-                  <span className="text-xs font-normal text-muted-foreground">({documents.length})</span>
+                  <span className="text-[11px] font-normal text-muted-foreground">({documents.length})</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -314,7 +314,7 @@ export default function ProductDetail() {
                           <div className="flex items-center gap-2.5 min-w-0">
                             <FileText className="h-4 w-4 text-destructive shrink-0" />
                             <div className="min-w-0">
-                              <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                              <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">
                                 {language === 'ko' ? doc.name_ko : doc.name_en}
                               </p>
                               {doc.file_size && (
