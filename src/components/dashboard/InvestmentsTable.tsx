@@ -12,6 +12,7 @@ interface Investment {
   maturity_date: string | null;
   expected_return: number | null;
   status: string;
+  invested_currency: string | null;
 }
 
 interface InvestmentsTableProps {
@@ -72,8 +73,8 @@ export function InvestmentsTable({ investments, loading }: InvestmentsTableProps
                   <td className="font-medium">
                     {language === 'ko' ? investment.product_name_ko : investment.product_name_en}
                   </td>
-                  <td>{formatCurrency(investment.investment_amount)}</td>
-                  <td className="font-medium">{formatCurrency(investment.current_value)}</td>
+                  <td>{formatCurrency(investment.investment_amount, investment.invested_currency || undefined)}</td>
+                  <td className="font-medium">{formatCurrency(investment.current_value, investment.invested_currency || undefined)}</td>
                   <td>{formatDate(investment.start_date)}</td>
                   <td>{investment.maturity_date ? formatDate(investment.maturity_date) : '-'}</td>
                   <td className="text-accent font-medium">

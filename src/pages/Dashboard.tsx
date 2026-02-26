@@ -21,6 +21,7 @@ interface Investment {
   maturity_date: string | null;
   expected_return: number | null;
   status: string;
+  invested_currency: string | null;
 }
 
 interface Distribution {
