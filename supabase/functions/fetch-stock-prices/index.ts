@@ -168,6 +168,63 @@ async function fetchUsStockPrice(token: string, stock: StockInput): Promise<Stoc
   }
 }
 
+// ── Perplexity Fallback ───────────────────────────────────
+async function fetchPriceViaPerplexity(stock: StockInput, market: string): Promise<StockPriceResult> {
+  const apiKey = Deno.env.get('PERPLEXITY_API_KEY');
+  if (!apiKey) {
+    console.warn('PERPLEXITY_API_KEY not set, skipping fallback');
+    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: 'Perplexity fallback unavailable' };
+  }
+
+  try {
+    const currency = market === 'KR' ? 'KRW' : 'USD';
+    const prompt = `What is the current stock price of ${stock.name} (ticker: ${stock.code})? Return ONLY the numeric price in ${currency} with no text, no currency symbol, no commas. Just the number.`;
+
+    const res = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar',
+        messages: [
+          { role: 'system', content: 'You are a stock price lookup tool. Return ONLY the numeric price value. No text, no currency symbols, no commas, no explanations.' },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0,
+      }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`Perplexity error for ${stock.name}:`, res.status, errText);
+      return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: `Perplexity API error ${res.status}` };
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content?.trim() || '';
+
+    // Extract numeric price, filtering out year-like integers (2020-2030)
+    const numbers = content.match(/[\d]+\.?\d*/g);
+    if (numbers) {
+      for (const numStr of numbers) {
+        const num = parseFloat(numStr);
+        if (num > 0 && !(Number.isInteger(num) && num >= 2020 && num <= 2030)) {
+          console.log(`Perplexity fallback price for ${stock.name}: ${num} (${market})`);
+          return { stockCode: stock.code, stockName: stock.name, currentPrice: num };
+        }
+      }
+    }
+
+    console.warn(`Perplexity returned no valid price for ${stock.name}:`, content);
+    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: 'Perplexity returned no valid price' };
+  } catch (err) {
+    console.error(`Perplexity fallback error for ${stock.name}:`, err);
+    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
 // ── Failure notification ──────────────────────────────────
 async function sendFailureNotification(failedStocks: StockPriceResult[], totalStocks: number) {
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
@@ -259,36 +316,50 @@ Deno.serve(async (req) => {
     }
 
     // Get KIS access token
-    let kisToken: string;
+    let kisToken: string | null = null;
     try {
       kisToken = await getKisAccessToken();
     } catch (tokenErr) {
-      console.error('Failed to get KIS token:', tokenErr);
-      return new Response(JSON.stringify({ success: false, error: `KIS token error: ${tokenErr instanceof Error ? tokenErr.message : 'Unknown'}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('Failed to get KIS token, will use Perplexity fallback:', tokenErr);
     }
 
-    // Fetch each stock price via KIS API
+    // Fetch each stock price via KIS API (with Perplexity fallback)
     const results: StockPriceResult[] = [];
     for (const stock of stockCodes) {
       const market = stockMarketMap[stock.code] || defaultMarket;
 
       let result: StockPriceResult;
-      if (market === 'US') {
-        result = await fetchUsStockPrice(kisToken, stock);
+
+      // Try KIS API first (if token available)
+      if (kisToken) {
+        if (market === 'US') {
+          result = await fetchUsStockPrice(kisToken, stock);
+        } else {
+          result = await fetchKrStockPrice(kisToken, stock);
+        }
       } else {
-        result = await fetchKrStockPrice(kisToken, stock);
+        result = { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: 'KIS token unavailable' };
+      }
+
+      // Perplexity fallback if KIS failed
+      if (!result.currentPrice) {
+        console.log(`KIS failed for ${stock.name}, trying Perplexity fallback...`);
+        const fallbackResult = await fetchPriceViaPerplexity(stock, market);
+        if (fallbackResult.currentPrice) {
+          result = fallbackResult;
+          result.error = undefined;
+        }
       }
 
       results.push(result);
 
-      // KIS API rate limit: ~1 request per 0.05s for domestic, need delay
+      // KIS API rate limit delay
       if (stockCodes.indexOf(stock) < stockCodes.length - 1) {
         await new Promise(r => setTimeout(r, 200));
       }
     }
 
-    console.log('Stock price fetch completed (KIS API):', JSON.stringify(results));
+    console.log('Stock price fetch completed:', JSON.stringify(results));
 
     // Auto-update: save to DB
     if (isAutoUpdate) {
