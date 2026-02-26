@@ -1106,6 +1106,7 @@ export default function SalesDashboard() {
                     <TableRow>
                       <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '수령자' : 'Recipient'}</TableHead>
                       <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs hidden sm:table-cell">{language === 'ko' ? '상품명' : 'Product'}</TableHead>
                       <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '레이어' : 'Layer'}</TableHead>
                       <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
                       <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '성과' : 'Perf'}</TableHead>
@@ -1118,7 +1119,7 @@ export default function SalesDashboard() {
                     {loading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i}>
-                          {Array.from({ length: 8 }).map((_, j) => (
+                          {Array.from({ length: 9 }).map((_, j) => (
                             <TableCell key={j}>
                               <Skeleton className="h-4 sm:h-5 w-14 sm:w-20" />
                             </TableCell>
@@ -1127,7 +1128,7 @@ export default function SalesDashboard() {
                       ))
                     ) : filteredCommissions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-6 sm:py-8 text-muted-foreground text-[10px] sm:text-sm">
+                        <TableCell colSpan={9} className="text-center py-6 sm:py-8 text-muted-foreground text-[10px] sm:text-sm">
                           {language === 'ko' ? '커미션 내역이 없습니다' : 'No commissions found'}
                         </TableCell>
                       </TableRow>
@@ -1142,6 +1143,13 @@ export default function SalesDashboard() {
                             </TableCell>
                             <TableCell className="text-[10px] sm:text-sm whitespace-nowrap">
                               {c.from_user_id ? getName(c.from_user_id) : '—'}
+                            </TableCell>
+                            <TableCell className="text-[10px] sm:text-sm hidden sm:table-cell max-w-[120px] truncate">
+                              {(() => {
+                                const inv = downlineInvestments.find((i) => i.id === c.investment_id);
+                                if (!inv) return '—';
+                                return language === 'ko' ? inv.product_name_ko : inv.product_name_en;
+                              })()}
                             </TableCell>
                             <TableCell className="text-[10px] sm:text-sm">{c.layer}</TableCell>
                             <TableCell className="text-right text-[10px] sm:text-sm">
