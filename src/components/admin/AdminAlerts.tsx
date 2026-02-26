@@ -108,8 +108,8 @@ export function AdminAlerts() {
   async function toggleSetting(setting: AlertSetting) {
     const newVal = !setting.is_enabled;
 
-    // Kakao and SMS are not yet connected
-    if (newVal && (setting.channel === 'kakao' || setting.channel === 'sms')) {
+    // SMS is not yet connected
+    if (newVal && setting.channel === 'sms') {
       const channelName = CHANNEL_LABELS[setting.channel];
       toast.error(
         language === 'ko'
@@ -145,8 +145,8 @@ export function AdminAlerts() {
       return;
     }
 
-    // Block kakao/sms for now
-    if (sendForm.channel !== 'email') {
+    // Block sms for now
+    if (sendForm.channel === 'sms') {
       const chLabel = CHANNEL_LABELS[sendForm.channel];
       toast.error(
         language === 'ko'
@@ -161,27 +161,45 @@ export function AdminAlerts() {
       const recipient = clients.find(c => c.user_id === sendForm.recipient_user_id);
       if (!recipient) throw new Error('Recipient not found');
 
-      const { error } = await supabase.functions.invoke('send-newsletter', {
-        body: {
-          subject: `[Namsan Partners] ${sendForm.subject}`,
-          htmlContent: `
-            <div style="margin-bottom: 16px;">
-              <span style="display: inline-block; background: #e2e8f0; color: #1a365d; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">
-                ${CATEGORY_LABELS[sendForm.category]?.ko || sendForm.category} / ${CATEGORY_LABELS[sendForm.category]?.en || sendForm.category}
-              </span>
-            </div>
-            <p style="color: #2d3748; font-size: 14px; line-height: 1.6;">${sendForm.message || sendForm.subject}</p>
-            <div style="margin-top: 24px;">
-              <a href="https://namsan-gateway-connect.lovable.app" style="display: inline-block; background: #1a365d; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px;">
-                포털 방문 / Visit Portal
-              </a>
-            </div>
-          `,
-          targetEmail: recipient.email,
-        },
-      });
-
-      if (error) throw error;
+      if (sendForm.channel === 'email') {
+        const { error } = await supabase.functions.invoke('send-newsletter', {
+          body: {
+            subject: `[Namsan Partners] ${sendForm.subject}`,
+            htmlContent: `
+              <div style="margin-bottom: 16px;">
+                <span style="display: inline-block; background: #e2e8f0; color: #1a365d; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                  ${CATEGORY_LABELS[sendForm.category]?.ko || sendForm.category} / ${CATEGORY_LABELS[sendForm.category]?.en || sendForm.category}
+                </span>
+              </div>
+              <p style="color: #2d3748; font-size: 14px; line-height: 1.6;">${sendForm.message || sendForm.subject}</p>
+              <div style="margin-top: 24px;">
+                <a href="https://namsan-gateway-connect.lovable.app" style="display: inline-block; background: #1a365d; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px;">
+                  포털 방문 / Visit Portal
+                </a>
+              </div>
+            `,
+            targetEmail: recipient.email,
+          },
+        });
+        if (error) throw error;
+      } else if (sendForm.channel === 'kakao') {
+        const kakaoMessage = `[남산파트너스] ${sendForm.subject}\n\n${sendForm.message || sendForm.subject}`;
+        const { error } = await supabase.functions.invoke('send-kakao', {
+          body: {
+            message: kakaoMessage,
+            templateObject: {
+              object_type: 'text',
+              text: kakaoMessage,
+              link: {
+                web_url: 'https://namsan-gateway-connect.lovable.app',
+                mobile_web_url: 'https://namsan-gateway-connect.lovable.app',
+              },
+              button_title: '포털 방문',
+            },
+          },
+        });
+        if (error) throw error;
+      }
 
       await supabase.from('alert_log').insert({
         category: sendForm.category,
@@ -279,7 +297,7 @@ export function AdminAlerts() {
                       </TableCell>
                       {Object.keys(CHANNEL_LABELS).map(chKey => {
                         const setting = channelSettings.find(s => s.channel === chKey);
-                        const isKakaoOrSms = chKey === 'kakao' || chKey === 'sms';
+                        const isSms = chKey === 'sms';
                         return (
                           <TableCell key={chKey} className="text-center">
                             {setting ? (
@@ -288,7 +306,7 @@ export function AdminAlerts() {
                                   checked={setting.is_enabled}
                                   onCheckedChange={() => toggleSetting(setting)}
                                 />
-                                {isKakaoOrSms && (
+                                {isSms && (
                                   <span className="text-[10px] text-muted-foreground">
                                     {language === 'ko' ? '미연동' : 'Not connected'}
                                   </span>

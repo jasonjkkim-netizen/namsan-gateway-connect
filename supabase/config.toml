@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.notify-sales]
 verify_jwt = false
+
+[functions.send-kakao]
+verify_jwt = false
