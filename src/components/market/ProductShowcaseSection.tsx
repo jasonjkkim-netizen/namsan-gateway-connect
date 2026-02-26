@@ -28,6 +28,7 @@ interface Product {
   募集_deadline: string | null;
   status: string | null;
   currency: string | null;
+  fundraising_amount: number | null;
 }
 
 const TYPE_LABELS: Record<string, { ko: string; en: string }> = {
@@ -141,6 +142,7 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                 <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-center">{language === 'ko' ? '기간' : 'Period'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '목표 수익률' : 'Target Return'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '모집 금액' : 'Fundraising'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '최소 금액' : 'Min. Amount'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-center">{language === 'ko' ? '상태' : 'Status'}</TableHead>
               </TableRow>
@@ -149,14 +151,14 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 8 }).map((_, j) => (
                       <TableCell key={j}><Skeleton className="h-5 w-20" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filteredProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-xs">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-xs">
                     {language === 'ko' ? '등록된 상품이 없습니다' : 'No products available'}
                   </TableCell>
                 </TableRow>
@@ -183,6 +185,9 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                     </TableCell>
                     <TableCell className="text-xs text-right font-semibold text-accent whitespace-nowrap">
                       {product.target_return != null ? `${product.target_return}%` : '-'}
+                    </TableCell>
+                    <TableCell className="text-xs text-right whitespace-nowrap">
+                      {product.fundraising_amount != null ? product.fundraising_amount.toLocaleString() : '-'}
                     </TableCell>
                     <TableCell className="text-xs text-right whitespace-nowrap">
                       {product.minimum_investment != null ? product.minimum_investment.toLocaleString() : '-'}
