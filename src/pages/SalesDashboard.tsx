@@ -640,7 +640,7 @@ export default function SalesDashboard() {
                       <span className="font-semibold text-[10px] sm:text-sm truncate">
                         {profile?.full_name || user?.email}
                       </span>
-                      <Badge variant="default" className="text-[8px] sm:text-xs shrink-0">
+                      <Badge variant="default" className="text-[8px] sm:text-xs shrink-0 whitespace-nowrap">
                         {(profile as any)?.sales_role
                           ? getRoleLabel((profile as any).sales_role)
                           : 'Admin'}
@@ -663,7 +663,7 @@ export default function SalesDashboard() {
                                 <div
                                   key={m.user_id}
                                   className="flex items-center gap-1.5 sm:gap-3 rounded-lg border border-border px-2 sm:px-4 py-1.5 sm:py-3 hover:bg-muted/30 transition-colors"
-                                  style={{ marginLeft: `${(depth + 1) * 12}px` }}
+                                  style={{ marginLeft: `${Math.min((depth + 1) * 12, 48)}px` }}
                                 >
                                   <div
                                     className="flex items-center gap-1.5 sm:gap-3 flex-1 cursor-pointer min-w-0"
@@ -678,7 +678,7 @@ export default function SalesDashboard() {
                                         (ROLE_COLORS[m.sales_role] as any) ||
                                         'secondary'
                                       }
-                                      className="text-[8px] sm:text-xs shrink-0"
+                                      className="text-[8px] sm:text-xs shrink-0 whitespace-nowrap"
                                     >
                                       {getRoleLabel(m.sales_role)}
                                     </Badge>
@@ -693,8 +693,8 @@ export default function SalesDashboard() {
                                       }}
                                       disabled={changingRoleId === m.user_id}
                                     >
-                                      <SelectTrigger className="w-[80px] sm:w-[130px] h-6 sm:h-7 text-[9px] sm:text-xs" onClick={(e) => e.stopPropagation()}>
-                                        <UserCog className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                                      <SelectTrigger className="w-[90px] sm:w-[130px] h-6 sm:h-7 text-[9px] sm:text-xs whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                        <UserCog className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 shrink-0" />
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent className="bg-popover z-50">
