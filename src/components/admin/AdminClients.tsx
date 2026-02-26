@@ -80,6 +80,7 @@ export function AdminClients() {
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Profile | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
   const [expandedManagers, setExpandedManagers] = useState<Set<string>>(new Set(['__unassigned__']));
@@ -300,6 +301,24 @@ export function AdminClients() {
     setDeleteTarget(null);
   };
 
+  const handlePermanentDelete = async () => {
+    if (!permanentDeleteTarget) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', permanentDeleteTarget.id);
+
+    if (error) {
+      toast.error(language === 'ko' ? '영구 삭제 실패' : 'Permanent delete failed');
+      console.error('Permanent delete error:', error);
+    } else {
+      toast.success(language === 'ko' ? '고객이 영구 삭제되었습니다' : 'Client permanently deleted');
+      fetchData();
+    }
+    setPermanentDeleteTarget(null);
+  };
+
   const handleRestore = async (profile: Profile) => {
     const { error } = await supabase
       .from('profiles')
@@ -456,9 +475,14 @@ export function AdminClients() {
         <TableCell>
           <div className="flex items-center gap-1">
             {isDeletedSection ? (
-              <Button variant="ghost" size="sm" onClick={() => handleRestore(profile)} title={language === 'ko' ? '복원' : 'Restore'}>
-                <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
-              </Button>
+              <>
+                <Button variant="ghost" size="sm" onClick={() => handleRestore(profile)} title={language === 'ko' ? '복원' : 'Restore'}>
+                  <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setPermanentDeleteTarget(profile)} className="text-destructive hover:text-destructive" title={language === 'ko' ? '영구 삭제' : 'Permanently Delete'}>
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
@@ -685,6 +709,28 @@ export function AdminClients() {
             <AlertDialogCancel>{language === 'ko' ? '취소' : 'Cancel'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {language === 'ko' ? '삭제' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Permanent Delete Confirmation */}
+      <AlertDialog open={!!permanentDeleteTarget} onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'ko' ? '⚠️ 영구 삭제' : '⚠️ Permanent Delete'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === 'ko'
+                ? `"${permanentDeleteTarget?.full_name}" 고객을 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없으며, 모든 데이터가 완전히 삭제됩니다.`
+                : `Are you sure you want to permanently delete "${permanentDeleteTarget?.full_name}"? This action cannot be undone and all data will be permanently removed.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{language === 'ko' ? '취소' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePermanentDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {language === 'ko' ? '영구 삭제' : 'Permanently Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
