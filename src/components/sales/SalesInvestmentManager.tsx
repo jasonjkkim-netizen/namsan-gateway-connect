@@ -485,14 +485,14 @@ export function SalesInvestmentManager({ downline, onDataChange }: Props) {
                         </>
                       ) : (
                         <>
-                          <TableCell className="text-right font-mono text-sm">
+                          <TableCell className="text-right font-mono text-[10px] sm:text-sm">
                             {myComm?.upfront_amount != null ? (
-                              <span className="text-success">+{Number(myComm.upfront_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                              <span className="text-success whitespace-nowrap">+{Number(myComm.upfront_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             ) : '—'}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm">
+                          <TableCell className="text-right font-mono text-[10px] sm:text-sm">
                             {myComm?.performance_amount != null ? (
-                              <span className="text-success">+{Number(myComm.performance_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                              <span className="text-success whitespace-nowrap">+{Number(myComm.performance_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             ) : '—'}
                           </TableCell>
                           <TableCell>
