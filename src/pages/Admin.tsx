@@ -103,15 +103,15 @@ export default function Admin() {
         </div>
 
         <Tabs defaultValue="approvals" className="space-y-6">
-          <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1">
             {tabs.map(({ id, label, icon: Icon }) => (
               <TabsTrigger
                 key={id}
                 value={id}
-                className="flex items-center gap-2 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-3 text-[10px] sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{label}</span>
+                <Icon className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">{label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
