@@ -237,6 +237,23 @@ export default function ProductDetail() {
             </Card>
           )}
 
+          {product.fundraising_amount && (
+            <Card className="card-elevated animate-fade-in" style={{ animationDelay: '150ms' }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-accent" />
+                  {language === 'ko' ? '모집 금액' : 'Fundraising Amount'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{formatCurrency(product.fundraising_amount, product.default_currency || undefined)}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {language === 'ko' ? '총 모집 목표 금액' : 'Total fundraising target'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {product.minimum_investment && (
             <Card className="card-elevated animate-fade-in" style={{ animationDelay: '200ms' }}>
               <CardHeader className="pb-2">
