@@ -722,11 +722,176 @@ export default function SalesDashboard() {
 
           {/* Commissions Tab */}
           <TabsContent value="commissions">
+            {/* Level-by-level commission summary */}
+            {!loading && commissions.length > 0 && (() => {
+              // Group commissions by to_user_id, then aggregate per role
+              const ROLE_ORDER = ['webmaster', 'district_manager', 'deputy_district_manager', 'principal_agent', 'agent', 'client'];
+              
+              // Build role map from profiles
+              const profileRoleMap: Record<string, string> = {};
+              profiles.forEach((p) => { profileRoleMap[p.user_id] = p.sales_role || 'client'; });
+              if (user && userRole) profileRoleMap[user.id] = userRole;
+
+              // Aggregate by role level
+              const roleAgg: Record<string, { upfront: number; performance: number; count: number; members: Set<string> }> = {};
+              ROLE_ORDER.forEach((r) => { roleAgg[r] = { upfront: 0, performance: 0, count: 0, members: new Set() }; });
+
+              commissions.forEach((c) => {
+                const role = profileRoleMap[c.to_user_id] || 'client';
+                if (!roleAgg[role]) roleAgg[role] = { upfront: 0, performance: 0, count: 0, members: new Set() };
+                roleAgg[role].upfront += toUsd(Number(c.upfront_amount) || 0, c.currency);
+                roleAgg[role].performance += toUsd(Number(c.performance_amount) || 0, c.currency);
+                roleAgg[role].count++;
+                roleAgg[role].members.add(c.to_user_id);
+              });
+
+              return (
+                <div className="card-elevated mb-4">
+                  <div className="p-3 sm:p-6 border-b border-border">
+                    <h2 className="text-sm sm:text-lg font-serif font-semibold">
+                      {language === 'ko' ? '레벨별 수수료 현황' : 'Commission by Level'}
+                    </h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '레벨' : 'Level'}</TableHead>
+                          <TableHead className="text-[10px] sm:text-xs text-center">{language === 'ko' ? '인원' : 'Members'}</TableHead>
+                          <TableHead className="text-[10px] sm:text-xs text-center">{language === 'ko' ? '건수' : 'Count'}</TableHead>
+                          <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '선취 합계' : 'Upfront Total'}</TableHead>
+                          <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '성과 합계' : 'Perf Total'}</TableHead>
+                          <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '합계' : 'Total'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {ROLE_ORDER.filter((r) => roleAgg[r]?.count > 0).map((role) => {
+                          const agg = roleAgg[role];
+                          return (
+                            <TableRow key={role}>
+                              <TableCell>
+                                <Badge variant="outline" className="text-[8px] sm:text-xs whitespace-nowrap">
+                                  {getRoleLabel(role)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center text-[10px] sm:text-sm">{agg.members.size}</TableCell>
+                              <TableCell className="text-center text-[10px] sm:text-sm">{agg.count}</TableCell>
+                              <TableCell className="text-right text-[10px] sm:text-sm font-mono text-success whitespace-nowrap">
+                                {formatCommAmount(agg.upfront)}
+                              </TableCell>
+                              <TableCell className="text-right text-[10px] sm:text-sm font-mono text-success whitespace-nowrap">
+                                {formatCommAmount(agg.performance)}
+                              </TableCell>
+                              <TableCell className="text-right text-[10px] sm:text-sm font-semibold font-mono whitespace-nowrap">
+                                {formatCommAmount(agg.upfront + agg.performance)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        {/* Grand total */}
+                        <TableRow className="bg-muted/30 font-semibold border-t-2">
+                          <TableCell className="text-[10px] sm:text-sm">{language === 'ko' ? '합계' : 'Total'}</TableCell>
+                          <TableCell />
+                          <TableCell className="text-center text-[10px] sm:text-sm">{commissions.length}</TableCell>
+                          <TableCell className="text-right text-[10px] sm:text-sm font-mono whitespace-nowrap">{formatCommAmount(totalUpfront)}</TableCell>
+                          <TableCell className="text-right text-[10px] sm:text-sm font-mono whitespace-nowrap">{formatCommAmount(totalPerformance)}</TableCell>
+                          <TableCell className="text-right text-[10px] sm:text-sm font-mono whitespace-nowrap">{formatCommAmount(totalUpfront + totalPerformance)}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Per-member commission breakdown */}
+            {!loading && commissions.length > 0 && (() => {
+              // Aggregate commissions per member
+              const memberAgg: Record<string, { upfront: number; performance: number; count: number; role: string }> = {};
+              const profileRoleMap: Record<string, string> = {};
+              profiles.forEach((p) => { profileRoleMap[p.user_id] = p.sales_role || 'client'; });
+              if (user && userRole) profileRoleMap[user.id] = userRole;
+
+              commissions.forEach((c) => {
+                if (!memberAgg[c.to_user_id]) {
+                  memberAgg[c.to_user_id] = { upfront: 0, performance: 0, count: 0, role: profileRoleMap[c.to_user_id] || 'client' };
+                }
+                memberAgg[c.to_user_id].upfront += toUsd(Number(c.upfront_amount) || 0, c.currency);
+                memberAgg[c.to_user_id].performance += toUsd(Number(c.performance_amount) || 0, c.currency);
+                memberAgg[c.to_user_id].count++;
+              });
+
+              const ROLE_LEVELS_ORDER: Record<string, number> = {
+                webmaster: 0, district_manager: 1, deputy_district_manager: 2,
+                principal_agent: 3, agent: 4, client: 5,
+              };
+
+              const sortedMembers = Object.entries(memberAgg).sort((a, b) => {
+                const lvlA = ROLE_LEVELS_ORDER[a[1].role] ?? 99;
+                const lvlB = ROLE_LEVELS_ORDER[b[1].role] ?? 99;
+                if (lvlA !== lvlB) return lvlA - lvlB;
+                return (b[1].upfront + b[1].performance) - (a[1].upfront + a[1].performance);
+              });
+
+              return (
+                <div className="card-elevated mb-4">
+                  <div className="p-3 sm:p-6 border-b border-border">
+                    <h2 className="text-sm sm:text-lg font-serif font-semibold">
+                      {language === 'ko' ? '멤버별 수수료 현황' : 'Commission by Member'}
+                    </h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '이름' : 'Name'}</TableHead>
+                          <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '역할' : 'Role'}</TableHead>
+                          <TableHead className="text-center text-[10px] sm:text-xs">{language === 'ko' ? '건수' : 'Count'}</TableHead>
+                          <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                          <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '성과' : 'Perf'}</TableHead>
+                          <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '합계' : 'Total'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sortedMembers.map(([userId, agg]) => {
+                          const isSelf = userId === user?.id;
+                          return (
+                            <TableRow key={userId} className={isSelf ? 'bg-primary/5' : ''}>
+                              <TableCell className="text-[10px] sm:text-sm font-medium whitespace-nowrap">
+                                {getName(userId)}
+                                {isSelf && <span className="text-[8px] sm:text-xs text-primary ml-1">({language === 'ko' ? '나' : 'Me'})</span>}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-[8px] sm:text-xs whitespace-nowrap">
+                                  {getRoleLabel(agg.role)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center text-[10px] sm:text-sm">{agg.count}</TableCell>
+                              <TableCell className="text-right text-[10px] sm:text-sm font-mono text-success whitespace-nowrap">
+                                {formatCommAmount(agg.upfront)}
+                              </TableCell>
+                              <TableCell className="text-right text-[10px] sm:text-sm font-mono text-success whitespace-nowrap">
+                                {formatCommAmount(agg.performance)}
+                              </TableCell>
+                              <TableCell className="text-right text-[10px] sm:text-sm font-semibold font-mono whitespace-nowrap">
+                                {formatCommAmount(agg.upfront + agg.performance)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Commission Detail History */}
             <div className="card-elevated">
               <div className="p-3 sm:p-6 border-b border-border space-y-2 sm:space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-sm sm:text-lg font-serif font-semibold">
-                    {language === 'ko' ? '커미션 내역' : 'Commission History'}
+                    {language === 'ko' ? '커미션 상세 내역' : 'Commission Detail History'}
                   </h2>
                   <Button size="sm" variant="outline" onClick={exportToExcel} disabled={filteredCommissions.length === 0} className="text-[9px] sm:text-xs h-6 sm:h-8 px-2 sm:px-3">
                     <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
@@ -782,10 +947,11 @@ export default function SalesDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '수령자' : 'Recipient'}</TableHead>
                       <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
                       <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '레이어' : 'Layer'}</TableHead>
-                      <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
-                      <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '성과' : 'Perf'}</TableHead>
+                      <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                      <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '성과' : 'Perf'}</TableHead>
                       <TableHead className="text-[10px] sm:text-xs hidden sm:table-cell">{language === 'ko' ? '적용률' : 'Rate'}</TableHead>
                       <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
                       <TableHead className="text-[10px] sm:text-xs hidden md:table-cell">{language === 'ko' ? '일자' : 'Date'}</TableHead>
@@ -795,7 +961,7 @@ export default function SalesDashboard() {
                     {loading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i}>
-                          {Array.from({ length: 7 }).map((_, j) => (
+                          {Array.from({ length: 8 }).map((_, j) => (
                             <TableCell key={j}>
                               <Skeleton className="h-4 sm:h-5 w-14 sm:w-20" />
                             </TableCell>
@@ -804,41 +970,48 @@ export default function SalesDashboard() {
                       ))
                     ) : filteredCommissions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-6 sm:py-8 text-muted-foreground text-[10px] sm:text-sm">
+                        <TableCell colSpan={8} className="text-center py-6 sm:py-8 text-muted-foreground text-[10px] sm:text-sm">
                           {language === 'ko' ? '커미션 내역이 없습니다' : 'No commissions found'}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredCommissions.map((c) => (
-                        <TableRow key={c.id}>
-                          <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
-                            {c.from_user_id ? getName(c.from_user_id) : '—'}
-                          </TableCell>
-                          <TableCell className="text-[10px] sm:text-sm">{c.layer}</TableCell>
-                          <TableCell className="text-[10px] sm:text-sm">
-                            {c.upfront_amount ? (
-                              <span className="text-success font-medium whitespace-nowrap">+{formatCommAmount(Number(c.upfront_amount), c.currency)}</span>
-                            ) : '—'}
-                          </TableCell>
-                          <TableCell className="text-[10px] sm:text-sm">
-                            {c.performance_amount ? (
-                              <span className="text-success font-medium whitespace-nowrap">+{formatCommAmount(Number(c.performance_amount), c.currency)}</span>
-                            ) : '—'}
-                          </TableCell>
-                          <TableCell className="text-[10px] sm:text-sm hidden sm:table-cell">{c.rate_used ? `${c.rate_used}%` : '—'}</TableCell>
-                          <TableCell>
-                            <Badge variant={c.status === 'available' ? 'default' : c.status === 'paid' ? 'outline' : 'secondary'} className="text-[8px] sm:text-xs whitespace-nowrap">
-                              {c.status === 'pending' ? (language === 'ko' ? '대기' : 'Pending')
-                                : c.status === 'available' ? (language === 'ko' ? '수령가능' : 'Available')
-                                : c.status === 'paid' ? (language === 'ko' ? '지급완료' : 'Paid')
-                                : c.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-[10px] sm:text-sm text-muted-foreground hidden md:table-cell">
-                            {formatDate(c.created_at)}
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      filteredCommissions.map((c) => {
+                        const isSelf = c.to_user_id === user?.id;
+                        return (
+                          <TableRow key={c.id} className={isSelf ? 'bg-primary/5' : ''}>
+                            <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
+                              {getName(c.to_user_id)}
+                              {isSelf && <span className="text-[8px] sm:text-xs text-primary ml-1">★</span>}
+                            </TableCell>
+                            <TableCell className="text-[10px] sm:text-sm whitespace-nowrap">
+                              {c.from_user_id ? getName(c.from_user_id) : '—'}
+                            </TableCell>
+                            <TableCell className="text-[10px] sm:text-sm">{c.layer}</TableCell>
+                            <TableCell className="text-right text-[10px] sm:text-sm">
+                              {c.upfront_amount ? (
+                                <span className="text-success font-medium whitespace-nowrap">+{formatCommAmount(Number(c.upfront_amount), c.currency)}</span>
+                              ) : '—'}
+                            </TableCell>
+                            <TableCell className="text-right text-[10px] sm:text-sm">
+                              {c.performance_amount ? (
+                                <span className="text-success font-medium whitespace-nowrap">+{formatCommAmount(Number(c.performance_amount), c.currency)}</span>
+                              ) : '—'}
+                            </TableCell>
+                            <TableCell className="text-[10px] sm:text-sm hidden sm:table-cell">{c.rate_used ? `${c.rate_used}%` : '—'}</TableCell>
+                            <TableCell>
+                              <Badge variant={c.status === 'available' ? 'default' : c.status === 'paid' ? 'outline' : 'secondary'} className="text-[8px] sm:text-xs whitespace-nowrap">
+                                {c.status === 'pending' ? (language === 'ko' ? '대기' : 'Pending')
+                                  : c.status === 'available' ? (language === 'ko' ? '수령가능' : 'Available')
+                                  : c.status === 'paid' ? (language === 'ko' ? '지급완료' : 'Paid')
+                                  : c.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-[10px] sm:text-sm text-muted-foreground hidden md:table-cell">
+                              {formatDate(c.created_at)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
