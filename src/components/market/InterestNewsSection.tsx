@@ -172,6 +172,7 @@ export function InterestNewsSection({ language }: Props) {
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         <span className="flex items-center gap-1.5">
                           {date.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { month: '2-digit', day: '2-digit' })}
+                          <span className="text-muted-foreground/70">{date.toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
                           {isToday && (
                             <span className="inline-block text-[9px] font-bold text-red-600 dark:text-red-400 animate-pulse">
                               NEW
