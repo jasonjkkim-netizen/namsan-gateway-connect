@@ -27,6 +27,7 @@ interface Product {
   募集_deadline: string | null;
   status: string;
   image_url: string | null;
+  default_currency: string | null;
 }
 
 interface ProductAccess {
@@ -231,7 +232,7 @@ export default function Products() {
                                 <div className="flex items-center gap-2">
                                   <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
                                   <span className="text-muted-foreground">{t('minimumInvestment')}:</span>
-                                  <span className="font-medium">{formatCurrency(product.minimum_investment)}</span>
+                                  <span className="font-medium">{formatCurrency(product.minimum_investment, product.default_currency || undefined)}</span>
                                 </div>
                               )}
 
