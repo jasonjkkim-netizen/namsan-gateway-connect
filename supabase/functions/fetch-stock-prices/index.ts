@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const KIS_BASE_URL = 'https://openapi.koreainvestment.com:9443';
+const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@namsan-korea.com';
+
 interface StockPriceResult {
   stockCode: string;
   stockName: string;
@@ -18,8 +21,139 @@ interface StockInput {
   name: string;
 }
 
-const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@namsan-korea.com';
+// ── KIS Access Token ──────────────────────────────────────
+async function getKisAccessToken(): Promise<string> {
+  const appKey = Deno.env.get('KIS_APP_KEY');
+  const appSecret = Deno.env.get('KIS_APP_SECRET');
+  if (!appKey || !appSecret) throw new Error('KIS_APP_KEY or KIS_APP_SECRET not configured');
 
+  const res = await fetch(`${KIS_BASE_URL}/oauth2/tokenP`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'client_credentials',
+      appkey: appKey,
+      appsecret: appSecret,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`KIS token error ${res.status}: ${errText}`);
+  }
+
+  const data = await res.json();
+  if (!data.access_token) throw new Error('No access_token in KIS response');
+  console.log('KIS access token obtained successfully');
+  return data.access_token;
+}
+
+// ── 국내주식 현재가 조회 ──────────────────────────────────
+async function fetchKrStockPrice(token: string, stock: StockInput): Promise<StockPriceResult> {
+  try {
+    const appKey = Deno.env.get('KIS_APP_KEY')!;
+    const appSecret = Deno.env.get('KIS_APP_SECRET')!;
+
+    const url = `${KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=${stock.code}`;
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'authorization': `Bearer ${token}`,
+        'appkey': appKey,
+        'appsecret': appSecret,
+        'tr_id': 'FHKST01010100',
+        'custtype': 'P',
+      },
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`KIS KR error for ${stock.name} (${stock.code}):`, res.status, errText);
+      return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: `KIS API error ${res.status}` };
+    }
+
+    const data = await res.json();
+
+    if (data.rt_cd !== '0') {
+      console.error(`KIS KR response error for ${stock.name}:`, data.msg1);
+      return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: data.msg1 || 'KIS response error' };
+    }
+
+    const priceStr = data.output?.stck_prpr;
+    const price = priceStr ? parseInt(priceStr, 10) : null;
+
+    if (price && price > 0) {
+      console.log(`KR Price for ${stock.name} (${stock.code}): ${price}`);
+      return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
+    }
+
+    console.warn(`No valid KR price for ${stock.name}:`, priceStr);
+    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: 'No valid price returned' };
+  } catch (err) {
+    console.error(`Error fetching KR ${stock.name}:`, err);
+    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
+// ── 해외주식 현재가 조회 ──────────────────────────────────
+async function fetchUsStockPrice(token: string, stock: StockInput): Promise<StockPriceResult> {
+  try {
+    const appKey = Deno.env.get('KIS_APP_KEY')!;
+    const appSecret = Deno.env.get('KIS_APP_SECRET')!;
+
+    // Try exchanges in order: NAS → NYS → AMS
+    const exchanges = ['NAS', 'NYS', 'AMS'];
+
+    for (const excd of exchanges) {
+      const url = `${KIS_BASE_URL}/uapi/overseas-price/v1/quotations/price?AUTH=&EXCD=${excd}&SYMB=${stock.code}`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+          'authorization': `Bearer ${token}`,
+          'appkey': appKey,
+          'appsecret': appSecret,
+          'tr_id': 'HHDFS00000300',
+          'custtype': 'P',
+        },
+      });
+
+      if (!res.ok) {
+        console.warn(`KIS US (${excd}) error for ${stock.name}:`, res.status);
+        continue;
+      }
+
+      const data = await res.json();
+
+      if (data.rt_cd !== '0') {
+        console.warn(`KIS US (${excd}) response for ${stock.name}:`, data.msg1);
+        continue;
+      }
+
+      const lastStr = data.output?.last;
+      const price = lastStr ? parseFloat(lastStr) : null;
+
+      if (price && price > 0) {
+        console.log(`US Price for ${stock.name} (${stock.code}) on ${excd}: $${price}`);
+        return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
+      }
+
+      // If price is 0, try next exchange
+      await new Promise(r => setTimeout(r, 100));
+    }
+
+    console.warn(`No valid US price for ${stock.name} on any exchange`);
+    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: 'No valid price on NAS/NYS/AMS' };
+  } catch (err) {
+    console.error(`Error fetching US ${stock.name}:`, err);
+    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
+// ── Failure notification ──────────────────────────────────
 async function sendFailureNotification(failedStocks: StockPriceResult[], totalStocks: number) {
   const resendApiKey = Deno.env.get('RESEND_API_KEY');
   if (!resendApiKey) return;
@@ -38,98 +172,14 @@ async function sendFailureNotification(failedStocks: StockPriceResult[], totalSt
       from: "Namsan Korea <onboarding@resend.dev>",
       to: [ADMIN_EMAIL],
       subject: `[Namsan Korea] 주가 업데이트 실패 - ${failedStocks.length}/${totalStocks}`,
-      html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto"><h2 style="color:#dc2626">⚠️ 주가 업데이트 실패</h2><p>${koreaTime} (KST) - ${failedStocks.length}/${totalStocks} 종목 실패</p><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px;background:#f0f0f0">종목명</th><th style="text-align:left;padding:8px;background:#f0f0f0">코드</th><th style="text-align:left;padding:8px;background:#f0f0f0">오류</th></tr></thead><tbody>${failedList}</tbody></table><p><a href="https://namsan-gateway-connect.lovable.app/admin">관리자 패널 →</a></p></div>`,
+      html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto"><h2 style="color:#dc2626">⚠️ 주가 업데이트 실패 (KIS API)</h2><p>${koreaTime} (KST) - ${failedStocks.length}/${totalStocks} 종목 실패</p><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;padding:8px;background:#f0f0f0">종목명</th><th style="text-align:left;padding:8px;background:#f0f0f0">코드</th><th style="text-align:left;padding:8px;background:#f0f0f0">오류</th></tr></thead><tbody>${failedList}</tbody></table><p><a href="https://namsan-gateway-connect.lovable.app/admin">관리자 패널 →</a></p></div>`,
     });
   } catch (e) {
     console.error('Failed to send notification:', e);
   }
 }
 
-async function fetchSingleStockPrice(apiKey: string, stock: StockInput, market: string = 'KR'): Promise<StockPriceResult> {
-  try {
-    const isUS = market === 'US';
-    const systemPrompt = isUS
-      ? 'Return ONLY the current US stock price in USD as a plain number. No currency symbol, no commas. Example: 142.53'
-      : '한국 주식의 현재 주가(원)를 숫자만 반환하세요. 종목코드가 아닌 주가만 답하세요. 쉼표 없이 숫자만. 예시: 55000';
-    const userPrompt = isUS
-      ? `What is the current stock price of "${stock.name}" (ticker: ${stock.code}) in USD? Reply with just the number.`
-      : `한국 주식 "${stock.name}"의 현재 주가(원)를 알려주세요. 숫자만 답해주세요.`;
-
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'sonar',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        search_recency_filter: 'day',
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`Perplexity error for ${stock.name}:`, response.status, errText);
-      return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: `API error ${response.status}` };
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
-    console.log(`Perplexity response for ${stock.name}: ${content}`);
-
-    if (isUS) {
-      // Parse US price (decimal number like 142.53)
-      // Look for numbers with decimal points first (most likely a price)
-      const decimalMatches = [...content.matchAll(/\$?\b([0-9]{1,5}\.[0-9]{1,4})\b/g)];
-      if (decimalMatches.length > 0) {
-        const price = parseFloat(decimalMatches[0][1]);
-        if (price > 0.5 && price < 50000) {
-          console.log(`Price for ${stock.name} (${stock.code}): $${price}`);
-          return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
-        }
-      }
-      // Fallback: integer price
-      const intMatch = content.match(/\$?\b([0-9]{1,5})\b/);
-      if (intMatch) {
-        const price = parseFloat(intMatch[1]);
-        // Exclude years (2020-2030) and very small numbers
-        if (price > 0.5 && price < 50000 && !(price >= 2020 && price <= 2030)) {
-          console.log(`Price for ${stock.name} (${stock.code}): $${price}`);
-          return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
-        }
-      }
-    } else {
-      // Parse KR price (integer like 55000)
-      const allNumbers: number[] = [];
-      const regex = /([0-9]{1,3}(?:,?[0-9]{3})+|[0-9]{4,})/g;
-      let match;
-      while ((match = regex.exec(content)) !== null) {
-        const num = parseInt(match[1].replace(/,/g, ''), 10);
-        const codeNum = parseInt(stock.code, 10);
-        // Filter out: stock codes, years (2020-2030), and unreasonable values
-        if (num > 1000 && num !== codeNum && num < 100000000 && !(num >= 2020 && num <= 2030)) {
-          allNumbers.push(num);
-        }
-      }
-      if (allNumbers.length > 0) {
-        const price = allNumbers[0];
-        console.log(`Price for ${stock.name} (${stock.code}): ${price}`);
-        return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
-      }
-    }
-
-    console.warn(`Could not parse price for ${stock.name} from: ${content}`);
-    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: 'Could not parse price' };
-  } catch (err) {
-    console.error(`Error fetching ${stock.name}:`, err);
-    return { stockCode: stock.code, stockName: stock.name, currentPrice: null, error: err instanceof Error ? err.message : 'Unknown error' };
-  }
-}
-
+// ── Main handler ──────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -164,12 +214,12 @@ Deno.serve(async (req) => {
     } catch {
       body = { autoUpdate: true };
     }
-    const market = body.market || 'KR';
+    const defaultMarket = body.market || 'KR';
 
     let stockCodes: StockInput[] = body.stockCodes || [];
     const isAutoUpdate = body.autoUpdate === true || stockCodes.length === 0;
-
     let stockMarketMap: Record<string, string> = {};
+
     if (isAutoUpdate) {
       const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
       const { data: activeStocks, error } = await supabase
@@ -193,26 +243,37 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const apiKey = Deno.env.get('PERPLEXITY_API_KEY');
-    if (!apiKey) {
-      return new Response(JSON.stringify({ success: false, error: 'PERPLEXITY_API_KEY not configured' }),
+    // Get KIS access token
+    let kisToken: string;
+    try {
+      kisToken = await getKisAccessToken();
+    } catch (tokenErr) {
+      console.error('Failed to get KIS token:', tokenErr);
+      return new Response(JSON.stringify({ success: false, error: `KIS token error: ${tokenErr instanceof Error ? tokenErr.message : 'Unknown'}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Fetch each stock individually for accuracy
+    // Fetch each stock price via KIS API
     const results: StockPriceResult[] = [];
     for (const stock of stockCodes) {
-      // Use individual stock market from DB, fallback to request body market
-      const stockMarket = stockMarketMap[stock.code] || market;
-      const result = await fetchSingleStockPrice(apiKey, stock, stockMarket);
+      const market = stockMarketMap[stock.code] || defaultMarket;
+
+      let result: StockPriceResult;
+      if (market === 'US') {
+        result = await fetchUsStockPrice(kisToken, stock);
+      } else {
+        result = await fetchKrStockPrice(kisToken, stock);
+      }
+
       results.push(result);
-      // Small delay between requests
+
+      // KIS API rate limit: ~1 request per 0.05s for domestic, need delay
       if (stockCodes.indexOf(stock) < stockCodes.length - 1) {
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 200));
       }
     }
 
-    console.log('Stock price fetch completed:', results);
+    console.log('Stock price fetch completed (KIS API):', JSON.stringify(results));
 
     // Auto-update: save to DB
     if (isAutoUpdate) {
@@ -221,8 +282,13 @@ Deno.serve(async (req) => {
         if (result.currentPrice && result.stockCode) {
           const { error } = await supabase
             .from('weekly_stock_picks')
-            .update({ current_closing_price: result.currentPrice, updated_at: new Date().toISOString() })
-            .eq('stock_code', result.stockCode);
+            .update({
+              current_closing_price: result.currentPrice,
+              price_reference_date: new Date().toISOString().split('T')[0],
+              updated_at: new Date().toISOString(),
+            })
+            .eq('stock_code', result.stockCode)
+            .eq('is_active', true);
           if (error) console.error(`Failed to update ${result.stockCode}:`, error);
           else console.log(`Updated ${result.stockName}: ${result.currentPrice}`);
         }
