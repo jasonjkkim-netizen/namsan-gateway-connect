@@ -266,10 +266,16 @@ function htmlToMarkdown(html: string): string {
   text = text.replace(/&#39;/g, "'");
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code)));
-  text = text.replace(/&([a-z]+);/gi, (match) => {
-    const el = document.createElement('span');
-    el.innerHTML = match;
-    return el.textContent || match;
+  const HTML_ENTITIES: Record<string, string> = {
+    'nbsp': '\u00A0', 'lt': '<', 'gt': '>', 'amp': '&', 'quot': '"', 'apos': "'",
+    'copy': '©', 'reg': '®', 'trade': '™', 'euro': '€', 'pound': '£', 'yen': '¥',
+    'cent': '¢', 'deg': '°', 'plusmn': '±', 'times': '×', 'divide': '÷',
+    'mdash': '—', 'ndash': '–', 'laquo': '«', 'raquo': '»',
+    'bull': '•', 'hellip': '…', 'prime': '′', 'Prime': '″',
+    'lsquo': '\u2018', 'rsquo': '\u2019', 'ldquo': '\u201C', 'rdquo': '\u201D',
+  };
+  text = text.replace(/&([a-z]+);/gi, (match, entity) => {
+    return HTML_ENTITIES[entity.toLowerCase()] || match;
   });
 
   // Clean up extra whitespace
