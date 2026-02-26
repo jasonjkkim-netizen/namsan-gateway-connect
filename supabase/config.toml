@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.register-quick-client]
 verify_jwt = false
+
+[functions.link-client-email]
+verify_jwt = false

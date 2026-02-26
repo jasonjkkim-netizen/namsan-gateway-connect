@@ -3,9 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Mail, Phone, MapPin, Calendar, Users, DollarSign, CheckCircle, Clock, Wallet, Briefcase } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { Mail, Phone, MapPin, Calendar, Users, DollarSign, CheckCircle, Clock, Wallet, Briefcase, LinkIcon, Loader2 } from 'lucide-react';
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
   ko: { webmaster: '웹마스터', district_manager: '총괄관리', deputy_district_manager: '부총괄관리', principal_agent: '수석 에이전트', agent: '에이전트', client: '고객' },
@@ -54,12 +59,19 @@ interface MemberDetailDialogProps {
 
 export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailDialogProps) {
   const { language, formatCurrency, formatDate } = useLanguage();
+  const { profile: myProfile } = useAuth();
   const [profile, setProfile] = useState<MemberProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [investmentStats, setInvestmentStats] = useState({ count: 0, totalAmount: 0 });
   const [downlineCount, setDownlineCount] = useState(0);
   const [commissions, setCommissions] = useState<CommissionRecord[]>([]);
   const [investments, setInvestments] = useState<InvestmentRecord[]>([]);
+
+  // Email linking state
+  const [showLinkForm, setShowLinkForm] = useState(false);
+  const [linkEmail, setLinkEmail] = useState('');
+  const [linkPassword, setLinkPassword] = useState('');
+  const [linking, setLinking] = useState(false);
 
   useEffect(() => {
     if (!open || !userId) return;
@@ -105,6 +117,54 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
     if (status === 'paid') return { label: language === 'ko' ? '지급완료' : 'Paid', icon: CheckCircle, color: 'text-emerald-600 bg-emerald-50' };
     if (status === 'available') return { label: language === 'ko' ? '수령가능' : 'Available', icon: Wallet, color: 'text-primary bg-primary/10' };
     return { label: language === 'ko' ? '대기' : 'Pending', icon: Clock, color: 'text-amber-600 bg-amber-50' };
+  };
+
+  const isPlaceholderEmail = profile?.email?.endsWith('@placeholder.local') ?? false;
+  const canLinkEmail = isPlaceholderEmail && ((myProfile as any)?.sales_role === 'webmaster');
+
+  const handleLinkEmail = async () => {
+    if (!userId || !linkEmail.trim()) return;
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(linkEmail)) {
+      toast.error(language === 'ko' ? '올바른 이메일을 입력해주세요' : 'Please enter a valid email');
+      return;
+    }
+    if (linkPassword && linkPassword.length < 6) {
+      toast.error(language === 'ko' ? '비밀번호는 6자 이상이어야 합니다' : 'Password must be at least 6 characters');
+      return;
+    }
+
+    setLinking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('link-client-email', {
+        body: {
+          target_user_id: userId,
+          new_email: linkEmail.trim(),
+          new_password: linkPassword || undefined,
+        },
+      });
+
+      if (error) {
+        toast.error(error.message || (language === 'ko' ? '이메일 연결 실패' : 'Failed to link email'));
+      } else {
+        toast.success(
+          language === 'ko'
+            ? `${linkEmail}로 계정이 연결되었습니다. 이제 이 이메일로 로그인할 수 있습니다.`
+            : `Account linked to ${linkEmail}. They can now log in with this email.`
+        );
+        setShowLinkForm(false);
+        setLinkEmail('');
+        setLinkPassword('');
+        // Refresh profile data
+        if (profile) {
+          setProfile({ ...profile, email: linkEmail.trim() });
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.message || (language === 'ko' ? '오류가 발생했습니다' : 'An error occurred'));
+    } finally {
+      setLinking(false);
+    }
   };
 
   const displayName = profile
@@ -173,8 +233,83 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
               <div className="space-y-3 rounded-lg border border-border p-4">
                 <div className="flex items-center gap-3 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="truncate">{profile.email}</span>
+                  {isPlaceholderEmail ? (
+                    <span className="truncate text-muted-foreground italic">
+                      {language === 'ko' ? '이메일 미등록 (간편 등록)' : 'No email (quick-registered)'}
+                    </span>
+                  ) : (
+                    <span className="truncate">{profile.email}</span>
+                  )}
                 </div>
+
+                {/* Email Linking Section */}
+                {canLinkEmail && !showLinkForm && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() => setShowLinkForm(true)}
+                  >
+                    <LinkIcon className="h-3 w-3 mr-1" />
+                    {language === 'ko' ? '실제 이메일 연결하기' : 'Link Real Email'}
+                  </Button>
+                )}
+
+                {showLinkForm && (
+                  <div className="space-y-3 rounded-lg bg-muted/50 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      {language === 'ko'
+                        ? '실제 이메일을 입력하면 고객이 이 이메일로 로그인할 수 있습니다.'
+                        : 'Enter a real email so the client can log in.'}
+                    </p>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{language === 'ko' ? '이메일' : 'Email'} *</Label>
+                      <Input
+                        type="email"
+                        value={linkEmail}
+                        onChange={(e) => setLinkEmail(e.target.value)}
+                        placeholder="client@example.com"
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{language === 'ko' ? '비밀번호 (선택)' : 'Password (optional)'}</Label>
+                      <Input
+                        type="password"
+                        value={linkPassword}
+                        onChange={(e) => setLinkPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="h-8 text-sm"
+                      />
+                      <p className="text-[10px] text-muted-foreground">
+                        {language === 'ko'
+                          ? '비밀번호를 설정하지 않으면 고객이 "비밀번호 찾기"로 설정해야 합니다.'
+                          : 'If not set, client must use "Forgot Password" to set one.'}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-7 text-xs"
+                        onClick={() => { setShowLinkForm(false); setLinkEmail(''); setLinkPassword(''); }}
+                        disabled={linking}
+                      >
+                        {language === 'ko' ? '취소' : 'Cancel'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 h-7 text-xs"
+                        onClick={handleLinkEmail}
+                        disabled={linking || !linkEmail.trim()}
+                      >
+                        {linking && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+                        {language === 'ko' ? '연결' : 'Link'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {profile.phone && (
                   <div className="flex items-center gap-3 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
