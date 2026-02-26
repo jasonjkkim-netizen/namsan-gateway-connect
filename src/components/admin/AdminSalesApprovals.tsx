@@ -333,12 +333,22 @@ export function AdminSalesApprovals() {
     }
   };
 
+  const ROLE_ORDER: Record<string, number> = {
+    webmaster: 0, district_manager: 1, deputy_district_manager: 2,
+    principal_agent: 3, agent: 4, client: 5,
+  };
+
   const filteredProfiles = profiles.filter((p) => {
     const matchesSearch =
       p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.full_name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || (roleFilter === 'none' ? p.sales_role === null : p.sales_role === roleFilter);
     return matchesSearch && matchesRole;
+  }).sort((a, b) => {
+    const levelA = ROLE_ORDER[a.sales_role || ''] ?? 99;
+    const levelB = ROLE_ORDER[b.sales_role || ''] ?? 99;
+    if (levelA !== levelB) return levelA - levelB;
+    return a.full_name.localeCompare(b.full_name);
   });
 
   // Get sponsor name helper
