@@ -26,12 +26,14 @@ const ROLE_LEVELS: Record<string, number> = {
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
   ko: {
+    district_manager: '총괄관리',
     deputy_district_manager: '부총괄관리',
     principal_agent: '수석 에이전트',
     agent: '에이전트',
     client: '고객',
   },
   en: {
+    district_manager: 'General Manager',
     deputy_district_manager: 'Deputy GM',
     principal_agent: 'Principal Agent',
     agent: 'Agent',
