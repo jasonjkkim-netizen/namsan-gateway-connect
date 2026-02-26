@@ -365,19 +365,19 @@ export function SalesInvestmentManager({ downline, onDataChange }: Props) {
   const selectedProduct = products.find((p) => p.id === formProductId);
 
   return (
-    <div className="mt-8">
+    <div className="mt-4 sm:mt-8">
       <div className="card-elevated">
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-serif font-semibold">
+        <div className="p-3 sm:p-6 border-b border-border flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <Briefcase className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+            <h2 className="text-xs sm:text-lg font-serif font-semibold truncate">
               {language === 'ko' ? '투자 & 커미션 관리' : 'Investment & Commission Management'}
             </h2>
           </div>
           {canEdit && (
-            <Button size="sm" onClick={openCreate}>
-              <Plus className="h-4 w-4 mr-1" />
-              {language === 'ko' ? '투자 등록' : 'New Investment'}
+            <Button size="sm" onClick={openCreate} className="text-[9px] sm:text-xs h-6 sm:h-8 px-2 sm:px-3 shrink-0">
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+              {language === 'ko' ? '등록' : 'New'}
             </Button>
           )}
         </div>
@@ -386,16 +386,16 @@ export function SalesInvestmentManager({ downline, onDataChange }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
-                <TableHead>{language === 'ko' ? '상품' : 'Product'}</TableHead>
-                <TableHead className="text-right">{language === 'ko' ? '투자금액' : 'Amount'}</TableHead>
-                <TableHead className="text-right">{language === 'ko' ? '현재가치' : 'Current'}</TableHead>
-                <TableHead>{language === 'ko' ? '통화' : 'Curr'}</TableHead>
-                <TableHead>{language === 'ko' ? '시작일' : 'Start'}</TableHead>
-                <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
-                <TableHead className="text-right">{language === 'ko' ? '내 선취' : 'My Upfront'}</TableHead>
-                <TableHead className="text-right">{language === 'ko' ? '내 성과' : 'My Perf'}</TableHead>
-                <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
+                <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
+                <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '상품' : 'Product'}</TableHead>
+                <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '투자금액' : 'Amount'}</TableHead>
+                <TableHead className="text-right text-[10px] sm:text-xs hidden sm:table-cell">{language === 'ko' ? '현재가치' : 'Current'}</TableHead>
+                <TableHead className="text-[10px] sm:text-xs hidden sm:table-cell">{language === 'ko' ? '통화' : 'Curr'}</TableHead>
+                <TableHead className="text-[10px] sm:text-xs hidden md:table-cell">{language === 'ko' ? '시작일' : 'Start'}</TableHead>
+                <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                <TableHead className="text-right text-[10px] sm:text-xs">{language === 'ko' ? '성과' : 'Perf'}</TableHead>
+                <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '작업' : 'Act'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -420,20 +420,20 @@ export function SalesInvestmentManager({ downline, onDataChange }: Props) {
 
                   return (
                     <TableRow key={inv.id}>
-                      <TableCell className="font-medium">{getName(inv.user_id)}</TableCell>
-                      <TableCell className="text-sm">
+                      <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">{getName(inv.user_id)}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm max-w-[80px] sm:max-w-none truncate">
                         {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-sm">
+                      <TableCell className="text-right font-mono text-[10px] sm:text-sm whitespace-nowrap">
                         {Number(inv.investment_amount).toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-sm">
+                      <TableCell className="text-right font-mono text-[10px] sm:text-sm hidden sm:table-cell">
                         {Number(inv.current_value).toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-xs">{inv.invested_currency || 'USD'}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDate(inv.start_date)}</TableCell>
+                      <TableCell className="text-[10px] sm:text-xs hidden sm:table-cell">{inv.invested_currency || 'USD'}</TableCell>
+                      <TableCell className="text-[10px] sm:text-sm text-muted-foreground hidden md:table-cell">{formatDate(inv.start_date)}</TableCell>
                       <TableCell>
-                        <Badge variant={inv.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                        <Badge variant={inv.status === 'active' ? 'default' : 'secondary'} className="text-[8px] sm:text-xs whitespace-nowrap">
                           {inv.status || 'active'}
                         </Badge>
                       </TableCell>
