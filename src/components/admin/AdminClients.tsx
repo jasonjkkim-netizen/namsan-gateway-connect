@@ -370,13 +370,13 @@ export function AdminClients() {
         <TableCell className="hidden md:table-cell">{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
         <TableCell className="hidden sm:table-cell whitespace-nowrap">{isDeletedSection && profile.deleted_at ? formatDate(profile.deleted_at) : formatDate(profile.created_at)}</TableCell>
         {!isDeletedSection && (
-          <TableCell className="min-w-[160px]">
+          <TableCell className="min-w-[90px] sm:min-w-[160px] max-w-[120px] sm:max-w-none">
             <Select
               value={profile.parent_id || '__none__'}
               onValueChange={(val) => handleManagerChange(profile.user_id, val)}
               disabled={updatingManager === profile.user_id}
             >
-              <SelectTrigger className="h-8 text-xs">
+              <SelectTrigger className="h-7 sm:h-8 text-[10px] sm:text-xs w-full">
                 <SelectValue placeholder={language === 'ko' ? '선택' : 'Select'} />
               </SelectTrigger>
               <SelectContent>
@@ -387,7 +387,7 @@ export function AdminClients() {
                   .filter(m => m.user_id !== profile.user_id)
                   .map(m => (
                     <SelectItem key={m.user_id} value={m.user_id}>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 whitespace-nowrap">
                         {language === 'ko' && m.full_name_ko ? m.full_name_ko : m.full_name}
                         <span className="text-muted-foreground text-[10px]">
                           ({roleLabel(m.sales_role)})
