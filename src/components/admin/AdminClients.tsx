@@ -348,10 +348,20 @@ export function AdminClients() {
     return acc;
   }, {});
 
-  // Sort manager keys: unassigned last
+  const roleOrder: Record<string, number> = {
+    webmaster: 0, district_manager: 1, deputy_district_manager: 2,
+    principal_agent: 3, agent: 4, client: 5,
+  };
+
+  // Sort manager keys: by role level, then name, unassigned last
   const managerKeys = Object.keys(groupedByManager).sort((a, b) => {
     if (a === '__unassigned__') return 1;
     if (b === '__unassigned__') return -1;
+    const profileA = profiles.find(p => p.user_id === a);
+    const profileB = profiles.find(p => p.user_id === b);
+    const levelA = roleOrder[profileA?.sales_role || ''] ?? 99;
+    const levelB = roleOrder[profileB?.sales_role || ''] ?? 99;
+    if (levelA !== levelB) return levelA - levelB;
     const nameA = getManagerName(a) || '';
     const nameB = getManagerName(b) || '';
     return nameA.localeCompare(nameB);
