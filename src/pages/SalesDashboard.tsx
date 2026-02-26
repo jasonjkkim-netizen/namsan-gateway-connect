@@ -468,6 +468,100 @@ export default function SalesDashboard() {
     });
     summaryRow.font = { bold: true };
 
+    // --- Sheet 2: Member Summary ---
+    const wsMember = wb.addWorksheet(language === 'ko' ? '멤버별 요약' : 'By Member');
+    wsMember.columns = [
+      { header: language === 'ko' ? '이름' : 'Name', key: 'name', width: 22 },
+      { header: language === 'ko' ? '역할' : 'Role', key: 'role', width: 18 },
+      { header: language === 'ko' ? '건수' : 'Count', key: 'count', width: 10 },
+      { header: language === 'ko' ? '선취 합계' : 'Upfront Total', key: 'upfront', width: 18 },
+      { header: language === 'ko' ? '성과 합계' : 'Perf Total', key: 'performance', width: 18 },
+      { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 18 },
+    ];
+    wsMember.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    wsMember.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+
+    const memberAggExcel: Record<string, { upfront: number; performance: number; count: number; role: string }> = {};
+    const profileRoleMapExcel: Record<string, string> = {};
+    profiles.forEach((p) => { profileRoleMapExcel[p.user_id] = p.sales_role || 'client'; });
+    if (user && userRole) profileRoleMapExcel[user.id] = userRole;
+
+    filteredCommissions.forEach((c) => {
+      if (!memberAggExcel[c.to_user_id]) {
+        memberAggExcel[c.to_user_id] = { upfront: 0, performance: 0, count: 0, role: profileRoleMapExcel[c.to_user_id] || 'client' };
+      }
+      memberAggExcel[c.to_user_id].upfront += Number(c.upfront_amount) || 0;
+      memberAggExcel[c.to_user_id].performance += Number(c.performance_amount) || 0;
+      memberAggExcel[c.to_user_id].count++;
+    });
+
+    const ROLE_SORT: Record<string, number> = { webmaster: 0, district_manager: 1, deputy_district_manager: 2, principal_agent: 3, agent: 4, client: 5 };
+    Object.entries(memberAggExcel)
+      .sort((a, b) => (ROLE_SORT[a[1].role] ?? 99) - (ROLE_SORT[b[1].role] ?? 99))
+      .forEach(([userId, agg]) => {
+        wsMember.addRow({
+          name: getName(userId),
+          role: getRoleLabel(agg.role),
+          count: agg.count,
+          upfront: agg.upfront,
+          performance: agg.performance,
+          total: agg.upfront + agg.performance,
+        });
+      });
+    const memberTotalRow = wsMember.addRow({
+      name: language === 'ko' ? '합계' : 'TOTAL',
+      upfront: Object.values(memberAggExcel).reduce((s, a) => s + a.upfront, 0),
+      performance: Object.values(memberAggExcel).reduce((s, a) => s + a.performance, 0),
+      total: Object.values(memberAggExcel).reduce((s, a) => s + a.upfront + a.performance, 0),
+    });
+    memberTotalRow.font = { bold: true };
+
+    // --- Sheet 3: Level Summary ---
+    const wsLevel = wb.addWorksheet(language === 'ko' ? '레벨별 요약' : 'By Level');
+    wsLevel.columns = [
+      { header: language === 'ko' ? '레벨' : 'Level', key: 'level', width: 20 },
+      { header: language === 'ko' ? '인원' : 'Members', key: 'members', width: 10 },
+      { header: language === 'ko' ? '건수' : 'Count', key: 'count', width: 10 },
+      { header: language === 'ko' ? '선취 합계' : 'Upfront Total', key: 'upfront', width: 18 },
+      { header: language === 'ko' ? '성과 합계' : 'Perf Total', key: 'performance', width: 18 },
+      { header: language === 'ko' ? '합계' : 'Total', key: 'total', width: 18 },
+    ];
+    wsLevel.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    wsLevel.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+
+    const ROLE_ORDER_EXCEL = ['webmaster', 'district_manager', 'deputy_district_manager', 'principal_agent', 'agent', 'client'];
+    const levelAgg: Record<string, { upfront: number; performance: number; count: number; members: Set<string> }> = {};
+    ROLE_ORDER_EXCEL.forEach((r) => { levelAgg[r] = { upfront: 0, performance: 0, count: 0, members: new Set() }; });
+
+    filteredCommissions.forEach((c) => {
+      const role = profileRoleMapExcel[c.to_user_id] || 'client';
+      if (!levelAgg[role]) levelAgg[role] = { upfront: 0, performance: 0, count: 0, members: new Set() };
+      levelAgg[role].upfront += Number(c.upfront_amount) || 0;
+      levelAgg[role].performance += Number(c.performance_amount) || 0;
+      levelAgg[role].count++;
+      levelAgg[role].members.add(c.to_user_id);
+    });
+
+    ROLE_ORDER_EXCEL.filter((r) => levelAgg[r]?.count > 0).forEach((role) => {
+      const agg = levelAgg[role];
+      wsLevel.addRow({
+        level: getRoleLabel(role),
+        members: agg.members.size,
+        count: agg.count,
+        upfront: agg.upfront,
+        performance: agg.performance,
+        total: agg.upfront + agg.performance,
+      });
+    });
+    const levelTotalRow = wsLevel.addRow({
+      level: language === 'ko' ? '합계' : 'TOTAL',
+      count: filteredCommissions.length,
+      upfront: totalUp,
+      performance: totalPerf,
+      total: totalUp + totalPerf,
+    });
+    levelTotalRow.font = { bold: true };
+
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
