@@ -449,7 +449,7 @@ export function AdminClients() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <Table className="text-xs sm:text-sm">
+          <Table className="text-[11px] sm:text-xs">
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
@@ -483,7 +483,7 @@ export function AdminClients() {
         </button>
         {showDeleted && (
           <div className="overflow-x-auto">
-            <Table className="text-xs sm:text-sm">
+            <Table className="text-[11px] sm:text-xs">
               <TableHeader>
                 <TableRow>
                   <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
