@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,7 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -81,6 +81,8 @@ export function AdminClients() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [managerFilter, setManagerFilter] = useState<string>('__all__');
+  const [expandedManagers, setExpandedManagers] = useState<Set<string>>(new Set(['__unassigned__']));
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -122,6 +124,9 @@ export function AdminClients() {
           sales_role: p.sales_role,
         }));
       setSalesMembers(members);
+      // Auto-expand all manager groups
+      const allManagerKeys = new Set(data.filter(p => !p.is_deleted).map(p => p.parent_id || '__unassigned__'));
+      setExpandedManagers(allManagerKeys);
     }
 
     if (!rolesRes.error && rolesRes.data) {
@@ -321,9 +326,11 @@ export function AdminClients() {
 
   const filteredProfiles = activeProfiles.filter(
     (p) =>
-      p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.full_name_ko && p.full_name_ko.includes(searchTerm))
+      (p.full_name_ko && p.full_name_ko.includes(searchTerm))) &&
+      (managerFilter === '__all__' || 
+       (managerFilter === '__unassigned__' ? !p.parent_id : p.parent_id === managerFilter))
   );
 
   const filteredDeleted = deletedProfiles.filter(
@@ -332,6 +339,34 @@ export function AdminClients() {
       p.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (p.full_name_ko && p.full_name_ko.includes(searchTerm))
   );
+
+  // Group active profiles by manager
+  const groupedByManager = filteredProfiles.reduce<Record<string, Profile[]>>((acc, p) => {
+    const key = p.parent_id || '__unassigned__';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(p);
+    return acc;
+  }, {});
+
+  // Sort manager keys: unassigned last
+  const managerKeys = Object.keys(groupedByManager).sort((a, b) => {
+    if (a === '__unassigned__') return 1;
+    if (b === '__unassigned__') return -1;
+    const nameA = getManagerName(a) || '';
+    const nameB = getManagerName(b) || '';
+    return nameA.localeCompare(nameB);
+  });
+
+  const toggleManagerExpand = (key: string) => {
+    setExpandedManagers(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const expandAll = () => setExpandedManagers(new Set(managerKeys));
+  const collapseAll = () => setExpandedManagers(new Set());
 
   const renderRows = (list: Profile[], isDeletedSection: boolean) => {
     if (loading) {
@@ -430,6 +465,31 @@ export function AdminClients() {
     ));
   };
 
+  const renderTableHeader = (isDeletedSection: boolean) => (
+    <TableHeader>
+      <TableRow>
+        <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
+        <TableHead className="whitespace-nowrap">{language === 'ko' ? '이름' : 'Name'}</TableHead>
+        <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
+        {!isDeletedSection && <TableHead className="whitespace-nowrap hidden lg:table-cell">{language === 'ko' ? '주소' : 'Address'}</TableHead>}
+        <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
+        <TableHead className="whitespace-nowrap hidden sm:table-cell">{isDeletedSection ? (language === 'ko' ? '삭제일' : 'Deleted') : (language === 'ko' ? '가입일' : 'Joined')}</TableHead>
+        {!isDeletedSection && <TableHead className="whitespace-nowrap">{language === 'ko' ? '담당자' : 'Manager'}</TableHead>}
+        {!isDeletedSection && <TableHead className="text-center whitespace-nowrap">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>}
+        <TableHead className="whitespace-nowrap">{language === 'ko' ? '작업' : 'Actions'}</TableHead>
+      </TableRow>
+    </TableHeader>
+  );
+
+  // Unique managers for filter dropdown
+  const uniqueManagers = useMemo(() => {
+    const managerIds = new Set(activeProfiles.map(p => p.parent_id).filter(Boolean) as string[]);
+    return Array.from(managerIds).map(id => {
+      const m = profiles.find(p => p.user_id === id);
+      return m ? { id, name: language === 'ko' && m.full_name_ko ? m.full_name_ko : m.full_name, role: m.sales_role } : null;
+    }).filter(Boolean).sort((a, b) => (a!.name).localeCompare(b!.name));
+  }, [profiles, activeProfiles, language]);
+
   return (
     <div className="space-y-6">
       {/* Active Clients */}
@@ -437,37 +497,101 @@ export function AdminClients() {
         <div className="p-4 sm:p-6 border-b border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
           <h2 className="text-base sm:text-xl font-serif font-semibold">
             {language === 'ko' ? '고객 목록' : 'Client List'}
+            <span className="text-muted-foreground text-xs ml-2">({filteredProfiles.length})</span>
           </h2>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={language === 'ko' ? '검색...' : 'Search...'}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 text-sm"
-            />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={managerFilter} onValueChange={setManagerFilter}>
+              <SelectTrigger className="h-8 text-xs w-full sm:w-48">
+                <SelectValue placeholder={language === 'ko' ? '담당자 필터' : 'Filter by manager'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">{language === 'ko' ? '전체' : 'All'}</SelectItem>
+                <SelectItem value="__unassigned__">{language === 'ko' ? '미배정' : 'Unassigned'}</SelectItem>
+                {uniqueManagers.map(m => m && (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name} {m.role ? `(${roleLabel(m.role)})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="relative w-full sm:w-48">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={language === 'ko' ? '검색...' : 'Search...'}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 text-sm h-8"
+              />
+            </div>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <Table className="text-[11px] sm:text-xs">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
-                <TableHead className="whitespace-nowrap">{language === 'ko' ? '이름' : 'Name'}</TableHead>
-                <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
-                <TableHead className="whitespace-nowrap hidden lg:table-cell">{language === 'ko' ? '주소' : 'Address'}</TableHead>
-                <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
-                <TableHead className="whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
-                <TableHead className="whitespace-nowrap">{language === 'ko' ? '담당자' : 'Manager'}</TableHead>
-                <TableHead className="text-center whitespace-nowrap">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>
-                <TableHead className="whitespace-nowrap">{language === 'ko' ? '작업' : 'Actions'}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {renderRows(filteredProfiles, false)}
-            </TableBody>
-          </Table>
-        </div>
+
+        {/* Expand/Collapse controls */}
+        {managerFilter === '__all__' && managerKeys.length > 1 && (
+          <div className="px-4 sm:px-6 py-2 border-b border-border flex gap-2">
+            <Button variant="ghost" size="sm" className="text-xs h-6" onClick={expandAll}>
+              <ChevronsUpDown className="h-3 w-3 mr-1" />
+              {language === 'ko' ? '전체 펼치기' : 'Expand All'}
+            </Button>
+            <Button variant="ghost" size="sm" className="text-xs h-6" onClick={collapseAll}>
+              {language === 'ko' ? '전체 접기' : 'Collapse All'}
+            </Button>
+          </div>
+        )}
+
+        {/* Grouped sections */}
+        {managerFilter !== '__all__' ? (
+          <div className="overflow-x-auto">
+            <Table className="text-[11px] sm:text-xs">
+              {renderTableHeader(false)}
+              <TableBody>
+                {renderRows(filteredProfiles, false)}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          managerKeys.map(key => {
+            const group = groupedByManager[key];
+            const managerName = key === '__unassigned__'
+              ? (language === 'ko' ? '미배정' : 'Unassigned')
+              : getManagerName(key) || key;
+            const isExpanded = expandedManagers.has(key);
+            const managerProfile = key !== '__unassigned__' ? profiles.find(p => p.user_id === key) : null;
+            const role = managerProfile?.sales_role;
+
+            return (
+              <div key={key} className="border-b border-border last:border-b-0">
+                <button
+                  onClick={() => toggleManagerExpand(key)}
+                  className="w-full px-4 sm:px-6 py-2.5 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    <span className="text-sm font-medium">{managerName}</span>
+                    {role && <span className="text-[10px] text-muted-foreground">({roleLabel(role)})</span>}
+                    <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{group.length}</span>
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="overflow-x-auto">
+                    <Table className="text-[11px] sm:text-xs">
+                      {renderTableHeader(false)}
+                      <TableBody>
+                        {renderRows(group, false)}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+
+        {managerFilter === '__all__' && managerKeys.length === 0 && !loading && (
+          <div className="p-8 text-center text-muted-foreground text-sm">
+            {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
+          </div>
+        )}
       </div>
 
       {/* Deleted Clients */}
@@ -484,16 +608,7 @@ export function AdminClients() {
         {showDeleted && (
           <div className="overflow-x-auto">
             <Table className="text-[11px] sm:text-xs">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
-                  <TableHead className="whitespace-nowrap">{language === 'ko' ? '이름' : 'Name'}</TableHead>
-                  <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
-                  <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
-                  <TableHead className="whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '삭제일' : 'Deleted'}</TableHead>
-                  <TableHead className="whitespace-nowrap">{language === 'ko' ? '작업' : 'Actions'}</TableHead>
-                </TableRow>
-              </TableHeader>
+              {renderTableHeader(true)}
               <TableBody>
                 {renderRows(filteredDeleted, true)}
               </TableBody>
