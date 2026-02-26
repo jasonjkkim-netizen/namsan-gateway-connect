@@ -9,6 +9,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { clientProfileSchema, validateFormData } from '@/lib/admin-validation';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -49,15 +56,26 @@ interface Profile {
   is_deleted: boolean | null;
   deleted_at: string | null;
   deleted_by: string | null;
+  parent_id: string | null;
+  sales_role: string | null;
+}
+
+interface SalesMember {
+  user_id: string;
+  full_name: string;
+  full_name_ko: string | null;
+  sales_role: string | null;
 }
 
 export function AdminClients() {
   const { language, formatDate } = useLanguage();
   const { user } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [salesMembers, setSalesMembers] = useState<SalesMember[]>([]);
   const [adminUserIds, setAdminUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [togglingAdmin, setTogglingAdmin] = useState<string | null>(null);
+  const [updatingManager, setUpdatingManager] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -92,7 +110,18 @@ export function AdminClients() {
     if (profilesRes.error) {
       toast.error(language === 'ko' ? '고객 목록 조회 실패' : 'Failed to fetch clients');
     } else {
-      setProfiles(profilesRes.data as Profile[]);
+      const data = profilesRes.data as Profile[];
+      setProfiles(data);
+      // Build sales members list from profiles that have a sales_role and are not deleted
+      const members = data
+        .filter(p => p.sales_role && !p.is_deleted)
+        .map(p => ({
+          user_id: p.user_id,
+          full_name: p.full_name,
+          full_name_ko: p.full_name_ko,
+          sales_role: p.sales_role,
+        }));
+      setSalesMembers(members);
     }
 
     if (!rolesRes.error && rolesRes.data) {
@@ -101,6 +130,54 @@ export function AdminClients() {
 
     setLoading(false);
   }
+
+  const roleLabel = (role: string | null) => {
+    if (!role) return '';
+    const labels: Record<string, string> = {
+      webmaster: language === 'ko' ? '웹마스터' : 'Webmaster',
+      district_manager: language === 'ko' ? '총괄관리인' : 'District Manager',
+      deputy_district_manager: language === 'ko' ? '부총괄관리인' : 'Deputy DM',
+      principal_agent: language === 'ko' ? '수석에이전트' : 'Principal Agent',
+      agent: language === 'ko' ? '에이전트' : 'Agent',
+      client: language === 'ko' ? '고객' : 'Client',
+    };
+    return labels[role] || role;
+  };
+
+  const getManagerName = (parentId: string | null) => {
+    if (!parentId) return null;
+    const manager = profiles.find(p => p.user_id === parentId);
+    if (!manager) return null;
+    return language === 'ko' && manager.full_name_ko
+      ? manager.full_name_ko
+      : manager.full_name;
+  };
+
+  const handleManagerChange = async (profileUserId: string, newParentId: string) => {
+    setUpdatingManager(profileUserId);
+    try {
+      const value = newParentId === '__none__' ? null : newParentId;
+      const { error } = await supabase
+        .from('profiles')
+        .update({ parent_id: value })
+        .eq('user_id', profileUserId);
+
+      if (error) {
+        console.error('Manager update error:', error);
+        toast.error(language === 'ko' ? '관리자 변경 실패' : 'Failed to change manager');
+      } else {
+        toast.success(language === 'ko' ? '관리자가 변경되었습니다' : 'Manager updated');
+        // Update local state
+        setProfiles(prev =>
+          prev.map(p => p.user_id === profileUserId ? { ...p, parent_id: value } : p)
+        );
+      }
+    } catch (err) {
+      toast.error(language === 'ko' ? '관리자 변경 실패' : 'Failed to change manager');
+    } finally {
+      setUpdatingManager(null);
+    }
+  };
 
   const handleToggleAdmin = async (profile: Profile) => {
     const isCurrentlyAdmin = adminUserIds.has(profile.user_id);
@@ -260,7 +337,7 @@ export function AdminClients() {
     if (loading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          {Array.from({ length: isDeletedSection ? 8 : 9 }).map((_, j) => (
+          {Array.from({ length: isDeletedSection ? 8 : 10 }).map((_, j) => (
             <TableCell key={j}><Skeleton className="h-5 w-24" /></TableCell>
           ))}
         </TableRow>
@@ -270,7 +347,7 @@ export function AdminClients() {
     if (list.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={isDeletedSection ? 8 : 9} className="text-center py-8 text-muted-foreground">
+          <TableCell colSpan={isDeletedSection ? 8 : 10} className="text-center py-8 text-muted-foreground">
             {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
           </TableCell>
         </TableRow>
@@ -292,6 +369,36 @@ export function AdminClients() {
         {!isDeletedSection && <TableCell className="hidden lg:table-cell max-w-[150px] truncate">{profile.address || '-'}</TableCell>}
         <TableCell className="hidden md:table-cell">{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
         <TableCell className="hidden sm:table-cell whitespace-nowrap">{isDeletedSection && profile.deleted_at ? formatDate(profile.deleted_at) : formatDate(profile.created_at)}</TableCell>
+        {!isDeletedSection && (
+          <TableCell className="min-w-[160px]">
+            <Select
+              value={profile.parent_id || '__none__'}
+              onValueChange={(val) => handleManagerChange(profile.user_id, val)}
+              disabled={updatingManager === profile.user_id}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder={language === 'ko' ? '선택' : 'Select'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">
+                  {language === 'ko' ? '없음' : 'None'}
+                </SelectItem>
+                {salesMembers
+                  .filter(m => m.user_id !== profile.user_id)
+                  .map(m => (
+                    <SelectItem key={m.user_id} value={m.user_id}>
+                      <span className="flex items-center gap-1">
+                        {language === 'ko' && m.full_name_ko ? m.full_name_ko : m.full_name}
+                        <span className="text-muted-foreground text-[10px]">
+                          ({roleLabel(m.sales_role)})
+                        </span>
+                      </span>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </TableCell>
+        )}
         {!isDeletedSection && (
           <TableCell className="text-center">
             <Switch
@@ -351,6 +458,7 @@ export function AdminClients() {
                 <TableHead className="whitespace-nowrap hidden lg:table-cell">{language === 'ko' ? '주소' : 'Address'}</TableHead>
                 <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
                 <TableHead className="whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '가입일' : 'Joined'}</TableHead>
+                <TableHead className="whitespace-nowrap">{language === 'ko' ? '담당자' : 'Manager'}</TableHead>
                 <TableHead className="text-center whitespace-nowrap">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>
                 <TableHead className="whitespace-nowrap">{language === 'ko' ? '작업' : 'Actions'}</TableHead>
               </TableRow>
