@@ -110,7 +110,8 @@ async function fetchSingleStockPrice(apiKey: string, stock: StockInput, market: 
       while ((match = regex.exec(content)) !== null) {
         const num = parseInt(match[1].replace(/,/g, ''), 10);
         const codeNum = parseInt(stock.code, 10);
-        if (num > 1000 && num !== codeNum && num < 100000000) {
+        // Filter out: stock codes, years (2020-2030), and unreasonable values
+        if (num > 1000 && num !== codeNum && num < 100000000 && !(num >= 2020 && num <= 2030)) {
           allNumbers.push(num);
         }
       }
@@ -168,11 +169,12 @@ Deno.serve(async (req) => {
     let stockCodes: StockInput[] = body.stockCodes || [];
     const isAutoUpdate = body.autoUpdate === true || stockCodes.length === 0;
 
+    let stockMarketMap: Record<string, string> = {};
     if (isAutoUpdate) {
       const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
       const { data: activeStocks, error } = await supabase
         .from('weekly_stock_picks')
-        .select('stock_code, stock_name')
+        .select('stock_code, stock_name, market')
         .eq('is_active', true)
         .not('stock_code', 'is', null);
 
@@ -181,6 +183,9 @@ Deno.serve(async (req) => {
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       stockCodes = (activeStocks || []).map(s => ({ code: s.stock_code!, name: s.stock_name }));
+      for (const s of activeStocks || []) {
+        if (s.stock_code) stockMarketMap[s.stock_code] = s.market || 'KR';
+      }
     }
 
     if (!stockCodes || stockCodes.length === 0) {
@@ -197,7 +202,9 @@ Deno.serve(async (req) => {
     // Fetch each stock individually for accuracy
     const results: StockPriceResult[] = [];
     for (const stock of stockCodes) {
-      const result = await fetchSingleStockPrice(apiKey, stock, market);
+      // Use individual stock market from DB, fallback to request body market
+      const stockMarket = stockMarketMap[stock.code] || market;
+      const result = await fetchSingleStockPrice(apiKey, stock, stockMarket);
       results.push(result);
       // Small delay between requests
       if (stockCodes.indexOf(stock) < stockCodes.length - 1) {
