@@ -734,22 +734,22 @@ export default function SalesDashboard() {
                   </Button>
                 </div>
                 {/* Filters */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-[100px] sm:w-[140px] h-7 sm:h-9 text-[10px] sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{language === 'ko' ? '전체 상태' : 'All Status'}</SelectItem>
-                      <SelectItem value="pending">{language === 'ko' ? '대기' : 'Pending'}</SelectItem>
-                      <SelectItem value="available">{language === 'ko' ? '수령가능' : 'Available'}</SelectItem>
-                      <SelectItem value="paid">{language === 'ko' ? '지급완료' : 'Paid'}</SelectItem>
+                      <SelectItem value="all" className="text-xs sm:text-sm">{language === 'ko' ? '전체 상태' : 'All Status'}</SelectItem>
+                      <SelectItem value="pending" className="text-xs sm:text-sm">{language === 'ko' ? '대기' : 'Pending'}</SelectItem>
+                      <SelectItem value="available" className="text-xs sm:text-sm">{language === 'ko' ? '수령가능' : 'Available'}</SelectItem>
+                      <SelectItem value="paid" className="text-xs sm:text-sm">{language === 'ko' ? '지급완료' : 'Paid'}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !dateFrom && "text-muted-foreground")}>
-                        <CalendarIcon className="h-4 w-4 mr-1" />
+                      <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal text-[10px] sm:text-xs h-7 sm:h-9 px-2 sm:px-3", !dateFrom && "text-muted-foreground")}>
+                        <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                         {dateFrom ? format(dateFrom, 'yyyy-MM-dd') : (language === 'ko' ? '시작일' : 'From')}
                       </Button>
                     </PopoverTrigger>
@@ -759,8 +759,8 @@ export default function SalesDashboard() {
                   </Popover>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal", !dateTo && "text-muted-foreground")}>
-                        <CalendarIcon className="h-4 w-4 mr-1" />
+                      <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal text-[10px] sm:text-xs h-7 sm:h-9 px-2 sm:px-3", !dateTo && "text-muted-foreground")}>
+                        <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                         {dateTo ? format(dateTo, 'yyyy-MM-dd') : (language === 'ko' ? '종료일' : 'To')}
                       </Button>
                     </PopoverTrigger>
@@ -769,11 +769,11 @@ export default function SalesDashboard() {
                     </PopoverContent>
                   </Popover>
                   {(dateFrom || dateTo || statusFilter !== 'all') && (
-                    <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); setStatusFilter('all'); }}>
+                    <Button variant="ghost" size="sm" onClick={() => { setDateFrom(undefined); setDateTo(undefined); setStatusFilter('all'); }} className="text-[10px] sm:text-xs h-7 sm:h-9">
                       {language === 'ko' ? '초기화' : 'Clear'}
                     </Button>
                   )}
-                  <span className="text-xs text-muted-foreground ml-auto">
+                  <span className="text-[10px] sm:text-xs text-muted-foreground ml-auto">
                     {filteredCommissions.length}{language === 'ko' ? '건' : ' records'}
                   </span>
                 </div>
@@ -782,13 +782,13 @@ export default function SalesDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
-                      <TableHead>{language === 'ko' ? '레이어' : 'Layer'}</TableHead>
-                      <TableHead>{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
-                      <TableHead>{language === 'ko' ? '성과' : 'Performance'}</TableHead>
-                      <TableHead>{language === 'ko' ? '적용률' : 'Rate'}</TableHead>
-                      <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
-                      <TableHead>{language === 'ko' ? '일자' : 'Date'}</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '레이어' : 'Layer'}</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '성과' : 'Perf'}</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs hidden sm:table-cell">{language === 'ko' ? '적용률' : 'Rate'}</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                      <TableHead className="text-[10px] sm:text-xs hidden md:table-cell">{language === 'ko' ? '일자' : 'Date'}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -797,44 +797,44 @@ export default function SalesDashboard() {
                         <TableRow key={i}>
                           {Array.from({ length: 7 }).map((_, j) => (
                             <TableCell key={j}>
-                              <Skeleton className="h-5 w-20" />
+                              <Skeleton className="h-4 sm:h-5 w-14 sm:w-20" />
                             </TableCell>
                           ))}
                         </TableRow>
                       ))
                     ) : filteredCommissions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center py-6 sm:py-8 text-muted-foreground text-[10px] sm:text-sm">
                           {language === 'ko' ? '커미션 내역이 없습니다' : 'No commissions found'}
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredCommissions.map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
                             {c.from_user_id ? getName(c.from_user_id) : '—'}
                           </TableCell>
-                          <TableCell>{c.layer}</TableCell>
-                          <TableCell>
+                          <TableCell className="text-[10px] sm:text-sm">{c.layer}</TableCell>
+                          <TableCell className="text-[10px] sm:text-sm">
                             {c.upfront_amount ? (
-                              <span className="text-success font-medium">+{formatCommAmount(Number(c.upfront_amount), c.currency)}</span>
+                              <span className="text-success font-medium whitespace-nowrap">+{formatCommAmount(Number(c.upfront_amount), c.currency)}</span>
                             ) : '—'}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-[10px] sm:text-sm">
                             {c.performance_amount ? (
-                              <span className="text-success font-medium">+{formatCommAmount(Number(c.performance_amount), c.currency)}</span>
+                              <span className="text-success font-medium whitespace-nowrap">+{formatCommAmount(Number(c.performance_amount), c.currency)}</span>
                             ) : '—'}
                           </TableCell>
-                          <TableCell>{c.rate_used ? `${c.rate_used}%` : '—'}</TableCell>
+                          <TableCell className="text-[10px] sm:text-sm hidden sm:table-cell">{c.rate_used ? `${c.rate_used}%` : '—'}</TableCell>
                           <TableCell>
-                            <Badge variant={c.status === 'available' ? 'default' : c.status === 'paid' ? 'outline' : 'secondary'}>
+                            <Badge variant={c.status === 'available' ? 'default' : c.status === 'paid' ? 'outline' : 'secondary'} className="text-[8px] sm:text-xs whitespace-nowrap">
                               {c.status === 'pending' ? (language === 'ko' ? '대기' : 'Pending')
                                 : c.status === 'available' ? (language === 'ko' ? '수령가능' : 'Available')
                                 : c.status === 'paid' ? (language === 'ko' ? '지급완료' : 'Paid')
                                 : c.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell className="text-[10px] sm:text-sm text-muted-foreground hidden md:table-cell">
                             {formatDate(c.created_at)}
                           </TableCell>
                         </TableRow>
@@ -848,7 +848,7 @@ export default function SalesDashboard() {
 
           {/* Commission Rate Settings Tab */}
           <TabsContent value="rates">
-            <div className="card-elevated p-6">
+            <div className="card-elevated p-3 sm:p-6">
               <SalesCommissionRates downline={downline} />
             </div>
           </TabsContent>
@@ -856,16 +856,16 @@ export default function SalesDashboard() {
           {/* Investment Pipeline Tab */}
           <TabsContent value="pipeline">
             <div className="card-elevated">
-              <div className="p-6 border-b border-border flex items-center justify-between">
-                <h2 className="text-lg font-serif font-semibold">
+              <div className="p-3 sm:p-6 border-b border-border flex items-center justify-between gap-2">
+                <h2 className="text-xs sm:text-lg font-serif font-semibold truncate">
                   {language === 'ko'
                     ? '하위 조직 투자 현황'
                     : 'Downline Investment Pipeline'}
                 </h2>
                 {downline.length > 0 && (
-                  <Button size="sm" onClick={() => setShowCreateInvestment(true)}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    {language === 'ko' ? '투자 등록' : 'New Investment'}
+                  <Button size="sm" onClick={() => setShowCreateInvestment(true)} className="text-[9px] sm:text-xs h-6 sm:h-8 px-2 sm:px-3 shrink-0">
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                    {language === 'ko' ? '등록' : 'New'}
                   </Button>
                 )}
               </div>
@@ -873,23 +873,23 @@ export default function SalesDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">
                         {language === 'ko' ? '투자자' : 'Investor'}
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">
                         {language === 'ko' ? '상품' : 'Product'}
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">
                         {language === 'ko' ? '투자금액' : 'Amount'}
                       </TableHead>
-                      <TableHead>
-                        {language === 'ko' ? '현재가치' : 'Current Value'}
+                      <TableHead className="text-[10px] sm:text-xs hidden sm:table-cell">
+                        {language === 'ko' ? '현재가치' : 'Current'}
                       </TableHead>
-                      <TableHead>
+                      <TableHead className="text-[10px] sm:text-xs">
                         {language === 'ko' ? '상태' : 'Status'}
                       </TableHead>
-                      <TableHead>
-                        {language === 'ko' ? '시작일' : 'Start Date'}
+                      <TableHead className="text-[10px] sm:text-xs hidden md:table-cell">
+                        {language === 'ko' ? '시작일' : 'Start'}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -899,7 +899,7 @@ export default function SalesDashboard() {
                         <TableRow key={i}>
                           {Array.from({ length: 6 }).map((_, j) => (
                             <TableCell key={j}>
-                              <Skeleton className="h-5 w-20" />
+                              <Skeleton className="h-4 sm:h-5 w-14 sm:w-20" />
                             </TableCell>
                           ))}
                         </TableRow>
@@ -908,7 +908,7 @@ export default function SalesDashboard() {
                       <TableRow>
                         <TableCell
                           colSpan={6}
-                          className="text-center py-8 text-muted-foreground"
+                          className="text-center py-6 sm:py-8 text-muted-foreground text-[10px] sm:text-sm"
                         >
                           {language === 'ko'
                             ? '하위 조직 투자가 없습니다'
@@ -918,18 +918,18 @@ export default function SalesDashboard() {
                     ) : (
                       downlineInvestments.map((inv) => (
                         <TableRow key={inv.id}>
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
                             {getName(inv.user_id)}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-[10px] sm:text-sm max-w-[80px] sm:max-w-none truncate">
                             {language === 'ko'
                               ? inv.product_name_ko
                               : inv.product_name_en}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-[10px] sm:text-sm whitespace-nowrap">
                             {formatCurrency(inv.investment_amount)}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-[10px] sm:text-sm hidden sm:table-cell">
                             {formatCurrency(inv.current_value)}
                           </TableCell>
                           <TableCell>
@@ -939,11 +939,12 @@ export default function SalesDashboard() {
                                   ? 'default'
                                   : 'secondary'
                               }
+                              className="text-[8px] sm:text-xs whitespace-nowrap"
                             >
                               {inv.status || 'active'}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell className="text-[10px] sm:text-sm text-muted-foreground hidden md:table-cell">
                             {formatDate(inv.start_date)}
                           </TableCell>
                         </TableRow>
