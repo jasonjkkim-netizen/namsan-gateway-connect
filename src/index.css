@@ -192,63 +192,69 @@
 
 /* Mobile-responsive admin & sales panel */
 @media (max-width: 639px) {
-  /* Shrink all admin page headings */
+  /* Global base font size reduction */
+  body {
+    font-size: 0.7rem;
+  }
+
   .container h1 {
-    font-size: 1.25rem;
+    font-size: 1rem;
   }
   .container h2 {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
+  }
+  h3 {
+    font-size: 0.75rem;
   }
 
-  /* Compact padding in cards */
   .card-elevated > .p-6,
   .card-elevated > div > .p-6 {
-    padding: 0.75rem;
+    padding: 0.5rem;
   }
 
-  /* Tables: smaller text globally */
-  table th,
-  table td {
-    font-size: 0.7rem;
-    padding: 0.4rem 0.5rem;
+  table th, table td {
+    font-size: 0.6rem;
+    padding: 0.25rem 0.35rem;
     white-space: nowrap;
   }
 
   .table-financial th {
-    font-size: 0.65rem;
-    padding: 0.4rem 0.5rem;
+    font-size: 0.55rem;
+    padding: 0.25rem 0.35rem;
   }
-
   .table-financial td {
-    font-size: 0.7rem;
-    padding: 0.5rem;
+    font-size: 0.6rem;
+    padding: 0.3rem 0.35rem;
   }
 
-  /* Compact buttons in admin */
   [class*="card-elevated"] button {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
   }
 
-  /* Smaller badges */
   [class*="card-elevated"] [class*="badge"],
   [class*="card-elevated"] .inline-flex[class*="badge"] {
-    font-size: 0.6rem;
-    padding: 0.1rem 0.35rem;
+    font-size: 0.5rem;
+    padding: 0.05rem 0.25rem;
   }
 
-  /* Search inputs full width */
   .relative.w-64 {
     width: 100%;
   }
 
-  /* Tab triggers compact */
-  [role="tablist"] button {
-    font-size: 0.65rem;
-    padding: 0.35rem 0.5rem;
+  input, select, textarea {
+    font-size: 0.7rem;
   }
 
-  /* Dialogs take full width */
+  [role="tablist"] button {
+    font-size: 0.55rem;
+    padding: 0.25rem 0.4rem;
+  }
+
   [role="dialog"] > div {
     max-width: 95vw;
+  }
+
+  button {
+    font-size: 0.65rem;
   }
 }
