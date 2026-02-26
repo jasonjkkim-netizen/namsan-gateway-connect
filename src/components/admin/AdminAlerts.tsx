@@ -505,7 +505,7 @@ export function AdminAlerts() {
                 <SelectContent>
                   {Object.entries(CHANNEL_LABELS).map(([key, label]) => {
                     const Icon = label.icon;
-                    const disabled = key !== 'email';
+                    const disabled = key === 'sms';
                     return (
                       <SelectItem key={key} value={key} disabled={disabled}>
                         <div className="flex items-center gap-2">
