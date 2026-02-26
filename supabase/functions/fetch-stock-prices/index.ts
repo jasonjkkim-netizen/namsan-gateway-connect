@@ -98,31 +98,49 @@ async function fetchKrStockPrice(token: string, stock: StockInput): Promise<Stoc
 }
 
 // ── 해외주식 현재가 조회 ──────────────────────────────────
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delay = 500): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      return res;
+    } catch (err) {
+      console.warn(`Fetch attempt ${attempt}/${retries} failed: ${err instanceof Error ? err.message : 'Unknown'}`);
+      if (attempt === retries) throw err;
+      await new Promise(r => setTimeout(r, delay * attempt));
+    }
+  }
+  throw new Error('All retries exhausted');
+}
+
 async function fetchUsStockPrice(token: string, stock: StockInput): Promise<StockPriceResult> {
   try {
     const appKey = Deno.env.get('KIS_APP_KEY')!;
     const appSecret = Deno.env.get('KIS_APP_SECRET')!;
 
-    // Try exchanges in order: NAS → NYS → AMS
     const exchanges = ['NAS', 'NYS', 'AMS'];
 
     for (const excd of exchanges) {
       const url = `${KIS_BASE_URL}/uapi/overseas-price/v1/quotations/price?AUTH=&EXCD=${excd}&SYMB=${stock.code}`;
+      const headers = {
+        'content-type': 'application/json; charset=utf-8',
+        'authorization': `Bearer ${token}`,
+        'appkey': appKey,
+        'appsecret': appSecret,
+        'tr_id': 'HHDFS00000300',
+        'custtype': 'P',
+      };
 
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'content-type': 'application/json; charset=utf-8',
-          'authorization': `Bearer ${token}`,
-          'appkey': appKey,
-          'appsecret': appSecret,
-          'tr_id': 'HHDFS00000300',
-          'custtype': 'P',
-        },
-      });
+      let res: Response;
+      try {
+        res = await fetchWithRetry(url, { method: 'GET', headers }, 3, 500);
+      } catch (err) {
+        console.warn(`KIS US (${excd}) connection failed for ${stock.name} after retries:`, err instanceof Error ? err.message : err);
+        continue;
+      }
 
       if (!res.ok) {
-        console.warn(`KIS US (${excd}) error for ${stock.name}:`, res.status);
+        const errText = await res.text();
+        console.warn(`KIS US (${excd}) error for ${stock.name}:`, res.status, errText);
         continue;
       }
 
@@ -141,7 +159,6 @@ async function fetchUsStockPrice(token: string, stock: StockInput): Promise<Stoc
         return { stockCode: stock.code, stockName: stock.name, currentPrice: price };
       }
 
-      // If price is 0, try next exchange
       await new Promise(r => setTimeout(r, 100));
     }
 
