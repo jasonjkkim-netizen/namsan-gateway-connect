@@ -142,13 +142,14 @@ Deno.serve(async (req) => {
 
     const ratesByRole: Record<string, { upfront_rate: number; performance_rate: number }> = {};
     if (rates && rates.length > 0) {
-      // Use manually configured rates
+      // Use manually configured rates; roles not explicitly set get 0
       for (const r of rates) {
         ratesByRole[r.sales_role] = {
           upfront_rate: Number(r.upfront_rate),
           performance_rate: Number(r.performance_rate),
         };
       }
+      // Roles without manual rates get 0 (not default splits)
     } else {
       // No manual rates found — auto-generate defaults from product's upfront_commission_percent
       const { data: productData } = await supabase

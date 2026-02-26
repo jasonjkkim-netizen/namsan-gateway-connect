@@ -177,6 +177,14 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
     }
 
     // Fall back to default calculation from product
+    // If ANY manual (non-override) rates exist for this product, roles without manual rates get 0
+    const hasManualRatesForProduct = rates.some(
+      (r) => r.product_id === productId && !r.is_override
+    );
+    if (hasManualRatesForProduct) {
+      return { upfront: 0, performance: 0, source: 'default' as const, id: null };
+    }
+
     const product = products.find((p) => p.id === productId);
     if (product?.upfront_commission_percent) {
       const totalUpfront = Number(product.upfront_commission_percent);
