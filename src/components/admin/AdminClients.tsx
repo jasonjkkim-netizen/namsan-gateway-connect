@@ -40,7 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
+import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -83,7 +83,6 @@ export function AdminClients() {
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Profile | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
-  const [expandedManagers, setExpandedManagers] = useState<Set<string>>(new Set(['__unassigned__']));
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -125,9 +124,6 @@ export function AdminClients() {
           sales_role: p.sales_role,
         }));
       setSalesMembers(members);
-      // Auto-expand all manager groups
-      const allManagerKeys = new Set(data.filter(p => !p.is_deleted).map(p => p.parent_id || '__unassigned__'));
-      setExpandedManagers(allManagerKeys);
     }
 
     if (!rolesRes.error && rolesRes.data) {
@@ -359,43 +355,27 @@ export function AdminClients() {
       (p.full_name_ko && p.full_name_ko.includes(searchTerm))
   );
 
-  // Group active profiles by manager
-  const groupedByManager = filteredProfiles.reduce<Record<string, Profile[]>>((acc, p) => {
-    const key = p.parent_id || '__unassigned__';
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(p);
-    return acc;
-  }, {});
-
   const roleOrder: Record<string, number> = {
     webmaster: 0, district_manager: 1, deputy_district_manager: 2,
     principal_agent: 3, agent: 4, client: 5,
   };
 
-  // Sort manager keys: by role level, then name, unassigned last
-  const managerKeys = Object.keys(groupedByManager).sort((a, b) => {
-    if (a === '__unassigned__') return 1;
-    if (b === '__unassigned__') return -1;
-    const profileA = profiles.find(p => p.user_id === a);
-    const profileB = profiles.find(p => p.user_id === b);
-    const levelA = roleOrder[profileA?.sales_role || ''] ?? 99;
-    const levelB = roleOrder[profileB?.sales_role || ''] ?? 99;
+  // Sort profiles by manager role level, then by name
+  const sortedProfiles = [...filteredProfiles].sort((a, b) => {
+    const getManagerRole = (p: Profile) => {
+      if (!p.parent_id) return 99;
+      const manager = profiles.find(m => m.user_id === p.parent_id);
+      return roleOrder[manager?.sales_role || ''] ?? 99;
+    };
+    const levelA = getManagerRole(a);
+    const levelB = getManagerRole(b);
     if (levelA !== levelB) return levelA - levelB;
-    const nameA = getManagerName(a) || '';
-    const nameB = getManagerName(b) || '';
-    return nameA.localeCompare(nameB);
+    // Within same manager group, sort by manager name then client name
+    const mNameA = getManagerName(a.parent_id) || 'zzz';
+    const mNameB = getManagerName(b.parent_id) || 'zzz';
+    if (mNameA !== mNameB) return mNameA.localeCompare(mNameB);
+    return a.full_name.localeCompare(b.full_name);
   });
-
-  const toggleManagerExpand = (key: string) => {
-    setExpandedManagers(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
-
-  const expandAll = () => setExpandedManagers(new Set(managerKeys));
-  const collapseAll = () => setExpandedManagers(new Set());
 
   const renderRows = (list: Profile[], isDeletedSection: boolean) => {
     if (loading) {
@@ -560,72 +540,14 @@ export function AdminClients() {
           </div>
         </div>
 
-        {/* Expand/Collapse controls */}
-        {managerFilter === '__all__' && managerKeys.length > 1 && (
-          <div className="px-4 sm:px-6 py-2 border-b border-border flex gap-2">
-            <Button variant="ghost" size="sm" className="text-xs h-6" onClick={expandAll}>
-              <ChevronsUpDown className="h-3 w-3 mr-1" />
-              {language === 'ko' ? '전체 펼치기' : 'Expand All'}
-            </Button>
-            <Button variant="ghost" size="sm" className="text-xs h-6" onClick={collapseAll}>
-              {language === 'ko' ? '전체 접기' : 'Collapse All'}
-            </Button>
-          </div>
-        )}
-
-        {/* Grouped sections */}
-        {managerFilter !== '__all__' ? (
-          <div className="overflow-x-auto">
-            <Table className="text-[11px] sm:text-xs">
-              {renderTableHeader(false)}
-              <TableBody>
-                {renderRows(filteredProfiles, false)}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          managerKeys.map(key => {
-            const group = groupedByManager[key];
-            const managerName = key === '__unassigned__'
-              ? (language === 'ko' ? '미배정' : 'Unassigned')
-              : getManagerName(key) || key;
-            const isExpanded = expandedManagers.has(key);
-            const managerProfile = key !== '__unassigned__' ? profiles.find(p => p.user_id === key) : null;
-            const role = managerProfile?.sales_role;
-
-            return (
-              <div key={key} className="border-b border-border last:border-b-0">
-                <button
-                  onClick={() => toggleManagerExpand(key)}
-                  className="w-full px-4 sm:px-6 py-2.5 flex items-center justify-between text-left hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                    <span className="text-sm font-medium">{managerName}</span>
-                    {role && <span className="text-[10px] text-muted-foreground">({roleLabel(role)})</span>}
-                    <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{group.length}</span>
-                  </div>
-                </button>
-                {isExpanded && (
-                  <div className="overflow-x-auto">
-                    <Table className="text-[11px] sm:text-xs">
-                      {renderTableHeader(false)}
-                      <TableBody>
-                        {renderRows(group, false)}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
-
-        {managerFilter === '__all__' && managerKeys.length === 0 && !loading && (
-          <div className="p-8 text-center text-muted-foreground text-sm">
-            {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
-          </div>
-        )}
+        <div className="overflow-x-auto">
+          <Table className="text-[11px] sm:text-xs">
+            {renderTableHeader(false)}
+            <TableBody>
+              {renderRows(sortedProfiles, false)}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Deleted Clients */}
