@@ -510,11 +510,16 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
     ? products
     : products.filter((p) => p.id === selectedProductId);
 
-  // Calculate total commission for a product (sum of all role rates)
+  // Roles visible to this user (own level and below)
+  const visibleRoles = SALES_ROLES_ORDERED.filter(
+    (r) => ROLE_LEVELS[r] >= userLevel
+  );
+
+  // Calculate total commission for a product (sum of visible role rates only)
   const getProductTotalRate = (productId: string) => {
     let totalUpfront = 0;
     let totalPerformance = 0;
-    for (const role of SALES_ROLES_ORDERED) {
+    for (const role of visibleRoles) {
       const rate = getEffectiveRate(productId, role);
       totalUpfront += rate.upfront;
       totalPerformance += rate.performance;
@@ -644,8 +649,8 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
                     const totalUpfront = Number(product.upfront_commission_percent) || 0;
                     const totalPerf = Number(product.performance_fee_percent) || 0;
                     
-                    // Calculate each role's current value (with edits applied)
-                    const roleValues = SALES_ROLES_ORDERED.map((role) => {
+                    // Calculate each role's current value (with edits applied) — only visible roles
+                    const roleValues = visibleRoles.map((role) => {
                       const key = `${product.id}_${role}_default`;
                       const edited = editedRates[key];
                       const effective = getEffectiveRate(product.id, role);
@@ -712,7 +717,7 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {SALES_ROLES_ORDERED.map((role, idx) => {
+                            {visibleRoles.map((role, idx) => {
                               const effective = getEffectiveRate(product.id, role);
                               const key = `${product.id}_${role}_default`;
                               const edited = editedRates[key];
