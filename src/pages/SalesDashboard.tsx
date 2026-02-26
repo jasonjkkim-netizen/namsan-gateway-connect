@@ -433,9 +433,16 @@ export default function SalesDashboard() {
     };
     const fxNote = `${language === 'ko' ? '적용 환율' : 'FX Rate'}: 1 USD = ${usdKrwRate.toLocaleString()} KRW`;
 
+    // Build investment_id -> product name map
+    const invProductMap: Record<string, string> = {};
+    downlineInvestments.forEach((inv) => {
+      invProductMap[inv.id] = language === 'ko' ? inv.product_name_ko : inv.product_name_en;
+    });
+
     ws.columns = [
       { header: language === 'ko' ? '수령자' : 'Recipient', key: 'recipient', width: 20 },
       { header: language === 'ko' ? '투자자' : 'Investor', key: 'investor', width: 20 },
+      { header: language === 'ko' ? '상품명' : 'Product', key: 'product', width: 28 },
       { header: language === 'ko' ? '레이어' : 'Layer', key: 'layer', width: 10 },
       { header: language === 'ko' ? '선취 커미션' : 'Upfront', key: 'upfront', width: 18 },
       { header: language === 'ko' ? '성과 커미션' : 'Performance', key: 'performance', width: 18 },
@@ -460,6 +467,7 @@ export default function SalesDashboard() {
       ws.addRow({
         recipient: getName(c.to_user_id),
         investor: c.from_user_id ? getName(c.from_user_id) : '—',
+        product: invProductMap[c.investment_id] || '—',
         layer: c.layer,
         upfront,
         performance: perf,
