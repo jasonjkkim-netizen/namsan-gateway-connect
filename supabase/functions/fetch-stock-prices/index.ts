@@ -55,18 +55,16 @@ async function fetchKrStockPrice(token: string, stock: StockInput): Promise<Stoc
     const appSecret = Deno.env.get('KIS_APP_SECRET')!;
 
     const url = `${KIS_BASE_URL}/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=${stock.code}`;
+    const headers = {
+      'content-type': 'application/json; charset=utf-8',
+      'authorization': `Bearer ${token}`,
+      'appkey': appKey,
+      'appsecret': appSecret,
+      'tr_id': 'FHKST01010100',
+      'custtype': 'P',
+    };
 
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'content-type': 'application/json; charset=utf-8',
-        'authorization': `Bearer ${token}`,
-        'appkey': appKey,
-        'appsecret': appSecret,
-        'tr_id': 'FHKST01010100',
-        'custtype': 'P',
-      },
-    });
+    const res = await fetchWithRetry(url, { method: 'GET', headers }, 3, 500);
 
     if (!res.ok) {
       const errText = await res.text();
