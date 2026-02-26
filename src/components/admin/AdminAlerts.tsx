@@ -58,7 +58,6 @@ const CATEGORY_LABELS: Record<string, { ko: string; en: string; icon: typeof Bel
   stock_pick: { ko: '관심 종목', en: 'Stock Pick', icon: Star },
   video: { ko: '비디오', en: 'Video', icon: PlayCircle },
   investment: { ko: '투자', en: 'Investment', icon: Briefcase },
-  commission: { ko: '수수료', en: 'Commission', icon: DollarSign },
 };
 
 const CHANNEL_LABELS: Record<string, { ko: string; en: string; icon: typeof Mail; color: string }> = {
