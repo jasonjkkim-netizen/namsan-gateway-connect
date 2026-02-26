@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify caller using anon client
     const anonClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -37,7 +36,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role client for privileged operations
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     // Verify caller is webmaster
@@ -56,7 +54,6 @@ Deno.serve(async (req) => {
 
     const { full_name } = await req.json();
 
-    // Validate input
     if (!full_name || typeof full_name !== "string" || full_name.trim().length < 1) {
       return new Response(
         JSON.stringify({ error: "Client name is required" }),
@@ -72,35 +69,56 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Generate a placeholder user_id and email
-    const placeholderId = crypto.randomUUID();
-    const placeholderEmail = `client_${placeholderId.slice(0, 8)}@placeholder.local`;
+    // Generate placeholder email and random password
+    const placeholderId = crypto.randomUUID().slice(0, 8);
+    const placeholderEmail = `client_${placeholderId}@placeholder.local`;
+    const randomPassword = crypto.randomUUID(); // random unguessable password
 
-    // Insert profile directly (bypasses auth, uses service role)
-    const { data: profile, error: insertError } = await adminClient
-      .from("profiles")
-      .insert({
-        user_id: placeholderId,
-        email: placeholderEmail,
-        full_name: cleanName,
-        sales_role: "client",
-        parent_id: caller.id,
-        sales_status: "pending",
-        is_approved: false,
-      })
-      .select("id, user_id, full_name, email")
-      .single();
+    // Create auth user via admin API (bypasses email confirmation)
+    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+      email: placeholderEmail,
+      password: randomPassword,
+      email_confirm: true,
+      user_metadata: { full_name: cleanName },
+    });
 
-    if (insertError) {
-      console.error("Insert error:", insertError);
+    if (createError || !newUser.user) {
+      console.error("Create user error:", createError);
       return new Response(
-        JSON.stringify({ error: insertError.message }),
+        JSON.stringify({ error: createError?.message || "Failed to create user" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Wait for profile trigger, then update with sales info
+    let profileUpdated = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const { error: updateError } = await adminClient
+        .from("profiles")
+        .update({
+          sales_role: "client",
+          parent_id: caller.id,
+          sales_status: "pending",
+          is_approved: false,
+        })
+        .eq("user_id", newUser.user.id);
+
+      if (!updateError) {
+        profileUpdated = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    if (!profileUpdated) {
+      return new Response(
+        JSON.stringify({ error: "Failed to update profile" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ success: true, profile }),
+      JSON.stringify({ success: true, user_id: newUser.user.id, full_name: cleanName }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
