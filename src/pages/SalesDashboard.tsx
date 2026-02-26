@@ -423,6 +423,7 @@ export default function SalesDashboard() {
     const ws = wb.addWorksheet(language === 'ko' ? '커미션 리포트' : 'Commission Report');
 
     ws.columns = [
+      { header: language === 'ko' ? '수령자' : 'Recipient', key: 'recipient', width: 20 },
       { header: language === 'ko' ? '투자자' : 'Investor', key: 'investor', width: 20 },
       { header: language === 'ko' ? '레이어' : 'Layer', key: 'layer', width: 10 },
       { header: language === 'ko' ? '선취 커미션' : 'Upfront', key: 'upfront', width: 18 },
@@ -443,6 +444,7 @@ export default function SalesDashboard() {
       const upfront = Number(c.upfront_amount) || 0;
       const perf = Number(c.performance_amount) || 0;
       ws.addRow({
+        recipient: getName(c.to_user_id),
         investor: c.from_user_id ? getName(c.from_user_id) : '—',
         layer: c.layer,
         upfront,
