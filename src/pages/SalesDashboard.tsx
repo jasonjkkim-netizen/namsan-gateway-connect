@@ -487,20 +487,20 @@ export default function SalesDashboard() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container py-8">
+      <main className="container py-4 sm:py-8 px-3 sm:px-4">
         {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl font-serif font-semibold text-foreground">
+        <div className="mb-4 sm:mb-8 animate-fade-in">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1">
+            <h1 className="text-xl sm:text-3xl font-serif font-semibold text-foreground">
               {language === 'ko' ? '영업 대시보드' : 'Sales Dashboard'}
             </h1>
             {userRole && (
-              <Badge variant={ROLE_COLORS[userRole] as any || 'secondary'}>
+              <Badge variant={ROLE_COLORS[userRole] as any || 'secondary'} className="text-[10px] sm:text-xs">
                 {getRoleLabel(userRole)}
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-xs sm:text-base text-muted-foreground">
             {language === 'ko'
               ? `${displayName}님의 영업 현황`
               : `Sales overview for ${displayName}`}
@@ -508,103 +508,103 @@ export default function SalesDashboard() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 animate-fade-in" style={{ animationDelay: '50ms' }}>
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <Users className="h-4 w-4" />
-              {language === 'ko' ? '하위 영업인' : 'Downline'}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 animate-fade-in" style={{ animationDelay: '50ms' }}>
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-5">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm text-muted-foreground mb-1 sm:mb-2">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">{language === 'ko' ? '하위 영업인' : 'Downline'}</span>
             </div>
-            {loading ? <Skeleton className="h-8 w-16" /> : (
-              <p className="text-2xl font-semibold">{downline.length}</p>
+            {loading ? <Skeleton className="h-6 sm:h-8 w-12 sm:w-16" /> : (
+              <p className="text-lg sm:text-2xl font-semibold">{downline.length}</p>
             )}
           </div>
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <Coins className="h-4 w-4" />
-              {language === 'ko' 
-                ? (canSeeTotalCommissions ? '총 선취 커미션' : '내 선취 커미션') 
-                : (canSeeTotalCommissions ? 'Total Upfront' : 'My Upfront')}
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-5">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm text-muted-foreground mb-1 sm:mb-2">
+              <Coins className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">{language === 'ko' 
+                ? (canSeeTotalCommissions ? '총 선취' : '내 선취') 
+                : (canSeeTotalCommissions ? 'Total Upfront' : 'My Upfront')}</span>
             </div>
-            {loading ? <Skeleton className="h-8 w-24" /> : (
-              <p className="text-2xl font-semibold text-success">{formatCommAmount(totalUpfront)}</p>
+            {loading ? <Skeleton className="h-6 sm:h-8 w-16 sm:w-24" /> : (
+              <p className="text-base sm:text-2xl font-semibold text-success truncate">{formatCommAmount(totalUpfront)}</p>
             )}
           </div>
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <TrendingUp className="h-4 w-4" />
-              {language === 'ko' 
-                ? (canSeeTotalCommissions ? '총 성과 커미션' : '내 성과 커미션') 
-                : (canSeeTotalCommissions ? 'Total Performance' : 'My Performance')}
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-5">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm text-muted-foreground mb-1 sm:mb-2">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">{language === 'ko' 
+                ? (canSeeTotalCommissions ? '총 성과' : '내 성과') 
+                : (canSeeTotalCommissions ? 'Total Perf.' : 'My Perf.')}</span>
             </div>
-            {loading ? <Skeleton className="h-8 w-24" /> : (
-              <p className="text-2xl font-semibold text-success">{formatCommAmount(totalPerformance)}</p>
+            {loading ? <Skeleton className="h-6 sm:h-8 w-16 sm:w-24" /> : (
+              <p className="text-base sm:text-2xl font-semibold text-success truncate">{formatCommAmount(totalPerformance)}</p>
             )}
           </div>
-          <div className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <Briefcase className="h-4 w-4" />
-              {language === 'ko' ? '하위 투자 총액' : 'Downline AUM'}
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-5">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm text-muted-foreground mb-1 sm:mb-2">
+              <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+              <span className="truncate">{language === 'ko' ? '하위 투자 총액' : 'Downline AUM'}</span>
             </div>
-            {loading ? <Skeleton className="h-8 w-24" /> : (
-              <p className="text-2xl font-semibold">{formatCurrency(totalDownlineInvested)}</p>
+            {loading ? <Skeleton className="h-6 sm:h-8 w-16 sm:w-24" /> : (
+              <p className="text-base sm:text-2xl font-semibold truncate">{formatCurrency(totalDownlineInvested)}</p>
             )}
           </div>
         </div>
 
         {/* Commission Status Breakdown */}
         {!loading && commissions.length > 0 && (
-          <div className="grid grid-cols-3 gap-4 mb-8 animate-fade-in" style={{ animationDelay: '75ms' }}>
-            <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-              <div className="rounded-full bg-muted p-2">
-                <CheckCircle className="h-4 w-4 text-success" />
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-8 animate-fade-in" style={{ animationDelay: '75ms' }}>
+            <div className="rounded-xl border border-border bg-card p-2 sm:p-4 flex items-center gap-2 sm:gap-3">
+              <div className="rounded-full bg-muted p-1.5 sm:p-2 shrink-0">
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-success" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{language === 'ko' ? '지급완료' : 'Paid'}</p>
-                <p className="text-lg font-semibold">{formatCommAmount(paidTotal)}</p>
-                <p className="text-xs text-muted-foreground">{paidCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-              <div className="rounded-full bg-muted p-2">
-                <Wallet className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{language === 'ko' ? '수령 가능' : 'Available'}</p>
-                <p className="text-lg font-semibold">{formatCommAmount(availableTotal)}</p>
-                <p className="text-xs text-muted-foreground">{availableCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{language === 'ko' ? '지급완료' : 'Paid'}</p>
+                <p className="text-sm sm:text-lg font-semibold truncate">{formatCommAmount(paidTotal)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{paidCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
               </div>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4 flex items-center gap-3">
-              <div className="rounded-full bg-muted p-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="rounded-xl border border-border bg-card p-2 sm:p-4 flex items-center gap-2 sm:gap-3">
+              <div className="rounded-full bg-muted p-1.5 sm:p-2 shrink-0">
+                <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{language === 'ko' ? '대기중' : 'Pending'}</p>
-                <p className="text-lg font-semibold">{formatCommAmount(pendingTotal)}</p>
-                <p className="text-xs text-muted-foreground">{pendingCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{language === 'ko' ? '수령 가능' : 'Available'}</p>
+                <p className="text-sm sm:text-lg font-semibold truncate">{formatCommAmount(availableTotal)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{availableCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-2 sm:p-4 flex items-center gap-2 sm:gap-3">
+              <div className="rounded-full bg-muted p-1.5 sm:p-2 shrink-0">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{language === 'ko' ? '대기중' : 'Pending'}</p>
+                <p className="text-sm sm:text-lg font-semibold truncate">{formatCommAmount(pendingTotal)}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{pendingCommissions.length}{language === 'ko' ? '건' : ' items'}</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="downline" className="space-y-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
-          <TabsList>
-            <TabsTrigger value="downline" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
+        <Tabs defaultValue="downline" className="space-y-4 sm:space-y-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="downline" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
               {language === 'ko' ? '조직도' : 'Downline'}
             </TabsTrigger>
-            <TabsTrigger value="commissions" className="flex items-center gap-2">
-              <Coins className="h-4 w-4" />
+            <TabsTrigger value="commissions" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Coins className="h-3 w-3 sm:h-4 sm:w-4" />
               {language === 'ko' ? '커미션' : 'Commissions'}
             </TabsTrigger>
-            <TabsTrigger value="rates" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              {language === 'ko' ? '수수료 설정' : 'Rate Settings'}
+            <TabsTrigger value="rates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+              {language === 'ko' ? '수수료' : 'Rates'}
             </TabsTrigger>
-            <TabsTrigger value="pipeline" className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4" />
-              {language === 'ko' ? '투자 파이프라인' : 'Pipeline'}
+            <TabsTrigger value="pipeline" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Briefcase className="h-3 w-3 sm:h-4 sm:w-4" />
+              {language === 'ko' ? '파이프라인' : 'Pipeline'}
             </TabsTrigger>
           </TabsList>
 

@@ -189,3 +189,66 @@
     transform: translateY(-1px);
   }
 }
+
+/* Mobile-responsive admin & sales panel */
+@media (max-width: 639px) {
+  /* Shrink all admin page headings */
+  .container h1 {
+    font-size: 1.25rem;
+  }
+  .container h2 {
+    font-size: 0.95rem;
+  }
+
+  /* Compact padding in cards */
+  .card-elevated > .p-6,
+  .card-elevated > div > .p-6 {
+    padding: 0.75rem;
+  }
+
+  /* Tables: smaller text globally */
+  table th,
+  table td {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  .table-financial th {
+    font-size: 0.65rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .table-financial td {
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+
+  /* Compact buttons in admin */
+  [class*="card-elevated"] button {
+    font-size: 0.7rem;
+  }
+
+  /* Smaller badges */
+  [class*="card-elevated"] [class*="badge"],
+  [class*="card-elevated"] .inline-flex[class*="badge"] {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.35rem;
+  }
+
+  /* Search inputs full width */
+  .relative.w-64 {
+    width: 100%;
+  }
+
+  /* Tab triggers compact */
+  [role="tablist"] button {
+    font-size: 0.65rem;
+    padding: 0.35rem 0.5rem;
+  }
+
+  /* Dialogs take full width */
+  [role="dialog"] > div {
+    max-width: 95vw;
+  }
+}
