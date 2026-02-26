@@ -181,7 +181,7 @@ export function RichPasteEditor({ value, onChange, placeholder, rows = 6, onImag
   );
 }
 
-function htmlToMarkdown(html: string): string {
+export function htmlToMarkdown(html: string): string {
   let text = html;
 
   // Remove style/script tags and their content
