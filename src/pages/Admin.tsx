@@ -92,12 +92,12 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container py-8">
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-serif font-semibold text-foreground">
+      <main className="container py-4 sm:py-8 px-3 sm:px-4">
+        <div className="mb-4 sm:mb-8 animate-fade-in">
+          <h1 className="text-xl sm:text-3xl font-serif font-semibold text-foreground">
             {language === 'ko' ? '관리자 패널' : 'Admin Panel'}
           </h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-1 text-xs sm:text-base text-muted-foreground">
             {language === 'ko' ? '고객 데이터 및 콘텐츠를 관리하세요' : 'Manage client data and content'}
           </p>
         </div>
