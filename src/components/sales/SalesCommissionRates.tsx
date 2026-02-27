@@ -710,9 +710,11 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
                               <TableHead className="w-[110px]">
                                 {language === 'ko' ? '성과 수수료(%)' : 'Performance (%)'}
                               </TableHead>
-                              <TableHead className="w-[130px]">
-                                {language === 'ko' ? '잔여 (선취/성과)' : 'Remaining'}
-                              </TableHead>
+                              {userLevel <= 1 && (
+                                <TableHead className="w-[130px]">
+                                  {language === 'ko' ? '잔여 (선취/성과)' : 'Remaining'}
+                                </TableHead>
+                              )}
                               <TableHead>
                                 {language === 'ko' ? '출처' : 'Source'}
                               </TableHead>
@@ -769,11 +771,13 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
                                       <span className="text-sm">{effective.performance.toFixed(2)}%</span>
                                     )}
                                   </TableCell>
-                                  <TableCell>
-                                    <span className={`text-xs font-mono ${rowData.remainingUpfront === 0 && rowData.remainingPerf === 0 ? 'text-muted-foreground' : 'text-accent'}`}>
-                                      {rowData.remainingUpfront.toFixed(2)} / {rowData.remainingPerf.toFixed(2)}
-                                    </span>
-                                  </TableCell>
+                                  {userLevel <= 1 && (
+                                    <TableCell>
+                                      <span className={`text-xs font-mono ${rowData.remainingUpfront === 0 && rowData.remainingPerf === 0 ? 'text-muted-foreground' : 'text-accent'}`}>
+                                        {rowData.remainingUpfront.toFixed(2)} / {rowData.remainingPerf.toFixed(2)}
+                                      </span>
+                                    </TableCell>
+                                  )}
                                   <TableCell>
                                     <Badge
                                       variant={
@@ -844,7 +848,6 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
                                 <TableCell className="text-sm text-primary">
                                   {allocatedPerf.toFixed(2)}%
                                 </TableCell>
-                                <TableCell />
                                 <TableCell />
                               </TableRow>
                             )}
