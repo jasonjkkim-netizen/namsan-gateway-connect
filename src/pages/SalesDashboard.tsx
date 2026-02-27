@@ -172,7 +172,9 @@ export default function SalesDashboard() {
         .from('profiles')
         .select('user_id, full_name, sales_role, sales_level, parent_id, depth:sales_level')
         .not('sales_role', 'is', null)
-        .neq('user_id', user.id);
+        .neq('user_id', user.id)
+        .or('is_deleted.is.null,is_deleted.eq.false')
+        .eq('is_approved', true);
 
       downlineData = (allProfiles || []).map((p: any) => ({
         user_id: p.user_id,
@@ -803,7 +805,7 @@ export default function SalesDashboard() {
                   </div>
                 ) : (() => {
                   // Group downline by role
-                  const ROLE_ORDER_LIST = ['district_manager', 'deputy_district_manager', 'principal_agent', 'agent', 'client'];
+                  const ROLE_ORDER_LIST = ['webmaster', 'district_manager', 'deputy_district_manager', 'principal_agent', 'agent', 'client'];
                   const byRole: Record<string, DownlineMember[]> = {};
                   downline.forEach((m) => {
                     if (!byRole[m.sales_role]) byRole[m.sales_role] = [];
@@ -860,6 +862,8 @@ export default function SalesDashboard() {
                                           <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent className="bg-popover z-50">
+                                          {isWebmaster && <SelectItem value="webmaster" className="text-xs">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>}
+                                          {isWebmaster && <SelectItem value="district_manager" className="text-xs">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>}
                                           {isDM && <SelectItem value="deputy_district_manager" className="text-xs">{language === 'ko' ? '부총괄' : 'Deputy GM'}</SelectItem>}
                                           <SelectItem value="principal_agent" className="text-xs">{language === 'ko' ? '수석' : 'Principal'}</SelectItem>
                                           <SelectItem value="agent" className="text-xs">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
