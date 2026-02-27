@@ -801,87 +801,83 @@ export default function SalesDashboard() {
                         : 'No downline members yet'}
                     </p>
                   </div>
-                ) : (
-                  <div className="space-y-1 sm:space-y-2">
-                    {/* Root: current user (self) */}
-                    <div className="flex items-center gap-1.5 sm:gap-3 rounded-lg border-2 border-primary/30 bg-primary/5 px-2 sm:px-4 py-1.5 sm:py-3">
-                      <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0" />
-                      <span className="font-semibold text-[10px] sm:text-sm truncate">
-                        {profile?.full_name || user?.email}
-                      </span>
-                      <Badge variant="default" className="text-[8px] sm:text-xs shrink-0 whitespace-nowrap">
-                        {(profile as any)?.sales_role
-                          ? getRoleLabel((profile as any).sales_role)
-                          : 'Admin'}
-                      </Badge>
-                    </div>
-                    {Object.keys(downlineByDepth)
-                      .sort((a, b) => Number(a) - Number(b))
-                      .map((depthStr) => {
-                        const depth = Number(depthStr);
-                        const members = downlineByDepth[depth];
-                        return (
-                          <div key={depth}>
-                            <p className="text-[9px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 sm:mb-2">
-                              {language === 'ko'
-                                ? `${depth + 1}단계`
-                                : `Level ${depth + 1}`}
-                            </p>
-                            <div className="space-y-0.5 sm:space-y-1 mb-2 sm:mb-4">
-                              {members.map((m) => (
-                                <div
-                                  key={m.user_id}
-                                  className="flex items-center gap-1.5 sm:gap-3 rounded-lg border border-border px-2 sm:px-4 py-1.5 sm:py-3 hover:bg-muted/30 transition-colors"
-                                  style={{ marginLeft: `${Math.min((depth + 1) * 12, 48)}px` }}
-                                >
-                                  <div
-                                    className="flex items-center gap-1.5 sm:gap-3 flex-1 cursor-pointer min-w-0"
+                ) : (() => {
+                  // Group downline by role
+                  const ROLE_ORDER_LIST = ['district_manager', 'deputy_district_manager', 'principal_agent', 'agent', 'client'];
+                  const byRole: Record<string, DownlineMember[]> = {};
+                  downline.forEach((m) => {
+                    if (!byRole[m.sales_role]) byRole[m.sales_role] = [];
+                    byRole[m.sales_role].push(m);
+                  });
+
+                  return (
+                    <div className="space-y-1">
+                      {/* Self row */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 rounded border-2 border-primary/30 bg-primary/5 px-2 sm:px-3 py-1 sm:py-1.5">
+                        <Crown className="h-3 w-3 text-primary shrink-0" />
+                        <span className="font-semibold text-[10px] sm:text-xs truncate">
+                          {profile?.full_name || user?.email}
+                        </span>
+                        <Badge variant="default" className="text-[7px] sm:text-[10px] h-4 shrink-0 whitespace-nowrap">
+                          {(profile as any)?.sales_role ? getRoleLabel((profile as any).sales_role) : 'Admin'}
+                        </Badge>
+                      </div>
+
+                      {/* Role-grouped table */}
+                      {ROLE_ORDER_LIST.filter((r) => byRole[r]?.length).map((role) => (
+                        <div key={role}>
+                          <div className="flex items-center gap-1.5 mt-2 mb-0.5 px-1">
+                            <Badge variant={(ROLE_COLORS[role] as any) || 'secondary'} className="text-[7px] sm:text-[10px] h-4 whitespace-nowrap">
+                              {getRoleLabel(role)}
+                            </Badge>
+                            <span className="text-[9px] sm:text-[11px] text-muted-foreground">
+                              ({byRole[role].length})
+                            </span>
+                          </div>
+                          <Table>
+                            <TableBody>
+                              {byRole[role].map((m) => (
+                                <TableRow key={m.user_id} className="h-7 sm:h-8">
+                                  <TableCell
+                                    className="text-[10px] sm:text-xs py-1 px-2 cursor-pointer hover:text-primary truncate max-w-[160px] sm:max-w-none"
                                     onClick={() => setSelectedMemberId(m.user_id)}
                                   >
-                                    <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
-                                    <span className="font-medium text-[10px] sm:text-sm truncate">
-                                      {m.full_name}
-                                    </span>
-                                    <Badge
-                                      variant={
-                                        (ROLE_COLORS[m.sales_role] as any) ||
-                                        'secondary'
-                                      }
-                                      className="text-[8px] sm:text-xs shrink-0 whitespace-nowrap"
-                                    >
-                                      {getRoleLabel(m.sales_role)}
-                                    </Badge>
-                                  </div>
-                                  {canChangeRoles && m.user_id !== user?.id && (isDM || m.sales_role !== 'deputy_district_manager') && (
-                                    <Select
-                                      value={m.sales_role}
-                                      onValueChange={(newRole) => {
-                                        if (newRole !== m.sales_role) {
-                                          setRoleChangeDialog({ open: true, member: m, newRole });
-                                        }
-                                      }}
-                                      disabled={changingRoleId === m.user_id}
-                                    >
-                                      <SelectTrigger className="w-[90px] sm:w-[130px] h-6 sm:h-7 text-[9px] sm:text-xs whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                                        <UserCog className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 shrink-0" />
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent className="bg-popover z-50">
-                                        {isDM && <SelectItem value="deputy_district_manager" className="text-xs">{language === 'ko' ? '부총괄' : 'Deputy GM'}</SelectItem>}
-                                        <SelectItem value="principal_agent" className="text-xs">{language === 'ko' ? '수석' : 'Principal'}</SelectItem>
-                                        <SelectItem value="agent" className="text-xs">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
-                                        <SelectItem value="client" className="text-xs">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  )}
-                                </div>
+                                    {m.full_name}
+                                  </TableCell>
+                                  <TableCell className="text-right py-1 px-1 w-[100px] sm:w-[140px]">
+                                    {canChangeRoles && m.user_id !== user?.id && (isDM || m.sales_role !== 'deputy_district_manager') && (
+                                      <Select
+                                        value={m.sales_role}
+                                        onValueChange={(newRole) => {
+                                          if (newRole !== m.sales_role) {
+                                            setRoleChangeDialog({ open: true, member: m, newRole });
+                                          }
+                                        }}
+                                        disabled={changingRoleId === m.user_id}
+                                      >
+                                        <SelectTrigger className="w-[80px] sm:w-[120px] h-5 sm:h-6 text-[8px] sm:text-[10px] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                          <UserCog className="h-2.5 w-2.5 mr-0.5 shrink-0" />
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover z-50">
+                                          {isDM && <SelectItem value="deputy_district_manager" className="text-xs">{language === 'ko' ? '부총괄' : 'Deputy GM'}</SelectItem>}
+                                          <SelectItem value="principal_agent" className="text-xs">{language === 'ko' ? '수석' : 'Principal'}</SelectItem>
+                                          <SelectItem value="agent" className="text-xs">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
+                                          <SelectItem value="client" className="text-xs">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
                               ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                )}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()
+                }
               </div>
             </div>
 
