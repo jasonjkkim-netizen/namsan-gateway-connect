@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, RefreshCw, Save, PieChart, BarChart3, Settings2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, RefreshCw, Save, PieChart, BarChart3, Settings2, MessageSquareQuote } from 'lucide-react';
 import type { PortfolioItemRow } from '@/components/flagship/portfolioTypes';
 import { GROUP_META, GroupId, PRESETS, DEFAULT_ASSUMPTIONS } from '@/components/flagship/portfolioTypes';
 import { mapRowToItem, buildGroups, formatPct } from '@/components/flagship/portfolioUtils';
@@ -73,6 +74,10 @@ export function AdminFlagshipPortfolio() {
     shares: 50, bonds: 40, others: 10, cash: 0,
   });
 
+  // CIO Commentary state
+  const [cioKo, setCioKo] = useState('');
+  const [cioEn, setCioEn] = useState('');
+
   const fetchItems = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -93,7 +98,16 @@ export function AdminFlagshipPortfolio() {
     }
   };
 
-  useEffect(() => { fetchItems(); fetchSettings(); }, []);
+  const fetchCIO = async () => {
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'cio_commentary').maybeSingle();
+    if (data?.value) {
+      const val = data.value as any;
+      setCioKo(val.content_ko || '');
+      setCioEn(val.content_en || '');
+    }
+  };
+
+  useEffect(() => { fetchItems(); fetchSettings(); fetchCIO(); }, []);
 
   const mappedItems = useMemo(() => items.filter(i => i.is_active).map(r => mapRowToItem(r as any)), [items]);
   const groups = useMemo(() => buildGroups(mappedItems), [mappedItems]);
@@ -226,15 +240,32 @@ export function AdminFlagshipPortfolio() {
     else toast.success(ko ? '설정 저장됨' : 'Settings saved');
   };
 
+  const saveCIO = async () => {
+    const value = { content_ko: cioKo, content_en: cioEn };
+    const { data: existing } = await supabase.from('app_settings').select('id').eq('key', 'cio_commentary').maybeSingle();
+    let error;
+    if (existing) {
+      ({ error } = await supabase.from('app_settings').update({ value: value as any }).eq('key', 'cio_commentary'));
+    } else {
+      ({ error } = await supabase.from('app_settings').insert([{ key: 'cio_commentary', value: value as any }] as any));
+    }
+    if (error) toast.error(error.message);
+    else toast.success(ko ? 'CIO 코멘트 저장됨' : 'CIO commentary saved');
+  };
+
   const updateField = (key: keyof FormData, value: string) => setForm(p => ({ ...p, [key]: value }));
 
   return (
     <div className="space-y-6">
       <Tabs defaultValue="items" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="items" className="flex items-center gap-1.5">
             <BarChart3 className="h-3.5 w-3.5" />
             {ko ? '종목 관리' : 'Items'}
+          </TabsTrigger>
+          <TabsTrigger value="cio" className="flex items-center gap-1.5">
+            <MessageSquareQuote className="h-3.5 w-3.5" />
+            {ko ? 'CIO 코멘트' : 'CIO Comment'}
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-1.5">
             <Settings2 className="h-3.5 w-3.5" />
@@ -359,6 +390,49 @@ export function AdminFlagshipPortfolio() {
               </TableBody>
             </Table>
           </div>
+        </TabsContent>
+
+        {/* ── Tab: CIO Commentary ── */}
+        <TabsContent value="cio" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <MessageSquareQuote className="h-5 w-5 text-accent" />
+                {ko ? 'CIO 코멘트 관리' : 'CIO Commentary Management'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-xs">{ko ? '한국어 코멘트' : 'Korean Commentary'}</Label>
+                <Textarea
+                  value={cioKo}
+                  onChange={e => setCioKo(e.target.value)}
+                  rows={6}
+                  placeholder={ko ? 'CIO 코멘트를 입력하세요 (마크다운 지원)' : 'Enter CIO commentary in Korean (markdown supported)'}
+                  className="mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">{ko ? '영어 코멘트' : 'English Commentary'}</Label>
+                <Textarea
+                  value={cioEn}
+                  onChange={e => setCioEn(e.target.value)}
+                  rows={6}
+                  placeholder="Enter CIO commentary in English (markdown supported)"
+                  className="mt-1 text-sm"
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {ko
+                  ? '마크다운 형식을 지원합니다. **굵게**, *기울임*, - 목록 등을 사용할 수 있습니다.'
+                  : 'Markdown is supported. Use **bold**, *italic*, - lists, etc.'}
+              </p>
+              <Button onClick={saveCIO} className="gap-1.5">
+                <Save className="h-4 w-4" />
+                {ko ? 'CIO 코멘트 저장' : 'Save CIO Commentary'}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Tab 2: Allocation & Settings ── */}
