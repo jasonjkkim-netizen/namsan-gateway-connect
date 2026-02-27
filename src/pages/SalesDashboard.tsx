@@ -95,9 +95,9 @@ const ROLE_COLORS: Record<string, string> = {
   webmaster: 'default',
   district_manager: 'default',
   deputy_district_manager: 'default',
-  principal_agent: 'secondary',
-  agent: 'outline',
-  client: 'outline',
+  principal_agent: 'default',
+  agent: 'default',
+  client: 'default',
 };
 
 export default function SalesDashboard() {
