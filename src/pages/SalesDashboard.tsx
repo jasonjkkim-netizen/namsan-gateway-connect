@@ -96,8 +96,13 @@ const ROLE_COLORS: Record<string, string> = {
   district_manager: 'default',
   deputy_district_manager: 'default',
   principal_agent: 'default',
-  agent: 'default',
-  client: 'default',
+  agent: 'outline',
+  client: 'outline',
+};
+
+const ROLE_EXTRA_CLASS: Record<string, string> = {
+  agent: 'border-green-500 bg-green-600 text-white',
+  client: 'border-emerald-500 bg-emerald-600 text-white',
 };
 
 export default function SalesDashboard() {
@@ -657,7 +662,7 @@ export default function SalesDashboard() {
               {language === 'ko' ? '영업 대시보드' : 'Sales Dashboard'}
             </h1>
             {userRole && (
-              <Badge variant={ROLE_COLORS[userRole] as any || 'secondary'} className="text-[10px] sm:text-xs">
+              <Badge variant={ROLE_COLORS[userRole] as any || 'secondary'} className={`text-[10px] sm:text-xs ${ROLE_EXTRA_CLASS[userRole] || ''}`}>
                 {getRoleLabel(userRole)}
               </Badge>
             )}
@@ -829,7 +834,7 @@ export default function SalesDashboard() {
                       {ROLE_ORDER_LIST.filter((r) => byRole[r]?.length).map((role) => (
                         <div key={role}>
                           <div className="flex items-center gap-1.5 mt-2 mb-0.5 px-1">
-                            <Badge variant={(ROLE_COLORS[role] as any) || 'secondary'} className="text-[7px] sm:text-[10px] h-4 whitespace-nowrap">
+                            <Badge variant={(ROLE_COLORS[role] as any) || 'secondary'} className={`text-[7px] sm:text-[10px] h-4 whitespace-nowrap ${ROLE_EXTRA_CLASS[role] || ''}`}>
                               {getRoleLabel(role)}
                             </Badge>
                             <span className="text-[9px] sm:text-[11px] text-muted-foreground">
