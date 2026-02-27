@@ -65,8 +65,18 @@ export function StockPickNewsSection({ language }: StockPickNewsSectionProps) {
     fetchNews();
   }, []);
 
-  const allCitations = news.length > 0 ? news[0].citations : [];
-  const fetchedAt = news.length > 0 ? news[0].fetched_at : null;
+  // Filter out items where all bullets are the "no news found" placeholder
+  const NO_NEWS_PLACEHOLDER = '검색 결과에서 해당 종목의 최신 뉴스를 찾을 수 없습니다';
+  const filteredNews = news.filter(item =>
+    item.news_bullets.length > 0 &&
+    !item.news_bullets.every(b => b === NO_NEWS_PLACEHOLDER)
+  );
+
+  const allCitations = filteredNews.length > 0 ? filteredNews[0].citations : [];
+  const fetchedAt = filteredNews.length > 0 ? filteredNews[0].fetched_at : null;
+
+  // Hide entire section if no real news after filtering
+  if (!loading && !error && filteredNews.length === 0) return null;
 
   return (
     <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
@@ -112,7 +122,7 @@ export function StockPickNewsSection({ language }: StockPickNewsSectionProps) {
               {language === 'ko' ? '다시 시도' : 'Retry'}
             </Button>
           </div>
-        ) : news.length === 0 ? (
+        ) : filteredNews.length === 0 ? (
           <div className="text-center py-6">
             <p className="text-sm text-muted-foreground mb-3">
               {language === 'ko' ? '종목 뉴스가 아직 없습니다' : 'No stock news yet'}
@@ -126,7 +136,7 @@ export function StockPickNewsSection({ language }: StockPickNewsSectionProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {news.map((item) => (
+            {filteredNews.map((item) => (
               <div key={item.id} className="space-y-1.5">
                 <h4 className="font-semibold text-xs text-foreground flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
