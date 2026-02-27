@@ -1,6 +1,6 @@
-export const BASE_DATE = '2026-02-02';
-export const BASE_DATE_LABEL_KO = '2026년 2월 2일';
-export const BASE_DATE_LABEL_EN = 'Feb 2, 2026';
+export const BASE_DATE = '2025-08-01';
+export const BASE_DATE_LABEL_KO = '2025년 8월 1일';
+export const BASE_DATE_LABEL_EN = 'Aug 1, 2025';
 
 export type GroupId = 'shares' | 'bonds' | 'others' | 'cash';
 
