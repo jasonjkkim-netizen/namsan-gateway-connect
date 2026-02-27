@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, BarChart3 } from 'lucide-react';
+import { LogOut, Settings, BarChart3, ArrowLeft } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import { supabase } from '@/integrations/supabase/client';
 import { ConsultationButton } from './ConsultationButton';
@@ -14,9 +14,11 @@ export function Header() {
   const { user, profile, signOut } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const salesRole = (profile as any)?.sales_role;
   const hasSalesRole = !!salesRole && salesRole !== 'client';
+  const isAdminPage = location.pathname === '/admin';
 
   useEffect(() => {
     async function checkAdminRole() {
@@ -59,14 +61,28 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container flex h-16 md:h-24 items-center justify-between">
-        <div className="flex items-center gap-3 md:gap-6">
-          <Link to={user ? "/market-data" : "/"} className="flex items-center gap-3">
-            <img src={logo} alt="Namsan Partners" className="h-12 md:h-20 w-auto" />
+        <div className="flex items-center gap-2 md:gap-6 min-w-0">
+          {/* Back button on admin page (mobile) */}
+          {isAdminPage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/market-data')}
+              className="md:hidden h-7 w-7 p-0 shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          <Link to={user ? "/market-data" : "/"} className="flex items-center gap-3 shrink-0">
+            <img src={logo} alt="Namsan Partners" className="h-10 md:h-20 w-auto" />
           </Link>
         </div>
 
-        <div className="flex items-center gap-1.5 md:gap-4">
-          <ConsultationButton variant="gold" size="sm" className="h-7 px-2 text-xs md:h-9 md:px-3 md:text-sm" />
+        <div className="flex items-center gap-1 md:gap-4">
+          {/* Hide consultation button on admin page */}
+          {!isAdminPage && (
+            <ConsultationButton variant="gold" size="sm" className="h-7 px-2 text-xs md:h-9 md:px-3 md:text-sm" />
+          )}
           <LanguageToggle />
           
           {user && (
@@ -83,7 +99,7 @@ export function Header() {
                   <span className="hidden md:inline">{language === 'ko' ? '영업' : 'Sales'}</span>
                 </Button>
               )}
-              {(isAdmin || salesRole === 'webmaster') && (
+              {(isAdmin || salesRole === 'webmaster') && !isAdminPage && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -92,6 +108,18 @@ export function Header() {
                 >
                   <Settings className="h-3.5 w-3.5 md:h-4 md:w-4" />
                   <span className="hidden md:inline">Admin</span>
+                </Button>
+              )}
+              {/* Show back to market button on admin page (desktop) */}
+              {isAdminPage && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/market-data')}
+                  className="hidden md:flex items-center gap-2 h-9 px-3"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  {language === 'ko' ? '시장 데이터' : 'Market Data'}
                 </Button>
               )}
               <div className="hidden md:flex flex-col items-end">
