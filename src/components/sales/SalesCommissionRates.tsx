@@ -683,18 +683,20 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
 
                     return (
                       <>
-                        {/* Product total banner */}
-                        <div className="flex items-center gap-4 mb-3 p-2.5 rounded-md bg-primary/5 border border-primary/20">
-                          <span className="text-xs font-semibold text-primary">
-                            {language === 'ko' ? '상품 총 커미션' : 'Product Total Commission'}
-                          </span>
-                          <span className="text-xs">
-                            {language === 'ko' ? '선취' : 'Upfront'}: <strong>{totalUpfront.toFixed(2)}%</strong>
-                          </span>
-                          <span className="text-xs">
-                            {language === 'ko' ? '성과' : 'Perf'}: <strong>{totalPerf.toFixed(2)}%</strong>
-                          </span>
-                        </div>
+                        {/* Product total banner - only for webmaster/DM who can see the full picture */}
+                        {userLevel <= 1 && (
+                          <div className="flex items-center gap-4 mb-3 p-2.5 rounded-md bg-primary/5 border border-primary/20">
+                            <span className="text-xs font-semibold text-primary">
+                              {language === 'ko' ? '상품 총 커미션' : 'Product Total Commission'}
+                            </span>
+                            <span className="text-xs">
+                              {language === 'ko' ? '선취' : 'Upfront'}: <strong>{totalUpfront.toFixed(2)}%</strong>
+                            </span>
+                            <span className="text-xs">
+                              {language === 'ko' ? '성과' : 'Perf'}: <strong>{totalPerf.toFixed(2)}%</strong>
+                            </span>
+                          </div>
+                        )}
 
                         <Table>
                           <TableHeader>
@@ -793,40 +795,59 @@ export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
                                 </TableRow>
                               );
                             })}
-                            {/* Allocated Total row */}
-                            <TableRow className="bg-muted/30 font-semibold border-t-2">
-                              <TableCell>
-                                {language === 'ko' ? '배분 합계' : 'Allocated'}
-                              </TableCell>
-                              <TableCell className={`text-sm ${overflowUpfront ? 'text-destructive' : ''}`}>
-                                {allocatedUpfront.toFixed(2)}%
-                                {overflowUpfront && <span className="text-xs ml-1">⚠</span>}
-                              </TableCell>
-                              <TableCell className={`text-sm ${overflowPerf ? 'text-destructive' : ''}`}>
-                                {allocatedPerf.toFixed(2)}%
-                                {overflowPerf && <span className="text-xs ml-1">⚠</span>}
-                              </TableCell>
-                              <TableCell />
-                              <TableCell />
-                            </TableRow>
-                            {/* Product Total row */}
-                            <TableRow className="bg-primary/5 font-semibold">
-                              <TableCell>
-                                {language === 'ko' ? '총 커미션' : 'Total Commission'}
-                              </TableCell>
-                              <TableCell className="text-sm text-primary">
-                                {totalUpfront.toFixed(2)}%
-                              </TableCell>
-                              <TableCell className="text-sm text-primary">
-                                {totalPerf.toFixed(2)}%
-                              </TableCell>
-                              <TableCell>
-                                <span className={`text-xs font-mono ${(totalUpfront - allocatedUpfront < 0 || totalPerf - allocatedPerf < 0) ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                  {Math.max(0, totalUpfront - allocatedUpfront).toFixed(2)} / {Math.max(0, totalPerf - allocatedPerf).toFixed(2)}
-                                </span>
-                              </TableCell>
-                              <TableCell />
-                            </TableRow>
+                            {/* Allocated vs Product Total - only for webmaster/DM */}
+                            {userLevel <= 1 && (
+                              <>
+                                <TableRow className="bg-muted/30 font-semibold border-t-2">
+                                  <TableCell>
+                                    {language === 'ko' ? '배분 합계' : 'Allocated'}
+                                  </TableCell>
+                                  <TableCell className={`text-sm ${overflowUpfront ? 'text-destructive' : ''}`}>
+                                    {allocatedUpfront.toFixed(2)}%
+                                    {overflowUpfront && <span className="text-xs ml-1">⚠</span>}
+                                  </TableCell>
+                                  <TableCell className={`text-sm ${overflowPerf ? 'text-destructive' : ''}`}>
+                                    {allocatedPerf.toFixed(2)}%
+                                    {overflowPerf && <span className="text-xs ml-1">⚠</span>}
+                                  </TableCell>
+                                  <TableCell />
+                                  <TableCell />
+                                </TableRow>
+                                <TableRow className="bg-primary/5 font-semibold">
+                                  <TableCell>
+                                    {language === 'ko' ? '총 커미션' : 'Total Commission'}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-primary">
+                                    {totalUpfront.toFixed(2)}%
+                                  </TableCell>
+                                  <TableCell className="text-sm text-primary">
+                                    {totalPerf.toFixed(2)}%
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className={`text-xs font-mono ${(totalUpfront - allocatedUpfront < 0 || totalPerf - allocatedPerf < 0) ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                      {Math.max(0, totalUpfront - allocatedUpfront).toFixed(2)} / {Math.max(0, totalPerf - allocatedPerf).toFixed(2)}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell />
+                                </TableRow>
+                              </>
+                            )}
+                            {/* For non-webmaster/DM users: show their allocated sum as total */}
+                            {userLevel > 1 && (
+                              <TableRow className="bg-primary/5 font-semibold border-t-2">
+                                <TableCell>
+                                  {language === 'ko' ? '총 커미션' : 'Total Commission'}
+                                </TableCell>
+                                <TableCell className="text-sm text-primary">
+                                  {allocatedUpfront.toFixed(2)}%
+                                </TableCell>
+                                <TableCell className="text-sm text-primary">
+                                  {allocatedPerf.toFixed(2)}%
+                                </TableCell>
+                                <TableCell />
+                                <TableCell />
+                              </TableRow>
+                            )}
                           </TableBody>
                         </Table>
                       </>
