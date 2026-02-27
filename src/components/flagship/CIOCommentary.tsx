@@ -49,7 +49,11 @@ export function CIOCommentary() {
         <p className="text-[10px] text-muted-foreground">{dateStr}</p>
       </CardHeader>
       <CardContent>
-        <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed italic">
+        <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed italic
+          [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2
+          [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2
+          [&_li]:my-0.5
+          [&_blockquote]:border-l-4 [&_blockquote]:border-accent/50 [&_blockquote]:pl-4 [&_blockquote]:py-1 [&_blockquote]:my-2 [&_blockquote]:text-muted-foreground [&_blockquote]:not-italic">
           <ReactMarkdown>{content}</ReactMarkdown>
         </div>
       </CardContent>
