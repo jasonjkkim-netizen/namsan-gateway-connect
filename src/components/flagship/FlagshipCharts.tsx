@@ -15,9 +15,10 @@ interface Props {
   items: PortfolioItem[];
   groups: GroupData[];
   groupWeights: Record<GroupId, number>;
+  sideBySide?: boolean;
 }
 
-export function FlagshipCharts({ items, groups, groupWeights }: Props) {
+export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false }: Props) {
   const { language } = useLanguage();
   const ko = language === 'ko';
 
@@ -47,8 +48,12 @@ export function FlagshipCharts({ items, groups, groupWeights }: Props) {
     return null;
   };
 
+  const containerClass = sideBySide
+    ? 'grid grid-cols-1 md:grid-cols-2 gap-4'
+    : 'flex flex-col gap-4';
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className={containerClass}>
       {/* Pie Chart */}
       <div className="bg-background rounded-lg border border-border p-4">
         <h3 className="text-sm font-semibold mb-3">{ko ? '자산 배분' : 'Asset Allocation'}</h3>

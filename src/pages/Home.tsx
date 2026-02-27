@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Menu, X, TrendingUp, Shield, Users, Globe } from 'lucide-react';
 import logo from '@/assets/namsan-logo.png';
 import namsanTowerBg from '@/assets/namsan-tower-night.jpg';
-import { FlagshipPortfolio } from '@/components/flagship/FlagshipPortfolio';
+
 export default function Home() {
   const {
     language
@@ -237,8 +237,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Flagship Portfolio Section */}
-      <FlagshipPortfolio />
 
       {/* Contact Section */}
       <section id="contact" className="py-24 md:py-32 px-6 bg-background">

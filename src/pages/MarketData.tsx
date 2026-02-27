@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw, Newspaper } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw, Newspaper, Star } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
 import { MarketNewsSection } from '@/components/market/MarketNewsSection';
@@ -13,6 +13,7 @@ import { StockPickNewsSection } from '@/components/market/StockPickNewsSection';
 import { NamsanViewpointSection } from '@/components/market/NamsanViewpointSection';
 import { ProductShowcaseSection } from '@/components/market/ProductShowcaseSection';
 import { InterestNewsSection } from '@/components/market/InterestNewsSection';
+import { FlagshipPortfolio } from '@/components/flagship/FlagshipPortfolio';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -52,6 +53,7 @@ export default function MarketData() {
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp, active: true },
+    { path: '/flagship', label: language === 'ko' ? '남산 포트폴리오' : 'Namsan Portfolio', icon: Star },
     { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
@@ -132,6 +134,9 @@ export default function MarketData() {
         {/* Product Showcase - first section */}
         <ProductShowcaseSection language={language} />
 
+        {/* Flagship Charts (pie + line side by side) */}
+        <FlagshipPortfolio chartsOnly />
+
         {/* Interest News */}
         <InterestNewsSection language={language} />
 
@@ -141,11 +146,14 @@ export default function MarketData() {
         {/* Weekly Stock Picks Table */}
         <WeeklyStockPicksTable language={language} />
 
-        {/* Today's Market Closing News */}
-        <MarketNewsSection language={language} />
+        {/* News sections side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Today's Market Closing News */}
+          <MarketNewsSection language={language} />
 
-        {/* Stock Pick News */}
-        <StockPickNewsSection language={language} />
+          {/* Stock Pick News */}
+          <StockPickNewsSection language={language} />
+        </div>
 
         {/* Main Index Cards */}
         <div className="flex items-center justify-between mb-3">
