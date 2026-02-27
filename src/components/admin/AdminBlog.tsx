@@ -55,7 +55,7 @@ const defaultFormData = {
   thumbnail_url: '',
   author: 'Namsan Capital',
   is_active: true,
-  published_at: new Date().toISOString().split('T')[0],
+  published_at: new Date().toISOString().slice(0, 16),
 };
 
 export function AdminBlog() {
@@ -198,7 +198,7 @@ export function AdminBlog() {
       thumbnail_url: post.thumbnail_url || '',
       author: post.author,
       is_active: post.is_active,
-      published_at: post.published_at.split('T')[0],
+      published_at: new Date(post.published_at).toISOString().slice(0, 16),
     });
     setDialogOpen(true);
   }
@@ -237,7 +237,7 @@ export function AdminBlog() {
       thumbnail_url: formData.thumbnail_url || null,
       author: formData.author,
       is_active: formData.is_active,
-      published_at: formData.published_at,
+      published_at: new Date(formData.published_at).toISOString(),
     };
 
     let error;
@@ -571,9 +571,9 @@ export function AdminBlog() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>{language === 'ko' ? '게시일' : 'Publish Date'}</Label>
+                  <Label>{language === 'ko' ? '게시일시' : 'Publish Date & Time'}</Label>
                   <Input
-                    type="date"
+                    type="datetime-local"
                     value={formData.published_at}
                     onChange={(e) => setFormData(prev => ({ ...prev, published_at: e.target.value }))}
                   />
