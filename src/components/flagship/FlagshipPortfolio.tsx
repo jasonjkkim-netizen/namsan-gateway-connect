@@ -5,6 +5,8 @@ import { GroupId, GROUP_META, BASE_DATE_LABEL_KO, BASE_DATE_LABEL_EN } from './p
 import { buildGroups, calcItemReturn, formatPct } from './portfolioUtils';
 import { FlagshipCharts } from './FlagshipCharts';
 import { FlagshipSimulator } from './FlagshipSimulator';
+import { PortfolioAnalysis } from './PortfolioAnalysis';
+import { CIOCommentary } from './CIOCommentary';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -196,6 +198,10 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
 
       {/* Charts side by side below table */}
       <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide />
+
+      {/* AI Analysis & CIO Commentary */}
+      <PortfolioAnalysis items={items} groups={groups} />
+      <CIOCommentary />
 
       {/* Simulator + Presets */}
       <FlagshipSimulator
