@@ -441,6 +441,60 @@ export type Database = {
           },
         ]
       }
+      flagship_portfolio_items: {
+        Row: {
+          asset_type: string
+          base_price: number | null
+          created_at: string
+          currency: string
+          current_price: number | null
+          display_order: number
+          group_id: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          recommended_weight: number
+          target_annual_return: number | null
+          ticker: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_type?: string
+          base_price?: number | null
+          created_at?: string
+          currency?: string
+          current_price?: number | null
+          display_order?: number
+          group_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          recommended_weight?: number
+          target_annual_return?: number | null
+          ticker?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_type?: string
+          base_price?: number | null
+          created_at?: string
+          currency?: string
+          current_price?: number | null
+          display_order?: number
+          group_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          recommended_weight?: number
+          target_annual_return?: number | null
+          ticker?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       interest_news: {
         Row: {
           content_en: string

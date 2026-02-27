@@ -21,8 +21,9 @@ import { AdminSalesApprovals } from '@/components/admin/AdminSalesApprovals';
 import { AdminCommissions } from '@/components/admin/AdminCommissions';
 import { AdminOrgTree } from '@/components/admin/AdminOrgTree';
 import { AdminAlerts } from '@/components/admin/AdminAlerts';
+import { AdminFlagshipPortfolio } from '@/components/admin/AdminFlagshipPortfolio';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell } from 'lucide-react';
+import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -86,6 +87,7 @@ export default function Admin() {
     { id: 'orgtree', label: language === 'ko' ? '조직도' : 'Org Tree', icon: GitBranch },
     { id: 'commissions', label: language === 'ko' ? '수수료' : 'Commissions', icon: Coins },
     { id: 'alerts', label: language === 'ko' ? '알림 관리' : 'Alerts', icon: Bell },
+    { id: 'flagship', label: language === 'ko' ? 'Flagship' : 'Flagship', icon: PieChart },
   ];
 
   return (
@@ -179,6 +181,10 @@ export default function Admin() {
 
           <TabsContent value="alerts">
             <AdminAlerts />
+          </TabsContent>
+
+          <TabsContent value="flagship">
+            <AdminFlagshipPortfolio />
           </TabsContent>
         </Tabs>
       </main>
