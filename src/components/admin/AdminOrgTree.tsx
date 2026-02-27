@@ -124,9 +124,11 @@ function TreeNodeComponent({
     // Can't drop onto current parent (no change)
     if (draggedNode.parent_id === node.user_id) return false;
     // Target must have a higher rank (lower number) than dragged node
+    // Exception: webmaster can sponsor another webmaster
     const targetLevel = ROLE_LEVELS[node.sales_role || ''] || 5;
     const draggedLevel = ROLE_LEVELS[draggedNode.sales_role || ''] || 5;
-    if (targetLevel >= draggedLevel) return false;
+    const bothWebmaster = node.sales_role === 'webmaster' && draggedNode.sales_role === 'webmaster';
+    if (targetLevel >= draggedLevel && !bothWebmaster) return false;
     // Target can't be a client (clients can't sponsor)
     if (node.sales_role === 'client') return false;
     return true;
