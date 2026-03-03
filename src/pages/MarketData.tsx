@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw, Newspaper, Star } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw, Newspaper, Star, MessageSquare } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
 import { MarketNewsSection } from '@/components/market/MarketNewsSection';
@@ -60,6 +60,7 @@ export default function MarketData() {
     { path: '/research', label: t('research'), icon: FileText },
     { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { path: '/videos', label: t('videos'), icon: PlayCircle },
+    { path: '/board', label: language === 'ko' ? '고객의 소리' : 'Voice of Customer', icon: MessageSquare },
   ];
 
   const formatNumber = (value: number, symbol: string) => {
