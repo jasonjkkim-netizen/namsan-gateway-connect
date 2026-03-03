@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { AdminInterestNews } from './AdminInterestNews';
+
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -375,10 +375,6 @@ export function AdminResearch() {
         </DialogContent>
       </Dialog>
 
-      {/* 최신 관심 뉴스 섹션 */}
-      <div className="mt-8">
-        <AdminInterestNews />
-      </div>
     </div>
   );
 }
