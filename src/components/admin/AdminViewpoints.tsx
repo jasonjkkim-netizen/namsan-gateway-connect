@@ -38,6 +38,7 @@ export function AdminViewpoints() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Viewpoint | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
@@ -160,11 +161,14 @@ export function AdminViewpoints() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (saving) return;
     if (!formData.title_ko) {
       toast.error(language === 'ko' ? '제목을 입력해주세요' : 'Please enter a title');
       return;
     }
 
+    setSaving(true);
+    try {
     if (editingItem) {
       const { error } = await supabase
         .from('namsan_viewpoints')
@@ -203,6 +207,9 @@ export function AdminViewpoints() {
         setDialogOpen(false);
         fetchItems();
       }
+    }
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -275,7 +282,7 @@ export function AdminViewpoints() {
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>{language === 'ko' ? '취소' : 'Cancel'}</Button>
-                <Button type="submit">{editingItem ? (language === 'ko' ? '수정' : 'Update') : (language === 'ko' ? '추가' : 'Add')}</Button>
+                <Button type="submit" disabled={saving}>{saving ? (language === 'ko' ? '저장 중...' : 'Saving...') : editingItem ? (language === 'ko' ? '수정' : 'Update') : (language === 'ko' ? '추가' : 'Add')}</Button>
               </div>
             </form>
           </DialogContent>
