@@ -67,6 +67,7 @@ export function AdminBlog() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(defaultFormData);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Newsletter state
   const [newsletterDialogOpen, setNewsletterDialogOpen] = useState(false);
@@ -222,6 +223,7 @@ export function AdminBlog() {
   }
 
   async function handleSave() {
+    if (saving) return;
     if (!formData.title_ko && !formData.title_en) {
       toast.error(language === 'ko' ? '제목을 입력해주세요' : 'Title is required');
       return;
@@ -240,6 +242,8 @@ export function AdminBlog() {
       published_at: new Date(formData.published_at).toISOString(),
     };
 
+    setSaving(true);
+    try {
     let error;
     if (editingId) {
       ({ error } = await supabase.from('blog_posts').update(payload).eq('id', editingId));
@@ -321,6 +325,9 @@ export function AdminBlog() {
 
     setDialogOpen(false);
     fetchPosts();
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -611,7 +618,7 @@ export function AdminBlog() {
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 {language === 'ko' ? '취소' : 'Cancel'}
               </Button>
-              <Button onClick={handleSave} disabled={sending} className="flex items-center gap-2">
+              <Button onClick={handleSave} disabled={sending || saving} className="flex items-center gap-2">
                 {sendAsNewsletter && <Send className="h-4 w-4" />}
                 {sending 
                   ? (language === 'ko' ? '발송 중...' : 'Sending...') 
