@@ -1,0 +1,1 @@
+ALTER TABLE public.research_reports ADD COLUMN external_url text DEFAULT NULL;
