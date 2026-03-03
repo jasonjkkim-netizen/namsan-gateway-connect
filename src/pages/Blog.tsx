@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, User, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen } from 'lucide-react';
+import { Calendar, User, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -90,6 +90,7 @@ export default function Blog() {
               { path: '/research', label: t('research'), icon: FileText },
               { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen, active: true },
               { path: '/videos', label: t('videos'), icon: PlayCircle },
+              { path: '/board', label: language === 'ko' ? '고객의 소리' : 'Voice of Customer', icon: MessageSquare },
             ].map((section) => (
               <Button
                 key={section.path}

@@ -39,6 +39,7 @@ export default function Research() {
     { path: '/research', label: t('research'), icon: FileText, active: true },
     { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { path: '/videos', label: t('videos'), icon: PlayCircle },
+    { path: '/board', label: language === 'ko' ? '고객의 소리' : 'Voice of Customer', icon: MessageSquare },
   ];
 
   useEffect(() => {
