@@ -2,7 +2,7 @@ import { Header } from '@/components/Header';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, BookOpen, Newspaper, Star } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, BookOpen, Newspaper, Star, MessageSquare } from 'lucide-react';
 import { FlagshipPortfolio } from '@/components/flagship/FlagshipPortfolio';
 
 export default function Flagship() {
@@ -18,6 +18,7 @@ export default function Flagship() {
     { path: '/research', label: t('research'), icon: FileText },
     { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { path: '/videos', label: t('videos'), icon: PlayCircle },
+    { path: '/board', label: language === 'ko' ? '고객의 소리' : 'Voice of Customer', icon: MessageSquare },
   ];
 
   return (
