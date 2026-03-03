@@ -8,6 +8,7 @@ import { PortfolioSummary } from '@/components/dashboard/PortfolioSummary';
 import { InvestmentsTable } from '@/components/dashboard/InvestmentsTable';
 import { DistributionsTable } from '@/components/dashboard/DistributionsTable';
 import { AssetAllocationChart } from '@/components/dashboard/AssetAllocationChart';
+import { PortfolioValueChart } from '@/components/dashboard/PortfolioValueChart';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, Package, FileText, PlayCircle, BookOpen, Newspaper, MessageSquare, Star, LayoutDashboard } from 'lucide-react';
 
@@ -115,6 +116,8 @@ export default function Dashboard() {
             totalReturn={totalReturn}
             loading={loading}
           />
+
+          <PortfolioValueChart investments={investments} loading={loading} />
 
           <div className="grid gap-8 lg:grid-cols-2">
             <AssetAllocationChart investments={investments} loading={loading} />
