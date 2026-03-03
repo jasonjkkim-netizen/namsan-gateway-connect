@@ -93,7 +93,8 @@ export const researchSchema = z.object({
   category: z.enum(['market_update', 'product_analysis', 'economic_outlook']),
   summary_en: z.string().max(2000, 'Summary too long').nullable().optional(),
   summary_ko: z.string().max(2000, 'Summary too long').nullable().optional(),
-  pdf_url: z.string().url('Invalid URL format').nullable().optional().or(z.literal('')),
+  pdf_url: z.string().max(500, 'PDF path too long').nullable().optional().or(z.literal('')),
+  external_url: z.string().url('Invalid URL format').nullable().optional().or(z.literal('')),
   publication_date: z.string().regex(datePattern, 'Invalid date format'),
   is_active: z.boolean(),
 });

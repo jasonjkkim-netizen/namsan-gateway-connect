@@ -1140,6 +1140,7 @@ export type Database = {
           admin_note: string | null
           category: string
           created_at: string
+          external_url: string | null
           id: string
           is_active: boolean | null
           pdf_url: string | null
@@ -1153,6 +1154,7 @@ export type Database = {
           admin_note?: string | null
           category: string
           created_at?: string
+          external_url?: string | null
           id?: string
           is_active?: boolean | null
           pdf_url?: string | null
@@ -1166,6 +1168,7 @@ export type Database = {
           admin_note?: string | null
           category?: string
           created_at?: string
+          external_url?: string | null
           id?: string
           is_active?: boolean | null
           pdf_url?: string | null

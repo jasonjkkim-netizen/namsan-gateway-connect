@@ -31,7 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Search, Trash2, Upload, FileText } from 'lucide-react';
+import { Plus, Edit, Search, Trash2, Upload, FileText, ExternalLink } from 'lucide-react';
 
 interface ResearchReport {
   id: string;
@@ -42,6 +42,7 @@ interface ResearchReport {
   summary_ko: string | null;
   admin_note: string | null;
   pdf_url: string | null;
+  external_url: string | null;
   publication_date: string;
   is_active: boolean | null;
 }
@@ -62,6 +63,7 @@ export function AdminResearch() {
     summary_ko: '',
     admin_note: '',
     pdf_url: '',
+    external_url: '',
     publication_date: new Date().toISOString().split('T')[0],
     is_active: true,
   });
@@ -95,6 +97,7 @@ export function AdminResearch() {
       summary_ko: report.summary_ko || '',
       admin_note: report.admin_note || '',
       pdf_url: report.pdf_url || '',
+      external_url: report.external_url || '',
       publication_date: report.publication_date,
       is_active: report.is_active ?? true,
     });
@@ -111,6 +114,7 @@ export function AdminResearch() {
       summary_ko: '',
       admin_note: '',
       pdf_url: '',
+      external_url: '',
       publication_date: new Date().toISOString().split('T')[0],
       is_active: true,
     });
@@ -126,6 +130,7 @@ export function AdminResearch() {
       summary_en: formData.summary_en || null,
       summary_ko: formData.summary_ko || null,
       pdf_url: formData.pdf_url || null,
+      external_url: formData.external_url || null,
       publication_date: formData.publication_date,
       is_active: formData.is_active,
     }, language);
@@ -143,6 +148,7 @@ export function AdminResearch() {
       summary_ko: validationResult.data.summary_ko ?? null,
       admin_note: formData.admin_note.trim() || null,
       pdf_url: validationResult.data.pdf_url ?? null,
+      external_url: (validationResult.data as any).external_url ?? null,
       publication_date: validationResult.data.publication_date!,
       is_active: validationResult.data.is_active!,
     };
@@ -349,6 +355,17 @@ export function AdminResearch() {
                 />
               </div>
               {uploading && <p className="text-xs text-muted-foreground">{language === 'ko' ? '업로드 중...' : 'Uploading...'}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '외부 링크 (URL)' : 'External Link (URL)'}</Label>
+              <div className="flex items-center gap-2">
+                <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Input
+                  value={formData.external_url}
+                  onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
