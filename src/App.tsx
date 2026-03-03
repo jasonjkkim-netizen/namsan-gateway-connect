@@ -26,6 +26,7 @@ import Admin from "./pages/Admin";
 import SalesSignUp from "./pages/SalesSignUp";
 import SalesDashboard from "./pages/SalesDashboard";
 import Flagship from "./pages/Flagship";
+import Board from "./pages/Board";
 import PendingApproval from "./pages/PendingApproval";
 import NotFound from "./pages/NotFound";
 
@@ -88,6 +89,11 @@ const App = () => (
                   </ProtectedRoute>
                 } />
                 <Route path="/news" element={<News />} />
+                <Route path="/board" element={
+                  <ProtectedRoute>
+                    <Board />
+                  </ProtectedRoute>
+                } />
                 <Route path="/pending-approval" element={
                   <ProtectedRoute requireApproval={false}>
                     <PendingApproval />
