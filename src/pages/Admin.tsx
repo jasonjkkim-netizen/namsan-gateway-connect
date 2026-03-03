@@ -23,8 +23,9 @@ import { AdminOrgTree } from '@/components/admin/AdminOrgTree';
 import { AdminAlerts } from '@/components/admin/AdminAlerts';
 import { AdminFlagshipPortfolio } from '@/components/admin/AdminFlagshipPortfolio';
 import { AdminBoard } from '@/components/admin/AdminBoard';
+import { AdminResearch } from '@/components/admin/AdminResearch';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart, MessageSquare } from 'lucide-react';
+import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart, MessageSquare } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -76,6 +77,7 @@ export default function Admin() {
     { id: 'investments', label: language === 'ko' ? '투자 관리' : 'Investments', icon: Briefcase },
     { id: 'products', label: language === 'ko' ? '상품 관리' : 'Products', icon: Package },
     
+    { id: 'research', label: language === 'ko' ? '리서치' : 'Research', icon: FileText },
     { id: 'blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { id: 'videos', label: language === 'ko' ? '비디오 관리' : 'Videos', icon: PlayCircle },
     { id: 'viewpoints', label: language === 'ko' ? '뷰 포인트' : 'Viewpoints', icon: Eye },
@@ -136,6 +138,10 @@ export default function Admin() {
             <AdminProducts />
           </TabsContent>
 
+
+          <TabsContent value="research">
+            <AdminResearch />
+          </TabsContent>
 
           <TabsContent value="blog">
             <AdminBlog />
