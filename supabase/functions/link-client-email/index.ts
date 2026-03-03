@@ -28,13 +28,16 @@ Deno.serve(async (req) => {
     const anonClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user: caller }, error: authError } = await anonClient.auth.getUser();
-    if (authError || !caller) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authError } = await anonClient.auth.getClaims(token);
+    if (authError || !claimsData?.claims?.sub) {
+      console.error("Auth claims error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const callerId = claimsData.claims.sub;
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
@@ -42,13 +45,13 @@ Deno.serve(async (req) => {
     const { data: callerProfile } = await adminClient
       .from("profiles")
       .select("sales_role")
-      .eq("user_id", caller.id)
+      .eq("user_id", callerId)
       .single();
 
     const { data: callerRoles } = await adminClient
       .from("user_roles")
       .select("role")
-      .eq("user_id", caller.id);
+      .eq("user_id", callerId);
 
     const isAdmin = (callerRoles || []).some((r: any) => r.role === "admin");
     const isWebmaster = callerProfile?.sales_role === "webmaster";
