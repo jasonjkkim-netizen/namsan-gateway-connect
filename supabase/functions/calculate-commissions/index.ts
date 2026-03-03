@@ -27,13 +27,16 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error("Auth claims error:", claimsError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub;
 
     // Use service role for data operations
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -42,14 +45,14 @@ Deno.serve(async (req) => {
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
 
     const { data: profileData } = await supabase
       .from("profiles")
       .select("sales_role")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     const isAdmin = !!roleData;
@@ -87,7 +90,7 @@ Deno.serve(async (req) => {
     // If sales user (not admin), verify they created this investment or the investor is in their subtree
     if (!isAdmin) {
       const { data: inSubtree } = await supabase.rpc("is_in_subtree", {
-        _ancestor_id: user.id,
+        _ancestor_id: userId,
         _descendant_id: investment.user_id,
       });
       if (!inSubtree) {
@@ -234,7 +237,7 @@ Deno.serve(async (req) => {
         upfront_amount: Math.round(upfrontAmount * 100) / 100,
         performance_amount: Math.round(performanceAmount * 100) / 100,
         rate_used: rate.upfront_rate,
-        set_by_user_id: user.id,
+        set_by_user_id: userId,
         currency: investment.invested_currency || "USD",
         status: "available",
       });
@@ -262,7 +265,7 @@ Deno.serve(async (req) => {
       action: "calculate_commissions",
       target_table: "commission_distributions",
       target_id: investment_id,
-      changed_by: user.id,
+      changed_by: userId,
       old_values: existingDists && existingDists.length > 0
         ? { count: existingDists.length, distributions: existingDists }
         : null,
