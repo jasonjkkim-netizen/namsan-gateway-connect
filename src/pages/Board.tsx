@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, Newspaper, MessageSquare, Plus, Send, Lock, Globe, CheckCircle, Clock } from 'lucide-react';
+import { TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, Newspaper, MessageSquare, Plus, Send, Lock, Globe, CheckCircle, Clock, Star } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface BoardPost {
@@ -79,13 +79,14 @@ export default function Board() {
 
   const sections = [
     { path: '/market-data', label: language === 'ko' ? '시장 데이터' : 'Market Data', icon: TrendingUp },
+    { path: '/flagship', label: language === 'ko' ? '남산 포트폴리오' : 'Namsan Portfolio', icon: Star },
     { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
     { path: '/dashboard', label: language === 'ko' ? '대시보드' : 'Dashboard', icon: LayoutDashboard },
     { path: '/products', label: language === 'ko' ? '상품' : 'Products', icon: Package },
     { path: '/research', label: language === 'ko' ? '리서치' : 'Research', icon: FileText },
     { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { path: '/videos', label: language === 'ko' ? '영상' : 'Videos', icon: PlayCircle },
-    { path: '/board', label: language === 'ko' ? '고객의 소리' : 'Voice', icon: MessageSquare, active: true },
+    { path: '/board', label: language === 'ko' ? '고객의 소리' : 'Voice of Customer', icon: MessageSquare, active: true },
   ];
 
   useEffect(() => {

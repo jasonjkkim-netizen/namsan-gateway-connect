@@ -9,7 +9,7 @@ import { InvestmentsTable } from '@/components/dashboard/InvestmentsTable';
 import { DistributionsTable } from '@/components/dashboard/DistributionsTable';
 import { AssetAllocationChart } from '@/components/dashboard/AssetAllocationChart';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, Package, FileText, PlayCircle, BookOpen, Newspaper, MessageSquare } from 'lucide-react';
+import { TrendingUp, Package, FileText, PlayCircle, BookOpen, Newspaper, MessageSquare, Star, LayoutDashboard } from 'lucide-react';
 
 interface Investment {
   id: string;
@@ -43,8 +43,9 @@ export default function Dashboard() {
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+    { path: '/flagship', label: language === 'ko' ? '남산 포트폴리오' : 'Namsan Portfolio', icon: Star },
     { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
-    { path: '/dashboard', label: t('dashboard'), icon: TrendingUp, active: true },
+    { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard, active: true },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText },
     { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },

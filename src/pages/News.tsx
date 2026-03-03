@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, ExternalLink, Newspaper, ChevronDown, MessageSquare } from 'lucide-react';
+import { Bell, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, ExternalLink, Newspaper, ChevronDown, MessageSquare, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
@@ -129,6 +129,7 @@ export default function News() {
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+    { path: '/flagship', label: language === 'ko' ? '남산 포트폴리오' : 'Namsan Portfolio', icon: Star },
     { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper, active: true },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
