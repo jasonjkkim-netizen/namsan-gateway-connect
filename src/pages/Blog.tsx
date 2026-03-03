@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, User, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, MessageSquare } from 'lucide-react';
+import { Calendar, User, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, MessageSquare, Star, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -85,6 +85,8 @@ export default function Blog() {
           <div className="flex flex-wrap gap-3">
             {[
               { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+              { path: '/flagship', label: language === 'ko' ? '남산 포트폴리오' : 'Namsan Portfolio', icon: Star },
+              { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
               { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
               { path: '/products', label: t('products'), icon: Package },
               { path: '/research', label: t('research'), icon: FileText },

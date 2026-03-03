@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Play, ExternalLink, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, Newspaper, MessageSquare } from 'lucide-react';
+import { Play, ExternalLink, TrendingUp, LayoutDashboard, Package, FileText, PlayCircle, BookOpen, Newspaper, MessageSquare, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Video {
@@ -44,13 +44,14 @@ export default function Videos() {
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+    { path: '/flagship', label: language === 'ko' ? '남산 포트폴리오' : 'Namsan Portfolio', icon: Star },
     { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package },
     { path: '/research', label: t('research'), icon: FileText },
     { path: '/blog', label: language === 'ko' ? '블로그' : 'Blog', icon: BookOpen },
     { path: '/videos', label: t('videos'), icon: PlayCircle, active: true },
-    { path: '/board', label: language === 'ko' ? '고객의 소리' : 'Voice', icon: MessageSquare },
+    { path: '/board', label: language === 'ko' ? '고객의 소리' : 'Voice of Customer', icon: MessageSquare },
   ];
 
   useEffect(() => {

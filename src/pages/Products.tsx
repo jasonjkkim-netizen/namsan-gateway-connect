@@ -12,7 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers, LayoutDashboard, FileText, PlayCircle, Package, BookOpen, Newspaper, MessageSquare } from 'lucide-react';
+import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers, LayoutDashboard, FileText, PlayCircle, Package, BookOpen, Newspaper, MessageSquare, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface Product {
@@ -53,6 +53,7 @@ export default function Products() {
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
+    { path: '/flagship', label: language === 'ko' ? '남산 포트폴리오' : 'Namsan Portfolio', icon: Star },
     { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { path: '/products', label: t('products'), icon: Package, active: true },
