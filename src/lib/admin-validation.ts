@@ -84,12 +84,8 @@ export const clientProfileSchema = z.object({
 
 // Research report validation schema
 export const researchSchema = z.object({
-  title_en: z.string()
-    .min(1, 'English title is required')
-    .max(255, 'Title must be less than 255 characters'),
-  title_ko: z.string()
-    .min(1, 'Korean title is required')
-    .max(255, 'Title must be less than 255 characters'),
+  title_en: z.string().max(255, 'Title must be less than 255 characters').optional().or(z.literal('')),
+  title_ko: z.string().max(255, 'Title must be less than 255 characters').optional().or(z.literal('')),
   category: z.enum(['market_update', 'product_analysis', 'economic_outlook']),
   summary_en: z.string().max(2000, 'Summary too long').nullable().optional(),
   summary_ko: z.string().max(2000, 'Summary too long').nullable().optional(),
@@ -97,7 +93,9 @@ export const researchSchema = z.object({
   external_url: z.string().url('Invalid URL format').nullable().optional().or(z.literal('')),
   publication_date: z.string().regex(datePattern, 'Invalid date format'),
   is_active: z.boolean(),
-});
+}).refine((data) => {
+  return (data.title_en && data.title_en.trim().length > 0) || (data.title_ko && data.title_ko.trim().length > 0);
+}, { message: 'Either English or Korean title is required', path: ['title_en'] });
 
 // Helper function to parse form data with validation
 export function validateFormData<T>(
@@ -142,6 +140,7 @@ function translateError(message: string): string {
     'Minimum investment must be positive': '최소투자금은 양수여야 합니다',
     'English title is required': '영문 제목은 필수입니다',
     'Korean title is required': '한글 제목은 필수입니다',
+    'Either English or Korean title is required': '영문 또는 한글 제목 중 하나는 필수입니다',
     'Title must be less than 255 characters': '제목은 255자 이내여야 합니다',
     'Description too long': '설명이 너무 깁니다',
     'Summary too long': '요약이 너무 깁니다',
