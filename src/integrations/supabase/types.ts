@@ -152,6 +152,80 @@ export type Database = {
         }
         Relationships: []
       }
+      board_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_admin_reply: boolean
+          is_public: boolean
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean
+          is_public?: boolean
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_admin_reply?: boolean
+          is_public?: boolean
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "board_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      board_posts: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_public: boolean
+          is_resolved: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          is_resolved?: boolean
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          is_resolved?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       client_investments: {
         Row: {
           created_at: string

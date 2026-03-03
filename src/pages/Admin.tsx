@@ -22,8 +22,9 @@ import { AdminCommissions } from '@/components/admin/AdminCommissions';
 import { AdminOrgTree } from '@/components/admin/AdminOrgTree';
 import { AdminAlerts } from '@/components/admin/AdminAlerts';
 import { AdminFlagshipPortfolio } from '@/components/admin/AdminFlagshipPortfolio';
+import { AdminBoard } from '@/components/admin/AdminBoard';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart } from 'lucide-react';
+import { Users, Briefcase, Package, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart, MessageSquare } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -88,6 +89,7 @@ export default function Admin() {
     { id: 'commissions', label: language === 'ko' ? '수수료' : 'Commissions', icon: Coins },
     { id: 'alerts', label: language === 'ko' ? '알림 관리' : 'Alerts', icon: Bell },
     { id: 'flagship', label: language === 'ko' ? 'Flagship' : 'Flagship', icon: PieChart },
+    { id: 'board', label: language === 'ko' ? '고객의 소리' : 'Board', icon: MessageSquare },
   ];
 
   return (
@@ -185,6 +187,10 @@ export default function Admin() {
 
           <TabsContent value="flagship">
             <AdminFlagshipPortfolio />
+          </TabsContent>
+
+          <TabsContent value="board">
+            <AdminBoard />
           </TabsContent>
         </Tabs>
       </main>
