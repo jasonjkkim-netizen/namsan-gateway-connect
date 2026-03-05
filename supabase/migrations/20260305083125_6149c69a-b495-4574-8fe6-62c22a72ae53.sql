@@ -1,0 +1,1 @@
+ALTER TABLE public.blog_posts ALTER COLUMN author SET DEFAULT '';
