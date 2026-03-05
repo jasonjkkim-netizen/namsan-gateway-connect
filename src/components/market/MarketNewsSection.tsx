@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Newspaper, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ReactMarkdown from 'react-markdown';
@@ -9,6 +10,7 @@ interface MarketNewsSectionProps {
 }
 
 export function MarketNewsSection({ language }: MarketNewsSectionProps) {
+  const { user } = useAuth();
   const [content, setContent] = useState<string>('');
   const [citations, setCitations] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,8 +44,13 @@ export function MarketNewsSection({ language }: MarketNewsSectionProps) {
   }
 
   useEffect(() => {
-    fetchNews();
-  }, []);
+    if (user) {
+      fetchNews();
+    }
+  }, [user]);
+
+  // Only show for authenticated users
+  if (!user) return null;
 
   return (
     <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
