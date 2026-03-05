@@ -45,6 +45,16 @@ interface BlogPost {
   created_at: string;
 }
 
+const toLocalDateTimeInputValue = (date: Date | string) => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 const defaultFormData = {
   title_ko: '',
   title_en: '',
@@ -55,7 +65,7 @@ const defaultFormData = {
   thumbnail_url: '',
   author: 'Namsan Partners',
   is_active: true,
-  published_at: new Date().toISOString().slice(0, 16),
+  published_at: toLocalDateTimeInputValue(new Date()),
 };
 
 export function AdminBlog() {
@@ -182,7 +192,7 @@ export function AdminBlog() {
 
   function openNew() {
     setEditingId(null);
-    setFormData({ ...defaultFormData, published_at: new Date().toISOString().slice(0, 16) });
+    setFormData({ ...defaultFormData, published_at: toLocalDateTimeInputValue(new Date()) });
     setSendAsNewsletter(false);
     setDialogOpen(true);
   }
@@ -199,7 +209,7 @@ export function AdminBlog() {
       thumbnail_url: post.thumbnail_url || '',
       author: post.author,
       is_active: post.is_active,
-      published_at: new Date(post.published_at).toISOString().slice(0, 16),
+      published_at: toLocalDateTimeInputValue(post.published_at),
     });
     setDialogOpen(true);
   }
