@@ -124,40 +124,7 @@ export function AdminViewpoints() {
     toast.success(language === 'ko' ? '이미지 업로드 완료' : 'Image uploaded');
   }
 
-  async function publishToBlog(data: typeof formData) {
-    try {
-      // Check if a blog post with the same Korean title already exists
-      const { data: existing } = await supabase
-        .from('blog_posts')
-        .select('id')
-        .eq('title_ko', data.title_ko)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase.from('blog_posts').update({
-          title_en: data.title_en || data.title_ko,
-          content_ko: data.content_ko,
-          content_en: data.content_en || data.content_ko,
-          thumbnail_url: data.image_url,
-          is_active: data.is_active,
-          author: 'Namsan Partners',
-          updated_at: new Date().toISOString(),
-        }).eq('id', existing.id);
-      } else {
-        await supabase.from('blog_posts').insert({
-          title_ko: data.title_ko,
-          title_en: data.title_en || data.title_ko,
-          content_ko: data.content_ko,
-          content_en: data.content_en || data.content_ko,
-          thumbnail_url: data.image_url,
-          is_active: data.is_active,
-          author: 'Namsan Partners',
-        });
-      }
-    } catch (err) {
-      console.error('Auto blog publish error:', err);
-    }
-  }
+  // Blog sync removed - viewpoints and blog are managed separately
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -176,8 +143,7 @@ export function AdminViewpoints() {
         .eq('id', editingItem.id);
       if (error) toast.error('Failed to update');
       else {
-        await publishToBlog(formData);
-        toast.success(language === 'ko' ? '수정 및 블로그 동기화 완료' : 'Updated & synced to blog');
+        toast.success(language === 'ko' ? '수정 완료' : 'Updated');
         sendContentNotification({
           contentType: 'viewpoint',
           action: 'updated',
@@ -195,8 +161,7 @@ export function AdminViewpoints() {
         .insert({ ...formData, display_order: maxOrder + 1 });
       if (error) toast.error('Failed to add');
       else {
-        await publishToBlog(formData);
-        toast.success(language === 'ko' ? '추가 및 블로그 자동 발행 완료' : 'Added & auto-published to blog');
+        toast.success(language === 'ko' ? '추가 완료' : 'Added');
         sendContentNotification({
           contentType: 'viewpoint',
           action: 'added',

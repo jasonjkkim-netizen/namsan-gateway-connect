@@ -53,7 +53,7 @@ const defaultFormData = {
   summary_ko: '',
   summary_en: '',
   thumbnail_url: '',
-  author: 'Namsan Capital',
+  author: '',
   is_active: true,
   published_at: new Date().toISOString().slice(0, 16),
 };
