@@ -182,7 +182,7 @@ export function AdminBlog() {
 
   function openNew() {
     setEditingId(null);
-    setFormData(defaultFormData);
+    setFormData({ ...defaultFormData, published_at: new Date().toISOString().slice(0, 16) });
     setSendAsNewsletter(false);
     setDialogOpen(true);
   }
