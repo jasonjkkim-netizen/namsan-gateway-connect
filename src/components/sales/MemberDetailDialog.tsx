@@ -21,9 +21,9 @@ interface MemberProfile {
   full_name: string;
   full_name_ko: string | null;
   email: string;
-  phone: string | null;
-  address: string | null;
-  birthday: string | null;
+  phone?: string | null;
+  address?: string | null;
+  birthday?: string | null;
   sales_role: string | null;
   sales_status: string | null;
   sales_level: number | null;
@@ -79,13 +79,13 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
 
     const fetchData = async () => {
       const [profileRes, investRes, downlineRes, commRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, full_name_ko, email, phone, address, birthday, sales_role, sales_status, sales_level, created_at').eq('user_id', userId).maybeSingle(),
+        supabase.from('profiles_safe' as any).select('full_name, full_name_ko, email, sales_role, sales_status, sales_level, created_at').eq('user_id', userId).maybeSingle(),
         supabase.from('client_investments').select('id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency').eq('user_id', userId).order('start_date', { ascending: false }),
         supabase.rpc('get_sales_subtree', { _user_id: userId }),
         supabase.from('commission_distributions').select('id, upfront_amount, performance_amount, currency, status, created_at').eq('to_user_id', userId).order('created_at', { ascending: false }).limit(20),
       ]);
 
-      setProfile(profileRes.data as MemberProfile | null);
+      setProfile(profileRes.data as unknown as MemberProfile | null);
 
       const investData = (investRes.data || []) as InvestmentRecord[];
       setInvestments(investData);

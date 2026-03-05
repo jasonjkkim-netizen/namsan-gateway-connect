@@ -1133,6 +1133,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "fk_profiles_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       research_reports: {
@@ -1323,7 +1330,99 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_safe: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          email: string | null
+          full_name: string | null
+          full_name_ko: string | null
+          id: string | null
+          is_admin: boolean | null
+          is_approved: boolean | null
+          is_deleted: boolean | null
+          is_rejected: boolean | null
+          parent_id: string | null
+          preferred_currency: string | null
+          preferred_language: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          sales_level: number | null
+          sales_role: string | null
+          sales_status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          email?: string | null
+          full_name?: string | null
+          full_name_ko?: string | null
+          id?: string | null
+          is_admin?: boolean | null
+          is_approved?: boolean | null
+          is_deleted?: boolean | null
+          is_rejected?: boolean | null
+          parent_id?: string | null
+          preferred_currency?: string | null
+          preferred_language?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          sales_level?: number | null
+          sales_role?: string | null
+          sales_status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          email?: string | null
+          full_name?: string | null
+          full_name_ko?: string | null
+          id?: string | null
+          is_admin?: boolean | null
+          is_approved?: boolean | null
+          is_deleted?: boolean | null
+          is_rejected?: boolean | null
+          parent_id?: string | null
+          preferred_currency?: string | null
+          preferred_language?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          sales_level?: number | null
+          sales_role?: string | null
+          sales_status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_profiles_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_profiles_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_safe"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_sales_ancestors: {
