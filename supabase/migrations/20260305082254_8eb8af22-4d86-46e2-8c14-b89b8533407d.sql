@@ -1,0 +1,1 @@
+DELETE FROM public.blog_posts WHERE author = 'Namsan Partners' OR (title_ko LIKE '%남산 뷰%');
