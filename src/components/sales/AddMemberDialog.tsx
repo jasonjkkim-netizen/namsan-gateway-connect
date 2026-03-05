@@ -132,52 +132,27 @@ export function AddMemberDialog({ open, onOpenChange, onSuccess }: Props) {
     try {
       const birthday = `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`;
 
-      // Create the user via Supabase auth
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: { full_name: fullName },
+      // Use server-side edge function to create user (prevents session hijack)
+      const { data, error } = await supabase.functions.invoke('register-member', {
+        body: {
+          email,
+          password,
+          fullName,
+          phone,
+          address,
+          birthday,
+          role: selectedRole,
         },
       });
 
-      if (signUpError) {
-        toast.error(signUpError.message);
+      if (error) {
+        toast.error(error.message || (language === 'ko' ? '등록 실패' : 'Registration failed'));
         setSubmitting(false);
         return;
       }
 
-      if (!signUpData.user) {
-        toast.error(language === 'ko' ? '사용자 생성 실패' : 'Failed to create user');
-        setSubmitting(false);
-        return;
-      }
-
-      // Wait for profile to be created by trigger, then update it
-      let profileUpdated = false;
-      for (let attempt = 0; attempt < 8; attempt++) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            phone,
-            address,
-            birthday,
-            sales_role: selectedRole,
-            parent_id: user.id,
-            sales_status: 'pending',
-          })
-          .eq('user_id', signUpData.user.id);
-
-        if (!updateError) {
-          profileUpdated = true;
-          break;
-        }
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
-      if (!profileUpdated) {
-        toast.error(language === 'ko' ? '프로필 업데이트 실패' : 'Failed to update profile');
+      if (data?.error) {
+        toast.error(data.error);
         setSubmitting(false);
         return;
       }
@@ -187,7 +162,7 @@ export function AddMemberDialog({ open, onOpenChange, onSuccess }: Props) {
         await supabase.functions.invoke('notify-sales', {
           body: {
             type: 'member_added',
-            user_id: signUpData.user.id,
+            user_id: data.user_id,
             user_name: fullName,
             user_email: email,
             role: selectedRole,
