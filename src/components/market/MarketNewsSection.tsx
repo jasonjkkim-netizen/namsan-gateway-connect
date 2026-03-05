@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Newspaper, RefreshCw, ExternalLink } from 'lucide-react';
@@ -9,7 +9,7 @@ interface MarketNewsSectionProps {
   language: string;
 }
 
-export const MarketNewsSection = forwardRef<HTMLDivElement, MarketNewsSectionProps>(function MarketNewsSection({ language }, ref) {
+export function MarketNewsSection({ language }: MarketNewsSectionProps) {
   const { user } = useAuth();
   const [content, setContent] = useState<string>('');
   const [citations, setCitations] = useState<string[]>([]);
@@ -53,7 +53,7 @@ export const MarketNewsSection = forwardRef<HTMLDivElement, MarketNewsSectionPro
   if (!user) return null;
 
   return (
-    <div ref={ref} className="mb-8 card-elevated overflow-hidden animate-fade-in">
+    <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
       <div className="p-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Newspaper className="h-4 w-4 text-primary" />
@@ -129,6 +129,4 @@ export const MarketNewsSection = forwardRef<HTMLDivElement, MarketNewsSectionPro
       </div>
     </div>
   );
-});
-
-MarketNewsSection.displayName = 'MarketNewsSection';
+}
