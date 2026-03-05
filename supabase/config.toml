@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.link-client-email]
 verify_jwt = false
+
+[functions.register-member]
+verify_jwt = false
