@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,10 @@ interface StockDetailDialogProps {
   language: string;
 }
 
-export function StockDetailDialog({ stock, open, onOpenChange, language }: StockDetailDialogProps) {
+export const StockDetailDialog = forwardRef<HTMLDivElement, StockDetailDialogProps>(function StockDetailDialog(
+  { stock, open, onOpenChange, language },
+  ref,
+) {
   const [chartError, setChartError] = useState(false);
 
   if (!stock) return null;
@@ -45,7 +48,7 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { setChartError(false); onOpenChange(isOpen); }}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent ref={ref} className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-serif">
             {stock.stock_name}
@@ -164,4 +167,6 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
       </DialogContent>
     </Dialog>
   );
-}
+});
+
+StockDetailDialog.displayName = 'StockDetailDialog';
