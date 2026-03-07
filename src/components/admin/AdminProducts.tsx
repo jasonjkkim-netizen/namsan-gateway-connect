@@ -521,11 +521,11 @@ export function AdminProducts() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '목표수익률 (기존)' : 'Target Return (legacy %)'}</Label>
+                <Label>{language === 'ko' ? '목표수익률' : 'Target Return (%)'}</Label>
                 <Input type="number" step="0.1" value={formData.target_return} onChange={(e) => setFormData({ ...formData, target_return: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '최소투자금 (기존)' : 'Min Investment (legacy)'}</Label>
+                <Label>{language === 'ko' ? '최소투자금' : 'Min Investment'}</Label>
                 <Input type="number" value={formData.minimum_investment} onChange={(e) => setFormData({ ...formData, minimum_investment: e.target.value })} />
               </div>
             </div>
