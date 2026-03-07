@@ -373,7 +373,14 @@ export default function ProductDetail() {
               {product.fixed_return_percent != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
                   <span className="text-muted-foreground">{language === 'ko' ? '확정 수익률' : 'Fixed Return'}</span>
-                  <span className="font-medium text-accent">{formatPercent(product.fixed_return_percent)}</span>
+                  <div className="text-right">
+                    <span className="font-medium text-accent">
+                      {language === 'ko' ? `년 ${product.fixed_return_percent}%` : `${product.fixed_return_percent}% p.a.`}
+                    </span>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {language === 'ko' ? '분기별 지급 · 다음 지급일 3월 31일' : 'Quarterly · Next payment Mar 31'}
+                    </p>
+                  </div>
                 </div>
               )}
               {product.target_return_percent != null && (
