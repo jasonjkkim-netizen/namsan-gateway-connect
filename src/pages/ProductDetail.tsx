@@ -459,16 +459,25 @@ export default function ProductDetail() {
 
         {/* Image Zoom Dialog */}
         {product.image_url && (
-          <Dialog open={imageZoom} onOpenChange={setImageZoom}>
+          <Dialog open={imageZoom} onOpenChange={(open) => { setImageZoom(open); if (!open) setZoomLevel(1); }}>
             <DialogContent className="max-w-4xl w-[95vw] p-2">
               <DialogHeader>
                 <DialogTitle className="text-sm">{language === 'ko' ? product.name_ko : product.name_en}</DialogTitle>
               </DialogHeader>
-              <img
-                src={product.image_url}
-                alt={language === 'ko' ? product.name_ko : product.name_en}
-                className="w-full h-auto object-contain max-h-[80vh] rounded-lg"
-              />
+              <div
+                className="overflow-auto max-h-[80vh] flex items-center justify-center cursor-grab"
+                onWheel={handleWheel}
+              >
+                <img
+                  src={product.image_url}
+                  alt={language === 'ko' ? product.name_ko : product.name_en}
+                  className="rounded-lg transition-transform duration-150"
+                  style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
+                />
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                {language === 'ko' ? '마우스 휠로 확대/축소' : 'Scroll to zoom in/out'} ({Math.round(zoomLevel * 100)}%)
+              </p>
             </DialogContent>
           </Dialog>
         )}
