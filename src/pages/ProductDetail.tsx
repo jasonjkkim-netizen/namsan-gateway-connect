@@ -26,6 +26,8 @@ interface Product {
   target_return: number | null;
   minimum_investment: number | null;
   募集_deadline: string | null;
+  maturity_date: string | null;
+  issue_date: string | null;
   status: string;
   created_at: string;
   image_url: string | null;
