@@ -26,6 +26,8 @@ interface Product {
   target_return: number | null;
   minimum_investment: number | null;
   募集_deadline: string | null;
+  maturity_date: string | null;
+  issue_date: string | null;
   status: string;
   created_at: string;
   image_url: string | null;
@@ -410,15 +412,15 @@ export default function ProductDetail() {
                   <span className="font-medium">{formatCurrency(product.minimum_investment, product.default_currency || product.currency || undefined)}</span>
                 </div>
               )}
-              {product.募集_deadline && (
+              {product.maturity_date && (
                 <div className="flex justify-between py-2.5 border-b border-border">
                   <span className="text-muted-foreground">{language === 'ko' ? '만기일' : 'Maturity Date'}</span>
-                  <span className="font-medium">{formatDate(product.募集_deadline)}</span>
+                  <span className="font-medium">{formatDate(product.maturity_date)}</span>
                 </div>
               )}
               <div className="flex justify-between py-2.5">
-                <span className="text-muted-foreground">{language === 'ko' ? '등록일' : 'Listed Date'}</span>
-                <span className="font-medium">{formatDate(product.created_at)}</span>
+                <span className="text-muted-foreground">{language === 'ko' ? '발행일' : 'Issue Date'}</span>
+                <span className="font-medium">{formatDate(product.issue_date || product.created_at)}</span>
               </div>
             </CardContent>
           </Card>

@@ -620,7 +620,9 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          issue_date: string | null
           management_fee_percent: number | null
+          maturity_date: string | null
           min_investment_amount: number | null
           minimum_investment: number | null
           name_en: string
@@ -645,7 +647,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          issue_date?: string | null
           management_fee_percent?: number | null
+          maturity_date?: string | null
           min_investment_amount?: number | null
           minimum_investment?: number | null
           name_en: string
@@ -670,7 +674,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          issue_date?: string | null
           management_fee_percent?: number | null
+          maturity_date?: string | null
           min_investment_amount?: number | null
           minimum_investment?: number | null
           name_en?: string
