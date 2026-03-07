@@ -432,7 +432,10 @@ export default function ProductDetail() {
           {/* Product Image */}
           <div className="animate-fade-in" style={{ animationDelay: '450ms' }}>
             {product.image_url ? (
-              <div className="overflow-hidden rounded-xl border border-border h-full">
+              <div
+                className="overflow-hidden rounded-xl border border-border h-full cursor-zoom-in"
+                onClick={() => setImageZoom(true)}
+              >
                 <img
                   src={product.image_url}
                   alt={language === 'ko' ? product.name_ko : product.name_en}
@@ -447,6 +450,22 @@ export default function ProductDetail() {
             )}
           </div>
         </div>
+
+        {/* Image Zoom Dialog */}
+        {product.image_url && (
+          <Dialog open={imageZoom} onOpenChange={setImageZoom}>
+            <DialogContent className="max-w-4xl w-[95vw] p-2">
+              <DialogHeader>
+                <DialogTitle className="text-sm">{language === 'ko' ? product.name_ko : product.name_en}</DialogTitle>
+              </DialogHeader>
+              <img
+                src={product.image_url}
+                alt={language === 'ko' ? product.name_ko : product.name_en}
+                className="w-full h-auto object-contain max-h-[80vh] rounded-lg"
+              />
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Investment Notes */}
         <div className="mb-8">
