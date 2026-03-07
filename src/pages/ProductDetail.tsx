@@ -228,7 +228,7 @@ export default function ProductDetail() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid gap-2 md:gap-4 grid-cols-5 mb-8">
+        <div className="grid gap-2 md:gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(0, 1fr))' }}>
           {product.target_return && (
             <Card className="card-elevated animate-fade-in" style={{ animationDelay: '100ms' }}>
               <CardHeader className="pb-1 pt-2 md:pt-3 px-2 md:px-3">
