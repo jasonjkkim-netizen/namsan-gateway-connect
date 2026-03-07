@@ -413,15 +413,11 @@ export default function ProductDetail() {
                 </div>
               )}
               {product.maturity_date && (
-                <div className="flex justify-between py-2.5 border-b border-border">
+                <div className="flex justify-between py-2.5">
                   <span className="text-muted-foreground">{language === 'ko' ? '만기일' : 'Maturity Date'}</span>
                   <span className="font-medium">{formatDate(product.maturity_date)}</span>
                 </div>
               )}
-              <div className="flex justify-between py-2.5">
-                <span className="text-muted-foreground">{language === 'ko' ? '발행일' : 'Issue Date'}</span>
-                <span className="font-medium">{formatDate(product.issue_date || product.created_at)}</span>
-              </div>
             </CardContent>
           </Card>
 
