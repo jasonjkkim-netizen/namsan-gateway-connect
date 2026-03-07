@@ -450,6 +450,16 @@ export function AdminProducts() {
                 </Select>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '목표수익률' : 'Target Return (%)'}</Label>
+                <Input type="number" step="0.1" value={formData.target_return} onChange={(e) => setFormData({ ...formData, target_return: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '최소투자금' : 'Min Investment'}</Label>
+                <Input type="number" value={formData.minimum_investment} onChange={(e) => setFormData({ ...formData, minimum_investment: e.target.value })} />
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>{language === 'ko' ? '설명 (영문)' : 'Description (EN)'}</Label>
               <Textarea value={formData.description_en} onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} />
@@ -517,17 +527,6 @@ export function AdminProducts() {
                   </label>
                 </div>
               )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{language === 'ko' ? '목표수익률' : 'Target Return (%)'}</Label>
-                <Input type="number" step="0.1" value={formData.target_return} onChange={(e) => setFormData({ ...formData, target_return: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>{language === 'ko' ? '최소투자금' : 'Min Investment'}</Label>
-                <Input type="number" value={formData.minimum_investment} onChange={(e) => setFormData({ ...formData, minimum_investment: e.target.value })} />
-              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
