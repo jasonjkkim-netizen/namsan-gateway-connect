@@ -76,6 +76,7 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
+  const [imageZoom, setImageZoom] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
