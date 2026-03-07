@@ -359,8 +359,8 @@ export default function ProductDetail() {
         <div className="grid gap-6 md:grid-cols-2 mb-8">
           <Card className="card-elevated animate-fade-in" style={{ animationDelay: '400ms' }}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-accent" />
+              <CardTitle className="flex items-center gap-2 text-base md:text-xl">
+                <Target className="h-4 w-4 md:h-5 md:w-5 text-accent" />
                 {language === 'ko' ? '투자 개요' : 'Investment Overview'}
               </CardTitle>
             </CardHeader>
@@ -486,8 +486,8 @@ export default function ProductDetail() {
         <div className="mb-8">
           <Card className="card-elevated animate-fade-in" style={{ animationDelay: '500ms' }}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-accent" />
+              <CardTitle className="flex items-center gap-2 text-base md:text-xl">
+                <Shield className="h-4 w-4 md:h-5 md:w-5 text-accent" />
                 {language === 'ko' ? '투자 안내' : 'Investment Notes'}
               </CardTitle>
             </CardHeader>
@@ -522,7 +522,7 @@ export default function ProductDetail() {
             <ConsultationButton 
               variant="gold" 
               size="lg" 
-              className="px-12 py-6 h-auto text-lg"
+              className="px-6 py-3 h-auto text-sm md:px-12 md:py-6 md:text-lg"
               productName={language === 'ko' ? product.name_ko : product.name_en}
             />
             <p className="text-sm text-muted-foreground mt-3">
