@@ -77,6 +77,12 @@ export default function ProductDetail() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState('');
   const [imageZoom, setImageZoom] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    setZoomLevel(prev => Math.min(Math.max(prev + (e.deltaY > 0 ? -0.1 : 0.1), 0.5), 5));
+  };
 
   useEffect(() => {
     async function fetchProduct() {
