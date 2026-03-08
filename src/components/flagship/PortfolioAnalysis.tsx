@@ -87,6 +87,7 @@ export function PortfolioAnalysis({ items, groups, onAnalysisChange }: Props) {
             if (content) {
               fullText += content;
               setAnalysis(fullText);
+              onAnalysisChange?.(fullText);
             }
           } catch {
             buffer = line + '\n' + buffer;
