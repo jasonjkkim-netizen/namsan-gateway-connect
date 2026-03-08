@@ -7,11 +7,13 @@ import { FlagshipCharts } from './FlagshipCharts';
 import { FlagshipSimulator } from './FlagshipSimulator';
 import { PortfolioAnalysis } from './PortfolioAnalysis';
 import { CIOCommentary } from './CIOCommentary';
+import { FlagshipReport } from './FlagshipReport';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Minus, FileText } from 'lucide-react';
 
 interface FlagshipPortfolioProps {
   chartsOnly?: boolean;
@@ -25,6 +27,8 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const [groupWeights, setGroupWeights] = useState<Record<GroupId, number>>({
     shares: 50, bonds: 40, others: 10, cash: 0,
   });
+  const [reportOpen, setReportOpen] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState('');
 
   const groups = useMemo(() => buildGroups(items), [items]);
 
@@ -89,6 +93,15 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             ? `${baseDateLabel} 기준 포트폴리오 성과 및 자산 배분 현황`
             : `Portfolio performance and asset allocation since ${baseDateLabel}`}
         </p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-4 gap-2"
+          onClick={() => setReportOpen(true)}
+        >
+          <FileText className="h-4 w-4" />
+          {ko ? '리포트 생성' : 'Generate Report'}
+        </Button>
       </div>
 
       {/* Table (full width on top) */}
@@ -200,7 +213,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide />
 
       {/* AI Analysis & CIO Commentary */}
-      <PortfolioAnalysis items={items} groups={groups} />
+      <PortfolioAnalysis items={items} groups={groups} onAnalysisChange={setAiAnalysis} />
       <CIOCommentary />
 
       {/* Simulator + Presets */}
@@ -217,6 +230,16 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
           ? `${BASE_DATE_LABEL_KO} 이후 수익률은 이용 가능한 가격 데이터를 기반으로 합니다. 채권은 목표 연간 수익률을 사용하며, 실제 체결 및 가격은 다를 수 있습니다. 투자 시뮬레이션은 예측치이며 수익을 보장하지 않습니다.`
           : `Performance since ${BASE_DATE_LABEL_EN} is based on available price data. Bonds use target annual yield; actual execution and pricing may differ. Projections are not guarantees.`}
       </p>
+
+      {/* Report Dialog */}
+      <FlagshipReport
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        items={items}
+        groups={groups}
+        groupWeights={groupWeights}
+        aiAnalysis={aiAnalysis}
+      />
     </div>
   );
 }
