@@ -230,6 +230,16 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
           ? `${BASE_DATE_LABEL_KO} 이후 수익률은 이용 가능한 가격 데이터를 기반으로 합니다. 채권은 목표 연간 수익률을 사용하며, 실제 체결 및 가격은 다를 수 있습니다. 투자 시뮬레이션은 예측치이며 수익을 보장하지 않습니다.`
           : `Performance since ${BASE_DATE_LABEL_EN} is based on available price data. Bonds use target annual yield; actual execution and pricing may differ. Projections are not guarantees.`}
       </p>
+
+      {/* Report Dialog */}
+      <FlagshipReport
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        items={items}
+        groups={groups}
+        groupWeights={groupWeights}
+        aiAnalysis={aiAnalysis}
+      />
     </div>
   );
 }
