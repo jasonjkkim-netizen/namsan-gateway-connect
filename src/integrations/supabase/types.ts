@@ -528,6 +528,8 @@ export type Database = {
           is_active: boolean
           name: string
           notes: string | null
+          product_id: string | null
+          rating: string | null
           recommended_weight: number
           target_annual_return: number | null
           ticker: string | null
@@ -545,6 +547,8 @@ export type Database = {
           is_active?: boolean
           name: string
           notes?: string | null
+          product_id?: string | null
+          rating?: string | null
           recommended_weight?: number
           target_annual_return?: number | null
           ticker?: string | null
@@ -562,12 +566,22 @@ export type Database = {
           is_active?: boolean
           name?: string
           notes?: string | null
+          product_id?: string | null
+          rating?: string | null
           recommended_weight?: number
           target_annual_return?: number | null
           ticker?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "flagship_portfolio_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "investment_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       interest_news: {
         Row: {

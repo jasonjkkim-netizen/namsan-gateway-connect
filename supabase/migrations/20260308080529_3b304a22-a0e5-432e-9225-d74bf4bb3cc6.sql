@@ -1,0 +1,2 @@
+ALTER TABLE public.flagship_portfolio_items ADD COLUMN IF NOT EXISTS rating text DEFAULT NULL;
+ALTER TABLE public.flagship_portfolio_items ADD COLUMN IF NOT EXISTS product_id uuid DEFAULT NULL REFERENCES public.investment_products(id) ON DELETE SET NULL;
