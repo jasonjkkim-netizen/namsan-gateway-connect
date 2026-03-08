@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { usePortfolioData } from './usePortfolioData';
 import { buildGroups } from './portfolioUtils';
-import { GroupId } from './portfolioTypes';
+import { GroupId, GROUP_META } from './portfolioTypes';
 
 const GROUP_COLORS: Record<string, string> = {
   shares: 'hsl(var(--accent))',
@@ -12,13 +12,21 @@ const GROUP_COLORS: Record<string, string> = {
   cash: 'hsl(var(--muted-foreground))',
 };
 
-export function MiniPieChart() {
+interface MiniPieChartProps {
+  /** Override group weights (e.g. from a preset scenario). If omitted, uses actual portfolio weights. */
+  presetWeights?: Record<GroupId, number>;
+}
+
+export function MiniPieChart({ presetWeights }: MiniPieChartProps = {}) {
   const { language } = useLanguage();
   const ko = language === 'ko';
   const { items, loading } = usePortfolioData();
 
   const { groups, groupWeights } = useMemo(() => {
     const g = buildGroups(items);
+    if (presetWeights) {
+      return { groups: g, groupWeights: presetWeights };
+    }
     const w: Record<GroupId, number> = { shares: 0, bonds: 0, others: 0, cash: 0 };
     items.forEach(i => { w[i.groupId] = (w[i.groupId] || 0) + i.weight; });
     const total = Object.values(w).reduce((s, v) => s + v, 0);
@@ -26,17 +34,26 @@ export function MiniPieChart() {
       (Object.keys(w) as GroupId[]).forEach(k => { w[k] = Math.round(w[k] / total * 100 * 10) / 10; });
     }
     return { groups: g, groupWeights: w };
-  }, [items]);
+  }, [items, presetWeights]);
 
   if (loading || items.length === 0) return null;
 
-  const pieData = groups
-    .filter(g => (groupWeights[g.id] || 0) > 0)
-    .map(g => ({
-      name: ko ? g.nameKo : g.nameEn,
-      value: groupWeights[g.id] || 0,
-      color: GROUP_COLORS[g.id] || '#888',
-    }));
+  // When using presetWeights, show all groups with weight > 0 using GROUP_META for names
+  const pieData = presetWeights
+    ? (Object.keys(presetWeights) as GroupId[])
+        .filter(gId => (presetWeights[gId] || 0) > 0)
+        .map(gId => ({
+          name: ko ? GROUP_META[gId].nameKo : GROUP_META[gId].nameEn,
+          value: presetWeights[gId],
+          color: GROUP_COLORS[gId] || '#888',
+        }))
+    : groups
+        .filter(g => (groupWeights[g.id] || 0) > 0)
+        .map(g => ({
+          name: ko ? g.nameKo : g.nameEn,
+          value: groupWeights[g.id] || 0,
+          color: GROUP_COLORS[g.id] || '#888',
+        }));
 
   return (
     <div className="w-full h-52 flex flex-col items-center justify-center">

@@ -15,6 +15,8 @@ import {
 import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers, LayoutDashboard, FileText, PlayCircle, Package, BookOpen, Newspaper, MessageSquare, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MiniPieChart } from '@/components/flagship/MiniPieChart';
+import { PRESETS } from '@/components/flagship/portfolioTypes';
+import type { GroupId } from '@/components/flagship/portfolioTypes';
 
 interface Product {
   id: string;
