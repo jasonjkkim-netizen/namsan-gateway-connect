@@ -292,6 +292,29 @@ export function AdminFlagshipPortfolio() {
     else toast.success(ko ? 'CIO 코멘트 저장됨' : 'CIO commentary saved');
   };
 
+  const handleImportProduct = (product: ProductOption) => {
+    const isBond = product.type === 'bond';
+    const groupId = isBond ? 'bonds' : product.type === 'fund' || product.type === 'alternative' ? 'others' : 'shares';
+    const assetType = isBond ? 'bond' : product.type === 'fund' || product.type === 'alternative' ? 'etf' : 'stock';
+    setForm({
+      name: ko ? product.name_ko : (product.name_en || product.name_ko),
+      group_id: groupId,
+      asset_type: assetType,
+      ticker: '',
+      currency: product.currency || 'KRW',
+      recommended_weight: '0',
+      target_annual_return: product.target_return != null ? String(product.target_return / 100) : '',
+      current_price: '',
+      base_price: '',
+      display_order: '0',
+      notes: '',
+      rating: isBond ? 'A' : '',
+      product_id: product.id,
+    });
+    setImportDialogOpen(false);
+    setDialogOpen(true);
+  };
+
   const updateField = (key: keyof FormData, value: string) => setForm(p => ({ ...p, [key]: value }));
 
   return (
@@ -339,6 +362,9 @@ export function AdminFlagshipPortfolio() {
               {ko ? 'Flagship 포트폴리오 종목' : 'Flagship Portfolio Items'}
             </h3>
             <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+                <Package className="h-4 w-4 mr-1" /> {ko ? '상품에서 가져오기' : 'Import Product'}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleBulkUpdatePrices}>
                 {ko ? '일괄 가격 업데이트' : 'Bulk Price Update'}
               </Button>
