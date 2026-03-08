@@ -119,6 +119,7 @@ export default function SalesDashboard() {
   const [showCreateInvestment, setShowCreateInvestment] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [editMemberId, setEditMemberId] = useState<string | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState<string>('KRW');
   const [usdKrwRate, setUsdKrwRate] = useState<number>(1350);
   const [roleChangeDialog, setRoleChangeDialog] = useState<{
