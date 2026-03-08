@@ -419,6 +419,7 @@ export function AdminFlagshipPortfolio() {
                       <TableCell className="font-medium max-w-[140px] truncate">{item.name}</TableCell>
                       <TableCell className="text-muted-foreground">{item.ticker || '-'}</TableCell>
                       <TableCell className="text-muted-foreground">{item.asset_type}</TableCell>
+                      <TableCell className="text-muted-foreground">{item.rating || (item.asset_type === 'bond' ? 'A' : '-')}</TableCell>
                       <TableCell className="text-right font-mono">{item.recommended_weight}</TableCell>
                       <TableCell className="text-right font-mono">
                         {item.target_annual_return != null ? `${(Number(item.target_annual_return) * 100).toFixed(1)}%` : '-'}
