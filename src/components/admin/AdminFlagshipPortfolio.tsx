@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, RefreshCw, Save, PieChart, BarChart3, Settings2, MessageSquareQuote } from 'lucide-react';
+import { Plus, Pencil, Trash2, RefreshCw, Save, PieChart, BarChart3, Settings2, MessageSquareQuote, Package } from 'lucide-react';
 import type { PortfolioItemRow } from '@/components/flagship/portfolioTypes';
 import { GROUP_META, GroupId, PRESETS, DEFAULT_ASSUMPTIONS } from '@/components/flagship/portfolioTypes';
 import { mapRowToItem, buildGroups, formatPct } from '@/components/flagship/portfolioUtils';
@@ -33,6 +34,16 @@ const ASSET_TYPE_OPTIONS = [
   { value: 'cash', label: 'Cash' },
 ];
 
+const RATING_OPTIONS = [
+  { value: '', label: '-' },
+  { value: 'AAA', label: 'AAA' },
+  { value: 'AA', label: 'AA' },
+  { value: 'A', label: 'A' },
+  { value: 'BBB', label: 'BBB' },
+  { value: 'BB', label: 'BB' },
+  { value: 'B', label: 'B' },
+];
+
 interface FormData {
   name: string;
   group_id: string;
@@ -45,13 +56,24 @@ interface FormData {
   base_price: string;
   display_order: string;
   notes: string;
+  rating: string;
+  product_id: string;
 }
 
 const emptyForm: FormData = {
   name: '', group_id: 'shares', asset_type: 'stock', ticker: '', currency: 'KRW',
   recommended_weight: '0', target_annual_return: '', current_price: '', base_price: '',
-  display_order: '0', notes: '',
+  display_order: '0', notes: '', rating: '', product_id: '',
 };
+
+interface ProductOption {
+  id: string;
+  name_ko: string;
+  name_en: string;
+  type: string;
+  target_return: number | null;
+  currency: string | null;
+}
 
 export function AdminFlagshipPortfolio() {
   const { language } = useLanguage();
