@@ -39,41 +39,43 @@ export function MiniPieChart() {
     }));
 
   return (
-    <div className="w-full h-36 flex flex-col items-center">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={pieData}
-            cx="50%"
-            cy="50%"
-            innerRadius={30}
-            outerRadius={55}
-            paddingAngle={2}
-            dataKey="value"
-            label={({ value }) => `${value.toFixed(0)}%`}
-            labelLine={false}
-          >
-            {pieData.map((entry, i) => (
-              <Cell key={i} fill={entry.color} strokeWidth={0} />
-            ))}
-          </Pie>
-          <Tooltip
-            content={({ active, payload }) => {
-              if (active && payload?.length) {
-                const d = payload[0].payload;
-                return (
-                  <div className="bg-card border border-border rounded p-1.5 text-[10px] shadow">
-                    <p className="font-medium">{d.name}</p>
-                    <p className="text-accent">{d.value.toFixed(1)}%</p>
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-      <div className="flex flex-wrap justify-center gap-2 mt-1">
+    <div className="w-full h-36 flex flex-col items-center justify-center">
+      <div className="flex-1 w-full min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              innerRadius={28}
+              outerRadius={48}
+              paddingAngle={2}
+              dataKey="value"
+              label={({ value }) => `${value.toFixed(0)}%`}
+              labelLine={false}
+            >
+              {pieData.map((entry, i) => (
+                <Cell key={i} fill={entry.color} strokeWidth={0} />
+              ))}
+            </Pie>
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload?.length) {
+                  const d = payload[0].payload;
+                  return (
+                    <div className="bg-card border border-border rounded p-1.5 text-[10px] shadow">
+                      <p className="font-medium">{d.name}</p>
+                      <p className="text-accent">{d.value.toFixed(1)}%</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2 shrink-0 pb-1">
         {pieData.map((d, i) => (
           <div key={i} className="flex items-center gap-1 text-[9px]">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
