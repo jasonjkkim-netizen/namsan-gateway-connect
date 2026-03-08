@@ -134,7 +134,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
                       {ko ? group.nameKo : group.nameEn}
                     </div>
                     <div className="w-28 text-right text-sm font-mono pr-4">
-                      {group.totalWeight.toFixed(1)}%
+                      {normalizedWeightPct(group).toFixed(1)}%
                     </div>
                     <div className={`w-28 text-right text-sm font-mono hidden sm:flex items-center justify-end gap-1 pr-4 ${perfColor}`}>
                       <PerfIcon className="h-3 w-3" />
@@ -199,7 +199,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
               {ko ? '합계' : 'Total'}
             </div>
             <div className="w-28 text-right text-sm font-mono font-semibold pr-4">
-              {totalAllocation.toFixed(1)}%
+              100.0%
             </div>
             <div className={`w-28 text-right text-sm font-mono font-semibold hidden sm:flex items-center justify-end gap-1 pr-4 ${totalPerfColor}`}>
               <TotalPerfIcon className="h-3 w-3" />
