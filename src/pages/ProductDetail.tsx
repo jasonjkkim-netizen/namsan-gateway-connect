@@ -101,14 +101,20 @@ export default function ProductDetail() {
         return;
       }
       
-      setProduct(data as Product);
+      const prod = data as Product;
+      setProduct(prod);
 
-      // Check if this product is linked from flagship portfolio
-      const { count } = await supabase
-        .from('flagship_portfolio_items')
-        .select('id', { count: 'exact', head: true })
-        .eq('product_id', id);
-      setIsFlagshipProduct((count || 0) > 0);
+      // Check if this is a flagship portfolio product
+      const isFlagship = (prod.type === 'fund' && (prod.name_ko.includes('포트폴리오') || prod.name_en.includes('Portfolio')));
+      if (!isFlagship) {
+        const { count } = await supabase
+          .from('flagship_portfolio_items')
+          .select('id', { count: 'exact', head: true })
+          .eq('product_id', id);
+        setIsFlagshipProduct((count || 0) > 0);
+      } else {
+        setIsFlagshipProduct(true);
+      }
       
       const { data: docs } = await supabase
         .from('product_documents')
