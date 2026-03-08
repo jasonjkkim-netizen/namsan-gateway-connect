@@ -67,7 +67,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
   return (
     <div className="space-y-8">
       {/* Investment Simulator */}
-      <div className="bg-background rounded-lg border border-border p-6">
+      <div ref={simulatorRef} className="bg-background rounded-lg border border-border p-6">
         <h3 className="text-lg font-serif font-semibold mb-6">
           {ko ? '투자 시뮬레이터' : 'Investment Simulator'}
         </h3>
