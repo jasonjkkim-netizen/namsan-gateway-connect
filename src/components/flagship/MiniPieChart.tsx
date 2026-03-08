@@ -47,7 +47,7 @@ export function MiniPieChart() {
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={45}
+              innerRadius={30}
               outerRadius={72}
               paddingAngle={2}
               dataKey="value"
