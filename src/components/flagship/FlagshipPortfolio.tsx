@@ -7,11 +7,13 @@ import { FlagshipCharts } from './FlagshipCharts';
 import { FlagshipSimulator } from './FlagshipSimulator';
 import { PortfolioAnalysis } from './PortfolioAnalysis';
 import { CIOCommentary } from './CIOCommentary';
+import { FlagshipReport } from './FlagshipReport';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Minus, FileText } from 'lucide-react';
 
 interface FlagshipPortfolioProps {
   chartsOnly?: boolean;
