@@ -27,6 +27,8 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const [groupWeights, setGroupWeights] = useState<Record<GroupId, number>>({
     shares: 50, bonds: 40, others: 10, cash: 0,
   });
+  const [reportOpen, setReportOpen] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState('');
 
   const groups = useMemo(() => buildGroups(items), [items]);
 
