@@ -39,7 +39,7 @@ export function MiniPieChart() {
     }));
 
   return (
-    <div className="w-full h-36 flex flex-col items-center justify-center">
+    <div className="w-full h-44 flex flex-col items-center justify-center">
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -47,8 +47,8 @@ export function MiniPieChart() {
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={28}
-              outerRadius={48}
+              innerRadius={38}
+              outerRadius={62}
               paddingAngle={2}
               dataKey="value"
               label={({ value }) => `${value.toFixed(0)}%`}
