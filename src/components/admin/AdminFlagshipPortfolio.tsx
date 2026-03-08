@@ -177,6 +177,8 @@ export function AdminFlagshipPortfolio() {
       base_price: item.base_price != null ? String(item.base_price) : '',
       display_order: String(item.display_order),
       notes: item.notes || '',
+      rating: item.rating || '',
+      product_id: item.product_id || '',
     });
     setDialogOpen(true);
   };
