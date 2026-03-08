@@ -131,7 +131,16 @@ export function AdminFlagshipPortfolio() {
     }
   };
 
-  useEffect(() => { fetchItems(); fetchSettings(); fetchCIO(); }, []);
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from('investment_products')
+      .select('id, name_ko, name_en, type, target_return, currency')
+      .eq('is_active', true)
+      .order('name_ko');
+    if (data) setProducts(data as ProductOption[]);
+  };
+
+  useEffect(() => { fetchItems(); fetchSettings(); fetchCIO(); fetchProducts(); }, []);
 
   const mappedItems = useMemo(() => items.filter(i => i.is_active).map(r => mapRowToItem(r as any)), [items]);
   const groups = useMemo(() => buildGroups(mappedItems), [mappedItems]);
@@ -185,6 +194,8 @@ export function AdminFlagshipPortfolio() {
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error(ko ? '종목명을 입력하세요' : 'Name is required'); return; }
+    // Auto-default rating to A for bonds without rating
+    const effectiveRating = (form.asset_type === 'bond' && !form.rating) ? 'A' : (form.rating || null);
     const payload: Record<string, any> = {
       name: form.name.trim(),
       group_id: form.group_id,
@@ -197,6 +208,8 @@ export function AdminFlagshipPortfolio() {
       base_price: form.base_price ? parseFloat(form.base_price) : null,
       display_order: parseInt(form.display_order) || 0,
       notes: form.notes.trim() || null,
+      rating: effectiveRating,
+      product_id: form.product_id || null,
     };
 
     let error;
