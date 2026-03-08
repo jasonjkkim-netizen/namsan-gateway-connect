@@ -295,23 +295,6 @@ export default function ProductDetail() {
               </CardContent>
             </Card>
           )}
-
-          {product.募集_deadline && (
-            <Card className="card-elevated animate-fade-in" style={{ animationDelay: '300ms' }}>
-              <CardHeader className="pb-1 pt-2 md:pt-3 px-2 md:px-3">
-                <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1 whitespace-nowrap">
-                  <Calendar className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                  {language === 'ko' ? '모집 마감일' : 'Deadline'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-2 md:px-3 pb-2 md:pb-3">
-                <p className="text-sm md:text-xl font-bold whitespace-nowrap">{formatDate(product.募集_deadline)}</p>
-                <p className="text-[9px] md:text-xs text-muted-foreground mt-0.5">
-                  {language === 'ko' ? '신청 마감' : 'Application deadline'}
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Documents List */}
@@ -394,6 +377,12 @@ export default function ProductDetail() {
                 <span className="text-muted-foreground">{language === 'ko' ? '통화' : 'Currency'}</span>
                 <span className="font-medium">{product.default_currency?.toUpperCase() || product.currency?.toUpperCase() || 'USD'}</span>
               </div>
+              {product.maturity_date && (
+                <div className="flex justify-between py-2.5 border-b border-border">
+                  <span className="text-muted-foreground">{language === 'ko' ? '상품 만기일' : 'Maturity Date'}</span>
+                  <span className="font-medium">{formatDate(product.maturity_date)}</span>
+                </div>
+              )}
               {product.fixed_return_percent != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
                   <span className="text-muted-foreground">{language === 'ko' ? '확정 수익률' : 'Fixed Return'}</span>
