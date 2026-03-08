@@ -265,6 +265,38 @@ export function AdminFlagshipPortfolio() {
     fetchItems();
   };
 
+  const handleLivePriceUpdate = useCallback(async () => {
+    setUpdatingPrices(true);
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/update-flagship-prices`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
+        body: JSON.stringify({ manual: true }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const failed = data.results?.filter((r: any) => !r.newPrice) || [];
+        toast.success(ko
+          ? `${data.updated}/${data.total}개 종목 실시간 시세 업데이트 완료`
+          : `${data.updated}/${data.total} prices updated from live sources`);
+        if (failed.length > 0) {
+          toast.warning(ko
+            ? `${failed.length}개 종목 업데이트 실패: ${failed.map((f: any) => f.name).join(', ')}`
+            : `${failed.length} failed: ${failed.map((f: any) => f.name).join(', ')}`);
+        }
+        fetchItems();
+      } else {
+        toast.error(data.error || 'Update failed');
+      }
+    } catch (err) {
+      toast.error(ko ? '시세 업데이트 오류' : 'Price update error');
+      console.error(err);
+    } finally {
+      setUpdatingPrices(false);
+    }
+  }, [ko]);
+
   const saveSettings = async () => {
     const config = { presetWeights };
     const { data: existing } = await supabase.from('app_settings').select('id').eq('key', 'flagship_config').maybeSingle();
