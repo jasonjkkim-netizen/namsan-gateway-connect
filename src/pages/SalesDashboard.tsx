@@ -853,31 +853,42 @@ export default function SalesDashboard() {
                                   >
                                     {m.full_name}
                                   </TableCell>
-                                  <TableCell className="text-right py-1 px-1 w-[100px] sm:w-[140px]">
-                                    {canChangeRoles && m.user_id !== user?.id && (isDM || m.sales_role !== 'deputy_district_manager') && (
-                                      <Select
-                                        value={m.sales_role}
-                                        onValueChange={(newRole) => {
-                                          if (newRole !== m.sales_role) {
-                                            setRoleChangeDialog({ open: true, member: m, newRole });
-                                          }
-                                        }}
-                                        disabled={changingRoleId === m.user_id}
+                                  <TableCell className="text-right py-1 px-1 w-[130px] sm:w-[180px]">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-5 w-5 sm:h-6 sm:w-6 p-0"
+                                        onClick={(e) => { e.stopPropagation(); setEditMemberId(m.user_id); }}
+                                        title={language === 'ko' ? '정보 수정' : 'Edit Info'}
                                       >
-                                        <SelectTrigger className="w-[80px] sm:w-[120px] h-5 sm:h-6 text-[8px] sm:text-[10px] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                                          <UserCog className="h-2.5 w-2.5 mr-0.5 shrink-0" />
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-popover z-50">
-                                          {isWebmaster && <SelectItem value="webmaster" className="text-xs">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>}
-                                          {isWebmaster && <SelectItem value="district_manager" className="text-xs">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>}
-                                          {isDM && <SelectItem value="deputy_district_manager" className="text-xs">{language === 'ko' ? '부총괄' : 'Deputy GM'}</SelectItem>}
-                                          <SelectItem value="principal_agent" className="text-xs">{language === 'ko' ? '수석' : 'Principal'}</SelectItem>
-                                          <SelectItem value="agent" className="text-xs">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
-                                          <SelectItem value="client" className="text-xs">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    )}
+                                        <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                      </Button>
+                                      {canChangeRoles && m.user_id !== user?.id && (isDM || m.sales_role !== 'deputy_district_manager') && (
+                                        <Select
+                                          value={m.sales_role}
+                                          onValueChange={(newRole) => {
+                                            if (newRole !== m.sales_role) {
+                                              setRoleChangeDialog({ open: true, member: m, newRole });
+                                            }
+                                          }}
+                                          disabled={changingRoleId === m.user_id}
+                                        >
+                                          <SelectTrigger className="w-[80px] sm:w-[120px] h-5 sm:h-6 text-[8px] sm:text-[10px] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                            <UserCog className="h-2.5 w-2.5 mr-0.5 shrink-0" />
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent className="bg-popover z-50">
+                                            {isWebmaster && <SelectItem value="webmaster" className="text-xs">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>}
+                                            {isWebmaster && <SelectItem value="district_manager" className="text-xs">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>}
+                                            {isDM && <SelectItem value="deputy_district_manager" className="text-xs">{language === 'ko' ? '부총괄' : 'Deputy GM'}</SelectItem>}
+                                            <SelectItem value="principal_agent" className="text-xs">{language === 'ko' ? '수석' : 'Principal'}</SelectItem>
+                                            <SelectItem value="agent" className="text-xs">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
+                                            <SelectItem value="client" className="text-xs">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      )}
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                               ))}
