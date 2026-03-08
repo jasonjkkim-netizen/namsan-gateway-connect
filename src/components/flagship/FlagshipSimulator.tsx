@@ -153,7 +153,9 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
             <p className="text-xl font-mono font-bold text-accent">{formatPct(blendedExpectedReturn)}</p>
           </div>
           <div className="text-center">
-            <p className="text-xs text-muted-foreground mb-1">{ko ? '예상 수익' : 'Projected Profit'}</p>
+            <p className="text-xs text-muted-foreground mb-1">
+              {ko ? `예상 수익 (${daysToHorizon}일)` : `Projected Profit (${daysToHorizon}d)`}
+            </p>
             <p className="text-xl font-mono font-bold text-accent">{formatKRW(projection.profit)}</p>
           </div>
           <div className="text-center">
