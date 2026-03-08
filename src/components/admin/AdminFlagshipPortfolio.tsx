@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, RefreshCw, Save, PieChart, BarChart3, Settings2, MessageSquareQuote } from 'lucide-react';
+import { Plus, Pencil, Trash2, RefreshCw, Save, PieChart, BarChart3, Settings2, MessageSquareQuote, Package } from 'lucide-react';
 import type { PortfolioItemRow } from '@/components/flagship/portfolioTypes';
 import { GROUP_META, GroupId, PRESETS, DEFAULT_ASSUMPTIONS } from '@/components/flagship/portfolioTypes';
 import { mapRowToItem, buildGroups, formatPct } from '@/components/flagship/portfolioUtils';
@@ -33,6 +34,16 @@ const ASSET_TYPE_OPTIONS = [
   { value: 'cash', label: 'Cash' },
 ];
 
+const RATING_OPTIONS = [
+  { value: '', label: '-' },
+  { value: 'AAA', label: 'AAA' },
+  { value: 'AA', label: 'AA' },
+  { value: 'A', label: 'A' },
+  { value: 'BBB', label: 'BBB' },
+  { value: 'BB', label: 'BB' },
+  { value: 'B', label: 'B' },
+];
+
 interface FormData {
   name: string;
   group_id: string;
@@ -45,13 +56,24 @@ interface FormData {
   base_price: string;
   display_order: string;
   notes: string;
+  rating: string;
+  product_id: string;
 }
 
 const emptyForm: FormData = {
   name: '', group_id: 'shares', asset_type: 'stock', ticker: '', currency: 'KRW',
   recommended_weight: '0', target_annual_return: '', current_price: '', base_price: '',
-  display_order: '0', notes: '',
+  display_order: '0', notes: '', rating: '', product_id: '',
 };
+
+interface ProductOption {
+  id: string;
+  name_ko: string;
+  name_en: string;
+  type: string;
+  target_return: number | null;
+  currency: string | null;
+}
 
 export function AdminFlagshipPortfolio() {
   const { language } = useLanguage();
@@ -61,6 +83,8 @@ export function AdminFlagshipPortfolio() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // Settings state
   const [presetWeights, setPresetWeights] = useState({
@@ -107,7 +131,16 @@ export function AdminFlagshipPortfolio() {
     }
   };
 
-  useEffect(() => { fetchItems(); fetchSettings(); fetchCIO(); }, []);
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from('investment_products')
+      .select('id, name_ko, name_en, type, target_return, currency')
+      .eq('is_active', true)
+      .order('name_ko');
+    if (data) setProducts(data as ProductOption[]);
+  };
+
+  useEffect(() => { fetchItems(); fetchSettings(); fetchCIO(); fetchProducts(); }, []);
 
   const mappedItems = useMemo(() => items.filter(i => i.is_active).map(r => mapRowToItem(r as any)), [items]);
   const groups = useMemo(() => buildGroups(mappedItems), [mappedItems]);
@@ -153,12 +186,16 @@ export function AdminFlagshipPortfolio() {
       base_price: item.base_price != null ? String(item.base_price) : '',
       display_order: String(item.display_order),
       notes: item.notes || '',
+      rating: item.rating || '',
+      product_id: item.product_id || '',
     });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error(ko ? '종목명을 입력하세요' : 'Name is required'); return; }
+    // Auto-default rating to A for bonds without rating
+    const effectiveRating = (form.asset_type === 'bond' && !form.rating) ? 'A' : (form.rating || null);
     const payload: Record<string, any> = {
       name: form.name.trim(),
       group_id: form.group_id,
@@ -171,6 +208,8 @@ export function AdminFlagshipPortfolio() {
       base_price: form.base_price ? parseFloat(form.base_price) : null,
       display_order: parseInt(form.display_order) || 0,
       notes: form.notes.trim() || null,
+      rating: effectiveRating,
+      product_id: form.product_id || null,
     };
 
     let error;
@@ -253,6 +292,29 @@ export function AdminFlagshipPortfolio() {
     else toast.success(ko ? 'CIO 코멘트 저장됨' : 'CIO commentary saved');
   };
 
+  const handleImportProduct = (product: ProductOption) => {
+    const isBond = product.type === 'bond';
+    const groupId = isBond ? 'bonds' : product.type === 'fund' || product.type === 'alternative' ? 'others' : 'shares';
+    const assetType = isBond ? 'bond' : product.type === 'fund' || product.type === 'alternative' ? 'etf' : 'stock';
+    setForm({
+      name: ko ? product.name_ko : (product.name_en || product.name_ko),
+      group_id: groupId,
+      asset_type: assetType,
+      ticker: '',
+      currency: product.currency || 'KRW',
+      recommended_weight: '0',
+      target_annual_return: product.target_return != null ? String(product.target_return / 100) : '',
+      current_price: '',
+      base_price: '',
+      display_order: '0',
+      notes: '',
+      rating: isBond ? 'A' : '',
+      product_id: product.id,
+    });
+    setImportDialogOpen(false);
+    setDialogOpen(true);
+  };
+
   const updateField = (key: keyof FormData, value: string) => setForm(p => ({ ...p, [key]: value }));
 
   return (
@@ -300,6 +362,9 @@ export function AdminFlagshipPortfolio() {
               {ko ? 'Flagship 포트폴리오 종목' : 'Flagship Portfolio Items'}
             </h3>
             <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+                <Package className="h-4 w-4 mr-1" /> {ko ? '상품에서 가져오기' : 'Import Product'}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleBulkUpdatePrices}>
                 {ko ? '일괄 가격 업데이트' : 'Bulk Price Update'}
               </Button>
@@ -320,6 +385,7 @@ export function AdminFlagshipPortfolio() {
                   <TableHead>{ko ? '종목명' : 'Name'}</TableHead>
                   <TableHead>{ko ? '코드' : 'Ticker'}</TableHead>
                   <TableHead>{ko ? '유형' : 'Type'}</TableHead>
+                  <TableHead>{ko ? '등급' : 'Rating'}</TableHead>
                   <TableHead className="text-right">{ko ? '비중(%)' : 'Weight(%)'}</TableHead>
                   <TableHead className="text-right">{ko ? '목표수익률' : 'Target Return'}</TableHead>
                   <TableHead className="text-right">{ko ? '기준가' : 'Base Price'}</TableHead>
@@ -353,6 +419,7 @@ export function AdminFlagshipPortfolio() {
                       <TableCell className="font-medium max-w-[140px] truncate">{item.name}</TableCell>
                       <TableCell className="text-muted-foreground">{item.ticker || '-'}</TableCell>
                       <TableCell className="text-muted-foreground">{item.asset_type}</TableCell>
+                      <TableCell className="text-muted-foreground">{item.rating || (item.asset_type === 'bond' ? 'A' : '-')}</TableCell>
                       <TableCell className="text-right font-mono">{item.recommended_weight}</TableCell>
                       <TableCell className="text-right font-mono">
                         {item.target_annual_return != null ? `${(Number(item.target_annual_return) * 100).toFixed(1)}%` : '-'}
@@ -649,6 +716,20 @@ export function AdminFlagshipPortfolio() {
                 <Label className="text-xs">{ko ? '표시 순서' : 'Display Order'}</Label>
                 <Input type="number" value={form.display_order} onChange={e => updateField('display_order', e.target.value)} />
               </div>
+              <div>
+                <Label className="text-xs">{ko ? '등급' : 'Rating'}</Label>
+                <Select value={form.rating || '_none'} onValueChange={v => updateField('rating', v === '_none' ? '' : v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {RATING_OPTIONS.map(o => <SelectItem key={o.value || '_none'} value={o.value || '_none'}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {form.asset_type === 'bond' && !form.rating && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {ko ? '채권은 미입력시 A등급 자동 적용' : 'Defaults to A for bonds'}
+                  </p>
+                )}
+              </div>
             </div>
             <div>
               <Label className="text-xs">{ko ? '메모' : 'Notes'}</Label>
@@ -659,6 +740,46 @@ export function AdminFlagshipPortfolio() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{ko ? '취소' : 'Cancel'}</Button>
             <Button onClick={handleSave}>{ko ? '저장' : 'Save'}</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import from Products Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{ko ? '판매 상품에서 가져오기' : 'Import from Products'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {products.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {ko ? '등록된 상품이 없습니다' : 'No products found'}
+              </p>
+            ) : (
+              products.map(p => {
+                const alreadyImported = items.some(i => (i as any).product_id === p.id);
+                return (
+                  <div key={p.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30">
+                    <div>
+                      <div className="text-sm font-medium">{ko ? p.name_ko : (p.name_en || p.name_ko)}</div>
+                      <div className="text-xs text-muted-foreground flex gap-2">
+                        <Badge variant="outline" className="text-[10px]">{p.type}</Badge>
+                        {p.target_return != null && <span>{p.target_return}%</span>}
+                        {p.currency && <span>{p.currency}</span>}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={alreadyImported ? 'outline' : 'default'}
+                      onClick={() => handleImportProduct(p)}
+                      disabled={alreadyImported}
+                    >
+                      {alreadyImported ? (ko ? '추가됨' : 'Added') : (ko ? '가져오기' : 'Import')}
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

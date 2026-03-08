@@ -18,6 +18,8 @@ export interface PortfolioItemRow {
   display_order: number;
   is_active: boolean;
   notes: string | null;
+  rating: string | null;
+  product_id: string | null;
 }
 
 export interface PortfolioItem {
