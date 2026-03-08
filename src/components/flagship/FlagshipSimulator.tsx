@@ -28,6 +28,7 @@ interface Props {
 export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights }: Props) {
   const { language } = useLanguage();
   const ko = language === 'ko';
+  const simulatorRef = useRef<HTMLDivElement>(null);
 
   const [investmentAmount, setInvestmentAmount] = useState(10_000_000);
   const [horizon, setHorizon] = useState<'eoy' | '12m'>('eoy');
