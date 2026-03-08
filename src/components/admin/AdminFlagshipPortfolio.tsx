@@ -385,6 +385,7 @@ export function AdminFlagshipPortfolio() {
                   <TableHead>{ko ? '종목명' : 'Name'}</TableHead>
                   <TableHead>{ko ? '코드' : 'Ticker'}</TableHead>
                   <TableHead>{ko ? '유형' : 'Type'}</TableHead>
+                  <TableHead>{ko ? '등급' : 'Rating'}</TableHead>
                   <TableHead className="text-right">{ko ? '비중(%)' : 'Weight(%)'}</TableHead>
                   <TableHead className="text-right">{ko ? '목표수익률' : 'Target Return'}</TableHead>
                   <TableHead className="text-right">{ko ? '기준가' : 'Base Price'}</TableHead>
