@@ -59,6 +59,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
 
   const applyPreset = (preset: typeof PRESETS[0]) => {
     setGroupWeights({ ...preset.groupWeights });
+    setTimeout(() => simulatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
   const activeGroups: GroupId[] = ['shares', 'bonds', 'others'];
