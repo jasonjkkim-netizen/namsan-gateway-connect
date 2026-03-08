@@ -11,9 +11,10 @@ import type { PortfolioItem, GroupData } from './portfolioTypes';
 interface Props {
   items: PortfolioItem[];
   groups: GroupData[];
+  onAnalysisChange?: (text: string) => void;
 }
 
-export function PortfolioAnalysis({ items, groups }: Props) {
+export function PortfolioAnalysis({ items, groups, onAnalysisChange }: Props) {
   const { language } = useLanguage();
   const { session } = useAuth();
   const ko = language === 'ko';
