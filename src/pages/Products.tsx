@@ -49,6 +49,7 @@ export default function Products() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [accessibleProductIds, setAccessibleProductIds] = useState<string[]>([]);
+  const [flagshipProductIds, setFlagshipProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAccessControl, setHasAccessControl] = useState(false);
 
