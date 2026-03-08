@@ -93,6 +93,15 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             ? `${baseDateLabel} 기준 포트폴리오 성과 및 자산 배분 현황`
             : `Portfolio performance and asset allocation since ${baseDateLabel}`}
         </p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-4 gap-2"
+          onClick={() => setReportOpen(true)}
+        >
+          <FileText className="h-4 w-4" />
+          {ko ? '리포트 생성' : 'Generate Report'}
+        </Button>
       </div>
 
       {/* Table (full width on top) */}
