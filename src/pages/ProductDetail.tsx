@@ -450,9 +450,13 @@ export default function ProductDetail() {
             </CardContent>
           </Card>
 
-          {/* Product Image */}
+          {/* Product Image / Flagship Chart */}
           <div className="animate-fade-in" style={{ animationDelay: '450ms' }}>
-            {product.image_url ? (
+            {isFlagshipProduct ? (
+              <div className="h-full rounded-xl border border-border p-4 bg-muted/10">
+                <ProductFlagshipChart />
+              </div>
+            ) : product.image_url ? (
               <div
                 className="overflow-hidden rounded-xl border border-border h-full cursor-zoom-in"
                 onClick={() => setImageZoom(true)}
