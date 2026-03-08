@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, RefreshCw, Save, PieChart, BarChart3, Settings2, MessageSquareQuote, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, RefreshCw, Save, PieChart, BarChart3, Settings2, MessageSquareQuote, Package, Zap, Loader2 } from 'lucide-react';
 import type { PortfolioItemRow } from '@/components/flagship/portfolioTypes';
 import { GROUP_META, GroupId, PRESETS, DEFAULT_ASSUMPTIONS } from '@/components/flagship/portfolioTypes';
 import { mapRowToItem, buildGroups, formatPct } from '@/components/flagship/portfolioUtils';
@@ -85,6 +85,7 @@ export function AdminFlagshipPortfolio() {
   const [form, setForm] = useState<FormData>(emptyForm);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [updatingPrices, setUpdatingPrices] = useState(false);
 
   // Settings state
   const [presetWeights, setPresetWeights] = useState({
