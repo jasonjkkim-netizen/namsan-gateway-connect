@@ -73,8 +73,9 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const baseDateLabel = ko ? BASE_DATE_LABEL_KO : BASE_DATE_LABEL_EN;
 
   // Calculate total allocation and blended performance
-  const totalAllocation = groups.reduce((sum, g) => sum + g.totalWeight, 0);
-  const totalPerformance = groups.reduce((sum, g) => sum + g.totalWeight * g.performance, 0) / (totalAllocation || 1);
+  const rawTotal = groups.reduce((sum, g) => sum + g.totalWeight, 0);
+  const normalizedWeightPct = (g: typeof groups[number]) => rawTotal > 0 ? (g.totalWeight / rawTotal) * 100 : 0;
+  const totalPerformance = groups.reduce((sum, g) => sum + g.totalWeight * g.performance, 0) / (rawTotal || 1);
   const TotalPerfIcon = totalPerformance > 0 ? TrendingUp : totalPerformance < 0 ? TrendingDown : Minus;
   const totalPerfColor = totalPerformance > 0 ? 'text-green-600' : totalPerformance < 0 ? 'text-red-500' : 'text-muted-foreground';
 
