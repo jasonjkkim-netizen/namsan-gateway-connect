@@ -261,11 +261,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Notify on failures
-    const failed = results.filter(r => !r.newPrice);
-    if (failed.length > 0) await sendFailureNotification(failed, results.length);
+    // Notify on failures and skips
+    const failed = results.filter(r => !r.newPrice && !r.skipped);
+    const skipped = results.filter(r => r.skipped);
+    const notifyList = [...failed, ...skipped.map(s => ({ ...s, error: s.skipReason }))];
+    if (notifyList.length > 0) await sendFailureNotification(notifyList, results.length);
 
-    console.log(`Flagship prices updated: ${updated}/${results.length}`);
+    console.log(`Flagship prices: updated=${updated}, skipped=${skipped.length}, failed=${failed.length}, total=${results.length}`);
 
     return new Response(JSON.stringify({
       success: true,
