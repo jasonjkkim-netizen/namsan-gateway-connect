@@ -1343,7 +1343,13 @@ export default function SalesDashboard() {
           onSuccess={fetchAll}
         />
 
-        {/* Role Change Confirmation Dialog */}
+        <EditMemberDialog
+          open={!!editMemberId}
+          onOpenChange={(open) => { if (!open) setEditMemberId(null); }}
+          userId={editMemberId}
+          onSuccess={fetchAll}
+        />
+
         <AlertDialog open={roleChangeDialog.open} onOpenChange={(open) => setRoleChangeDialog({ ...roleChangeDialog, open })}>
           <AlertDialogContent>
             <AlertDialogHeader>
