@@ -714,6 +714,20 @@ export function AdminFlagshipPortfolio() {
                 <Label className="text-xs">{ko ? '표시 순서' : 'Display Order'}</Label>
                 <Input type="number" value={form.display_order} onChange={e => updateField('display_order', e.target.value)} />
               </div>
+              <div>
+                <Label className="text-xs">{ko ? '등급' : 'Rating'}</Label>
+                <Select value={form.rating || '_none'} onValueChange={v => updateField('rating', v === '_none' ? '' : v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {RATING_OPTIONS.map(o => <SelectItem key={o.value || '_none'} value={o.value || '_none'}>{o.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {form.asset_type === 'bond' && !form.rating && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {ko ? '채권은 미입력시 A등급 자동 적용' : 'Defaults to A for bonds'}
+                  </p>
+                )}
+              </div>
             </div>
             <div>
               <Label className="text-xs">{ko ? '메모' : 'Notes'}</Label>
@@ -724,6 +738,46 @@ export function AdminFlagshipPortfolio() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{ko ? '취소' : 'Cancel'}</Button>
             <Button onClick={handleSave}>{ko ? '저장' : 'Save'}</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import from Products Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{ko ? '판매 상품에서 가져오기' : 'Import from Products'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {products.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {ko ? '등록된 상품이 없습니다' : 'No products found'}
+              </p>
+            ) : (
+              products.map(p => {
+                const alreadyImported = items.some(i => (i as any).product_id === p.id);
+                return (
+                  <div key={p.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30">
+                    <div>
+                      <div className="text-sm font-medium">{ko ? p.name_ko : (p.name_en || p.name_ko)}</div>
+                      <div className="text-xs text-muted-foreground flex gap-2">
+                        <Badge variant="outline" className="text-[10px]">{p.type}</Badge>
+                        {p.target_return != null && <span>{p.target_return}%</span>}
+                        {p.currency && <span>{p.currency}</span>}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={alreadyImported ? 'outline' : 'default'}
+                      onClick={() => handleImportProduct(p)}
+                      disabled={alreadyImported}
+                    >
+                      {alreadyImported ? (ko ? '추가됨' : 'Added') : (ko ? '가져오기' : 'Import')}
+                    </Button>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
