@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { differenceInDays } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { GroupId, GroupData, PortfolioItem, PRESETS, GROUP_META } from './portfolioTypes';
