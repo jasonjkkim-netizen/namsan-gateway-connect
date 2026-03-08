@@ -9,12 +9,16 @@ const corsHeaders = {
 const KIS_BASE_URL = 'https://openapi.koreainvestment.com:9443';
 const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@namsan-korea.com';
 
+const MAX_CHANGE_RATIO = 0.50; // 50% cap – skip if price moves more than this
+
 interface PriceResult {
   id: string;
   name: string;
   ticker: string;
   oldPrice: number | null;
   newPrice: number | null;
+  skipped?: boolean;
+  skipReason?: string;
   error?: string;
 }
 
@@ -220,10 +224,24 @@ Deno.serve(async (req) => {
 
       if (!newPrice) error = 'All sources failed';
 
+      // Safety check: skip if price change exceeds MAX_CHANGE_RATIO
+      const oldPrice = item.current_price ? Number(item.current_price) : null;
+      let skipped = false;
+      let skipReason: string | undefined;
+
+      if (newPrice && oldPrice && oldPrice > 0) {
+        const changeRatio = Math.abs(newPrice - oldPrice) / oldPrice;
+        if (changeRatio > MAX_CHANGE_RATIO) {
+          skipped = true;
+          skipReason = `Price change ${(changeRatio * 100).toFixed(1)}% exceeds ${MAX_CHANGE_RATIO * 100}% cap (${oldPrice} → ${newPrice})`;
+          console.warn(`SKIPPED ${item.name}: ${skipReason}`);
+          newPrice = null; // prevent DB update
+        }
+      }
+
       results.push({
         id: item.id, name: item.name, ticker,
-        oldPrice: item.current_price ? Number(item.current_price) : null,
-        newPrice, error,
+        oldPrice, newPrice, skipped, skipReason, error,
       });
 
       // Rate limit between requests
@@ -243,11 +261,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Notify on failures
-    const failed = results.filter(r => !r.newPrice);
-    if (failed.length > 0) await sendFailureNotification(failed, results.length);
+    // Notify on failures and skips
+    const failed = results.filter(r => !r.newPrice && !r.skipped);
+    const skipped = results.filter(r => r.skipped);
+    const notifyList = [...failed, ...skipped.map(s => ({ ...s, error: s.skipReason }))];
+    if (notifyList.length > 0) await sendFailureNotification(notifyList, results.length);
 
-    console.log(`Flagship prices updated: ${updated}/${results.length}`);
+    console.log(`Flagship prices: updated=${updated}, skipped=${skipped.length}, failed=${failed.length}, total=${results.length}`);
 
     return new Response(JSON.stringify({
       success: true,
