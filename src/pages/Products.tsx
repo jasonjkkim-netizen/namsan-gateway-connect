@@ -15,6 +15,8 @@ import {
 import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers, LayoutDashboard, FileText, PlayCircle, Package, BookOpen, Newspaper, MessageSquare, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { MiniPieChart } from '@/components/flagship/MiniPieChart';
+import { PRESETS } from '@/components/flagship/portfolioTypes';
+import type { GroupId } from '@/components/flagship/portfolioTypes';
 
 interface Product {
   id: string;
@@ -110,6 +112,20 @@ export default function Products() {
       case 'coming_soon': return 'bg-accent text-accent-foreground';
       default: return 'bg-muted text-muted-foreground';
     }
+  };
+
+  const getFundPresetWeights = (product: Product): Record<GroupId, number> | undefined => {
+    const name = product.name_ko + product.name_en;
+    if (name.includes('안정') || name.toLowerCase().includes('conservative') || name.toLowerCase().includes('low risk')) {
+      return PRESETS.find(p => p.id === 'low')?.groupWeights;
+    }
+    if (name.includes('균형') || name.toLowerCase().includes('balanced')) {
+      return PRESETS.find(p => p.id === 'mid')?.groupWeights;
+    }
+    if (name.includes('공격') || name.toLowerCase().includes('aggressive') || name.toLowerCase().includes('high growth')) {
+      return PRESETS.find(p => p.id === 'high')?.groupWeights;
+    }
+    return undefined;
   };
 
   const getProductsByType = (type: string) => {
@@ -211,7 +227,7 @@ export default function Products() {
                             {/* Show mini pie chart for flagship portfolio fund products only, else image */}
                             {product.type === 'fund' && (flagshipProductIds.includes(product.id) || product.name_ko.includes('포트폴리오') || product.name_en.includes('Portfolio')) ? (
                               <div className="mb-3 -mx-5 -mt-5 overflow-hidden rounded-t-lg bg-muted/20 h-52">
-                                <MiniPieChart />
+                                <MiniPieChart presetWeights={getFundPresetWeights(product)} />
                               </div>
                             ) : product.image_url ? (
                               <div className="mb-3 -mx-5 -mt-5 overflow-hidden rounded-t-lg">
