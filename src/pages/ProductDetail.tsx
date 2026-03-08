@@ -295,23 +295,6 @@ export default function ProductDetail() {
               </CardContent>
             </Card>
           )}
-
-          {product.maturity_date && (
-            <Card className="card-elevated animate-fade-in" style={{ animationDelay: '300ms' }}>
-              <CardHeader className="pb-1 pt-2 md:pt-3 px-2 md:px-3">
-                <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1 whitespace-nowrap">
-                  <Calendar className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                  {language === 'ko' ? '상품 만기일' : 'Maturity Date'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-2 md:px-3 pb-2 md:pb-3">
-                <p className="text-sm md:text-xl font-bold whitespace-nowrap">{formatDate(product.maturity_date)}</p>
-                <p className="text-[9px] md:text-xs text-muted-foreground mt-0.5">
-                  {language === 'ko' ? '만기 예정' : 'Expected maturity'}
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Documents List */}
