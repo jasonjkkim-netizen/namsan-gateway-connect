@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConsultationButton } from '@/components/ConsultationButton';
+import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart';
 
 interface Product {
   id: string;
