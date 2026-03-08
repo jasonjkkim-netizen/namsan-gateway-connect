@@ -377,10 +377,10 @@ export default function ProductDetail() {
                 <span className="text-muted-foreground">{language === 'ko' ? '통화' : 'Currency'}</span>
                 <span className="font-medium">{product.default_currency?.toUpperCase() || product.currency?.toUpperCase() || 'USD'}</span>
               </div>
-              {(product.maturity_date || product.募集_deadline) && (
+              {product.maturity_date && (
                 <div className="flex justify-between py-2.5 border-b border-border">
                   <span className="text-muted-foreground">{language === 'ko' ? '상품 만기일' : 'Maturity Date'}</span>
-                  <span className="font-medium">{formatDate(product.maturity_date || product.募集_deadline!)}</span>
+                  <span className="font-medium">{formatDate(product.maturity_date)}</span>
                 </div>
               )}
               {product.fixed_return_percent != null && (

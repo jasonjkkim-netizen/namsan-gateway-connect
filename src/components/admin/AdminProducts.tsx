@@ -33,6 +33,7 @@ interface Product {
   target_return: number | null;
   minimum_investment: number | null;
   募集_deadline: string | null;
+  maturity_date: string | null;
   status: string | null;
   is_active: boolean | null;
   currency: string | null;
@@ -102,6 +103,7 @@ export function AdminProducts() {
     target_return: '',
     minimum_investment: '',
     募集_deadline: '',
+    maturity_date: '',
     status: 'draft',
     is_active: true,
     // New commission fields
@@ -157,6 +159,7 @@ export function AdminProducts() {
       target_return: product.target_return ? String(product.target_return) : '',
       minimum_investment: product.minimum_investment ? String(product.minimum_investment) : '',
       募集_deadline: product.募集_deadline || '',
+      maturity_date: product.maturity_date || '',
       status: product.status || 'draft',
       is_active: product.is_active ?? true,
       target_return_percent: product.target_return_percent ? String(product.target_return_percent) : '',
@@ -179,7 +182,7 @@ export function AdminProducts() {
     setFormData({
       name_en: '', name_ko: '', type: 'fund', currency: 'KRW',
       description_en: '', description_ko: '', target_return: '',
-      minimum_investment: '', 募集_deadline: '', status: 'draft', is_active: true,
+      minimum_investment: '', 募集_deadline: '', maturity_date: '', status: 'draft', is_active: true,
       target_return_percent: '', fixed_return_percent: '',
       management_fee_percent: '', performance_fee_percent: '',
       upfront_commission_percent: '', min_investment_amount: '', fundraising_amount: '', default_currency: 'USD',
@@ -222,6 +225,7 @@ export function AdminProducts() {
       target_return: validationResult.data.target_return ?? null,
       minimum_investment: validationResult.data.minimum_investment ?? null,
       募集_deadline: validationResult.data.募集_deadline ?? null,
+      maturity_date: formData.maturity_date || null,
       status: validationResult.data.status!,
       is_active: validationResult.data.is_active!,
       // New fields
@@ -528,10 +532,14 @@ export function AdminProducts() {
                 </div>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '모집마감일' : 'Deadline'}</Label>
                 <Input type="date" value={formData.募集_deadline} onChange={(e) => setFormData({ ...formData, 募集_deadline: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '상품 만기일' : 'Maturity Date'}</Label>
+                <Input type="date" value={formData.maturity_date} onChange={(e) => setFormData({ ...formData, maturity_date: e.target.value })} />
               </div>
               <div className="flex items-center gap-2 pt-6">
                 <Switch checked={formData.is_active} onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })} />
