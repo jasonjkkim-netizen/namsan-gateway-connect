@@ -114,6 +114,20 @@ export default function Products() {
     }
   };
 
+  const getFundPresetWeights = (product: Product): Record<GroupId, number> | undefined => {
+    const name = product.name_ko + product.name_en;
+    if (name.includes('안정') || name.toLowerCase().includes('conservative') || name.toLowerCase().includes('low risk')) {
+      return PRESETS.find(p => p.id === 'low')?.groupWeights;
+    }
+    if (name.includes('균형') || name.toLowerCase().includes('balanced')) {
+      return PRESETS.find(p => p.id === 'mid')?.groupWeights;
+    }
+    if (name.includes('공격') || name.toLowerCase().includes('aggressive') || name.toLowerCase().includes('high growth')) {
+      return PRESETS.find(p => p.id === 'high')?.groupWeights;
+    }
+    return undefined;
+  };
+
   const getProductsByType = (type: string) => {
     return products.filter(p => p.type === type);
   };
