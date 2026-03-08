@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConsultationButton } from '@/components/ConsultationButton';
+import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart';
 
 interface Product {
   id: string;
@@ -78,6 +79,7 @@ export default function ProductDetail() {
   const [previewName, setPreviewName] = useState('');
   const [imageZoom, setImageZoom] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [isFlagshipProduct, setIsFlagshipProduct] = useState(false);
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -100,6 +102,13 @@ export default function ProductDetail() {
       }
       
       setProduct(data as Product);
+
+      // Check if this product is linked from flagship portfolio
+      const { count } = await supabase
+        .from('flagship_portfolio_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('product_id', id);
+      setIsFlagshipProduct((count || 0) > 0);
       
       const { data: docs } = await supabase
         .from('product_documents')
@@ -441,9 +450,13 @@ export default function ProductDetail() {
             </CardContent>
           </Card>
 
-          {/* Product Image */}
+          {/* Product Image / Flagship Chart */}
           <div className="animate-fade-in" style={{ animationDelay: '450ms' }}>
-            {product.image_url ? (
+            {isFlagshipProduct ? (
+              <div className="h-full rounded-xl border border-border p-4 bg-muted/10">
+                <ProductFlagshipChart />
+              </div>
+            ) : product.image_url ? (
               <div
                 className="overflow-hidden rounded-xl border border-border h-full cursor-zoom-in"
                 onClick={() => setImageZoom(true)}
