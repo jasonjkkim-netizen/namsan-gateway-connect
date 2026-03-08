@@ -432,10 +432,10 @@ export default function ProductDetail() {
                   <span className="font-medium">{formatCurrency(product.minimum_investment, product.default_currency || product.currency || undefined)}</span>
                 </div>
               )}
-              {product.maturity_date && (
+              {product.募集_deadline && (
                 <div className="flex justify-between py-2.5">
-                  <span className="text-muted-foreground">{language === 'ko' ? '만기일' : 'Maturity Date'}</span>
-                  <span className="font-medium">{formatDate(product.maturity_date)}</span>
+                  <span className="text-muted-foreground">{language === 'ko' ? '모집 마감일' : 'Subscription Deadline'}</span>
+                  <span className="font-medium">{formatDate(product.募集_deadline)}</span>
                 </div>
               )}
             </CardContent>
