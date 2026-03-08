@@ -213,7 +213,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide />
 
       {/* AI Analysis & CIO Commentary */}
-      <PortfolioAnalysis items={items} groups={groups} />
+      <PortfolioAnalysis items={items} groups={groups} onAnalysisChange={setAiAnalysis} />
       <CIOCommentary />
 
       {/* Simulator + Presets */}
