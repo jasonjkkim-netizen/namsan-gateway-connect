@@ -79,6 +79,7 @@ export default function ProductDetail() {
   const [previewName, setPreviewName] = useState('');
   const [imageZoom, setImageZoom] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [isFlagshipProduct, setIsFlagshipProduct] = useState(false);
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
