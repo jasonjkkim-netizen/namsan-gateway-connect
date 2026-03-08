@@ -26,6 +26,7 @@ interface Product {
   target_return: number | null;
   minimum_investment: number | null;
   募集_deadline: string | null;
+  maturity_date: string | null;
   status: string | null;
   currency: string | null;
   fundraising_amount: number | null;
@@ -140,7 +141,7 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                 <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '상품명' : 'Product'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '종류' : 'Type'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
-                <TableHead className="text-xs font-medium whitespace-nowrap text-center">{language === 'ko' ? '기간' : 'Period'}</TableHead>
+                <TableHead className="text-xs font-medium whitespace-nowrap text-center">{language === 'ko' ? '투자만기일' : 'Maturity'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '목표 수익률' : 'Target Return'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '모집 금액' : 'Fundraising'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '최소 금액' : 'Min. Amount'}</TableHead>
@@ -181,7 +182,7 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                       {CURRENCY_LABELS[product.currency || 'KRW'] || product.currency || 'KRW'}
                     </TableCell>
                     <TableCell className="text-xs text-center whitespace-nowrap">
-                      {calculateTerm(product.募集_deadline)}
+                      {product.maturity_date ? formatDate(product.maturity_date) : '-'}
                     </TableCell>
                     <TableCell className="text-xs text-right font-semibold text-accent whitespace-nowrap">
                       {product.target_return != null ? `${product.target_return}%` : '-'}
