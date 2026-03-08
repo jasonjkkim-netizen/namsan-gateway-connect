@@ -222,7 +222,7 @@ export default function ProductDetail() {
           <h1 className="text-lg md:text-xl font-serif font-semibold text-foreground mb-2">
             {language === 'ko' ? product.name_ko : product.name_en}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground whitespace-pre-line">
             {language === 'ko' ? product.description_ko : product.description_en}
           </p>
         </div>
