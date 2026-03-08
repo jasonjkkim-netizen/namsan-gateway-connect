@@ -104,16 +104,16 @@ export default function ProductDetail() {
       const prod = data as Product;
       setProduct(prod);
 
-      // Check if this is a flagship portfolio product
+      // Check if this is a flagship portfolio FUND product (only funds show charts)
       const isFlagship = (prod.type === 'fund' && (prod.name_ko.includes('포트폴리오') || prod.name_en.includes('Portfolio')));
-      if (!isFlagship) {
+      if (!isFlagship && prod.type === 'fund') {
         const { count } = await supabase
           .from('flagship_portfolio_items')
           .select('id', { count: 'exact', head: true })
           .eq('product_id', id);
         setIsFlagshipProduct((count || 0) > 0);
       } else {
-        setIsFlagshipProduct(true);
+        setIsFlagshipProduct(isFlagship);
       }
       
       const { data: docs } = await supabase

@@ -208,8 +208,8 @@ export default function Products() {
                             }`}
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
-                            {/* Show mini pie chart for flagship portfolio products, else image */}
-                            {(flagshipProductIds.includes(product.id) || (product.type === 'fund' && (product.name_ko.includes('포트폴리오') || product.name_en.includes('Portfolio')))) ? (
+                            {/* Show mini pie chart for flagship portfolio fund products only, else image */}
+                            {product.type === 'fund' && (flagshipProductIds.includes(product.id) || product.name_ko.includes('포트폴리오') || product.name_en.includes('Portfolio')) ? (
                               <div className="mb-3 -mx-5 -mt-5 overflow-hidden rounded-t-lg bg-muted/20 h-52">
                                 <MiniPieChart />
                               </div>
