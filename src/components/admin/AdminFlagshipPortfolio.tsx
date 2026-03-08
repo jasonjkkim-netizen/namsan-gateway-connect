@@ -398,8 +398,12 @@ export function AdminFlagshipPortfolio() {
               <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
                 <Package className="h-4 w-4 mr-1" /> {ko ? '상품에서 가져오기' : 'Import Product'}
               </Button>
+              <Button variant="default" size="sm" onClick={handleLivePriceUpdate} disabled={updatingPrices}>
+                {updatingPrices ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Zap className="h-4 w-4 mr-1" />}
+                {ko ? '실시간 시세 업데이트' : 'Live Price Update'}
+              </Button>
               <Button variant="outline" size="sm" onClick={handleBulkUpdatePrices}>
-                {ko ? '일괄 가격 업데이트' : 'Bulk Price Update'}
+                {ko ? '수동 입력' : 'Manual Entry'}
               </Button>
               <Button variant="outline" size="sm" onClick={fetchItems} disabled={loading}>
                 <RefreshCw className="h-4 w-4" />
