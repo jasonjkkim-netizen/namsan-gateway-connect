@@ -185,7 +185,7 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                       {product.maturity_date ? formatDate(product.maturity_date) : '-'}
                     </TableCell>
                     <TableCell className="text-xs text-right font-semibold text-accent whitespace-nowrap">
-                      {product.target_return != null ? `${product.target_return}%` : '-'}
+                      {product.target_return != null ? (language === 'ko' ? `년 ${product.target_return}%` : `${product.target_return}% p.a.`) : '-'}
                     </TableCell>
                     <TableCell className="text-xs text-right whitespace-nowrap">
                       {product.fundraising_amount != null ? product.fundraising_amount.toLocaleString() : '-'}
