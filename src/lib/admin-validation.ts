@@ -33,8 +33,9 @@ export const investmentSchema = z.object({
 // Product validation schema
 export const productSchema = z.object({
   name_en: z.string()
-    .min(1, 'English name is required')
-    .max(255, 'Name must be less than 255 characters'),
+    .max(255, 'Name must be less than 255 characters')
+    .optional()
+    .or(z.literal('')),
   name_ko: z.string()
     .min(1, 'Korean name is required')
     .max(255, 'Name must be less than 255 characters'),
