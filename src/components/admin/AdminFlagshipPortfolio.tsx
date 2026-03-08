@@ -83,6 +83,8 @@ export function AdminFlagshipPortfolio() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // Settings state
   const [presetWeights, setPresetWeights] = useState({
