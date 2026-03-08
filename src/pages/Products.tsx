@@ -76,6 +76,17 @@ export default function Products() {
       const { data: accessData } = await supabase
         .from('client_product_access')
         .select('product_id');
+
+      // Fetch flagship-linked product IDs
+      const { data: flagshipData } = await supabase
+        .from('flagship_portfolio_items')
+        .select('product_id')
+        .not('product_id', 'is', null);
+      
+      if (flagshipData) {
+        const ids = [...new Set(flagshipData.map((f: any) => f.product_id).filter(Boolean))];
+        setFlagshipProductIds(ids as string[]);
+      }
       
       if (productsData) setProducts(productsData as Product[]);
       
