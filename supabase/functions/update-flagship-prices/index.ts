@@ -9,12 +9,16 @@ const corsHeaders = {
 const KIS_BASE_URL = 'https://openapi.koreainvestment.com:9443';
 const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'admin@namsan-korea.com';
 
+const MAX_CHANGE_RATIO = 0.50; // 50% cap – skip if price moves more than this
+
 interface PriceResult {
   id: string;
   name: string;
   ticker: string;
   oldPrice: number | null;
   newPrice: number | null;
+  skipped?: boolean;
+  skipReason?: string;
   error?: string;
 }
 
