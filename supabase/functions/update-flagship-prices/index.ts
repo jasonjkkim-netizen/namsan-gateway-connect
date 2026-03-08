@@ -224,10 +224,24 @@ Deno.serve(async (req) => {
 
       if (!newPrice) error = 'All sources failed';
 
+      // Safety check: skip if price change exceeds MAX_CHANGE_RATIO
+      const oldPrice = item.current_price ? Number(item.current_price) : null;
+      let skipped = false;
+      let skipReason: string | undefined;
+
+      if (newPrice && oldPrice && oldPrice > 0) {
+        const changeRatio = Math.abs(newPrice - oldPrice) / oldPrice;
+        if (changeRatio > MAX_CHANGE_RATIO) {
+          skipped = true;
+          skipReason = `Price change ${(changeRatio * 100).toFixed(1)}% exceeds ${MAX_CHANGE_RATIO * 100}% cap (${oldPrice} → ${newPrice})`;
+          console.warn(`SKIPPED ${item.name}: ${skipReason}`);
+          newPrice = null; // prevent DB update
+        }
+      }
+
       results.push({
         id: item.id, name: item.name, ticker,
-        oldPrice: item.current_price ? Number(item.current_price) : null,
-        newPrice, error,
+        oldPrice, newPrice, skipped, skipReason, error,
       });
 
       // Rate limit between requests
