@@ -210,7 +210,7 @@ export default function Products() {
                           >
                             {/* Show mini pie chart for flagship portfolio products, else image */}
                             {(flagshipProductIds.includes(product.id) || (product.type === 'fund' && (product.name_ko.includes('포트폴리오') || product.name_en.includes('Portfolio')))) ? (
-                              <div className="mb-3 -mx-5 -mt-5 overflow-hidden rounded-t-lg bg-muted/20 h-44">
+                              <div className="mb-3 -mx-5 -mt-5 overflow-hidden rounded-t-lg bg-muted/20 h-52">
                                 <MiniPieChart />
                               </div>
                             ) : product.image_url ? (
