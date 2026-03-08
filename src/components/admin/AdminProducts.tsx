@@ -216,7 +216,7 @@ export function AdminProducts() {
     const parseNum = (v: string) => v ? parseFloat(v) || null : null;
 
     const payload = {
-      name_en: validationResult.data.name_en!,
+      name_en: validationResult.data.name_en || '',
       name_ko: validationResult.data.name_ko!,
       type: validationResult.data.type!,
       currency: formData.currency,
