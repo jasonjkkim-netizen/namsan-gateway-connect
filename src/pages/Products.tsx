@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/accordion';
 import { TrendingUp, Calendar, DollarSign, ArrowRight, Lock, Briefcase, Building2, Landmark, LineChart, Layers, LayoutDashboard, FileText, PlayCircle, Package, BookOpen, Newspaper, MessageSquare, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { MiniPieChart } from '@/components/flagship/MiniPieChart';
 
 interface Product {
   id: string;
@@ -48,6 +49,7 @@ export default function Products() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [accessibleProductIds, setAccessibleProductIds] = useState<string[]>([]);
+  const [flagshipProductIds, setFlagshipProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAccessControl, setHasAccessControl] = useState(false);
 
@@ -74,6 +76,17 @@ export default function Products() {
       const { data: accessData } = await supabase
         .from('client_product_access')
         .select('product_id');
+
+      // Fetch flagship-linked product IDs
+      const { data: flagshipData } = await supabase
+        .from('flagship_portfolio_items')
+        .select('product_id')
+        .not('product_id', 'is', null);
+      
+      if (flagshipData) {
+        const ids = [...new Set(flagshipData.map((f: any) => f.product_id).filter(Boolean))];
+        setFlagshipProductIds(ids as string[]);
+      }
       
       if (productsData) setProducts(productsData as Product[]);
       
@@ -195,7 +208,12 @@ export default function Products() {
                             }`}
                             style={{ animationDelay: `${index * 50}ms` }}
                           >
-                            {product.image_url && (
+                            {/* Show mini pie chart for flagship products, else image */}
+                            {flagshipProductIds.includes(product.id) ? (
+                              <div className="mb-3 -mx-5 -mt-5 pt-3 pb-1 bg-muted/20 rounded-t-lg">
+                                <MiniPieChart />
+                              </div>
+                            ) : product.image_url ? (
                               <div className="mb-3 -mx-5 -mt-5 overflow-hidden rounded-t-lg">
                                 <img
                                   src={product.image_url}
@@ -203,7 +221,7 @@ export default function Products() {
                                   className="w-full h-36 object-cover"
                                 />
                               </div>
-                            )}
+                            ) : null}
                             <div className="flex items-start justify-between mb-3">
                               <Badge className={getStatusColor(product.status)}>
                                 {t(product.status)}
