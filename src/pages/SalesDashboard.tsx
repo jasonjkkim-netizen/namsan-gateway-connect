@@ -15,12 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { Users, Coins, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown, UserCog, Settings } from 'lucide-react';
+import { Users, Coins, Briefcase, ChevronRight, TrendingUp, Plus, CheckCircle, Clock, Wallet, Download, CalendarIcon, Crown, UserCog, Settings, Pencil } from 'lucide-react';
 import { CreateInvestmentDialog } from '@/components/sales/CreateInvestmentDialog';
 import { SalesCommissionRates } from '@/components/sales/SalesCommissionRates';
 import { SalesInvestmentManager } from '@/components/sales/SalesInvestmentManager';
 import { MemberDetailDialog } from '@/components/sales/MemberDetailDialog';
 import { AddMemberDialog } from '@/components/sales/AddMemberDialog';
+import { EditMemberDialog } from '@/components/sales/EditMemberDialog';
 import { PendingMemberApprovals } from '@/components/sales/PendingMemberApprovals';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import ExcelJS from 'exceljs';
