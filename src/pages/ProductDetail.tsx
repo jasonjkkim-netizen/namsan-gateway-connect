@@ -102,6 +102,13 @@ export default function ProductDetail() {
       }
       
       setProduct(data as Product);
+
+      // Check if this product is linked from flagship portfolio
+      const { count } = await supabase
+        .from('flagship_portfolio_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('product_id', id);
+      setIsFlagshipProduct((count || 0) > 0);
       
       const { data: docs } = await supabase
         .from('product_documents')
