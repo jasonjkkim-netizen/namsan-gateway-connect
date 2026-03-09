@@ -168,11 +168,11 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
 
       {/* Description */}
       {(product.description_ko || product.description_en) && (
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '12pt', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444' }}>
+        <div style={{ marginBottom: '14px' }}>
+          <h2 style={{ fontSize: '10pt', fontWeight: 600, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444' }}>
             {language === 'ko' ? '상품 개요' : 'Product Overview'}
           </h2>
-          <p style={{ fontSize: '11pt', color: '#333', whiteSpace: 'pre-line', lineHeight: 1.7 }}>
+          <p style={{ fontSize: '9pt', color: '#333', whiteSpace: 'pre-line', lineHeight: 1.5, maxHeight: '120px', overflow: 'hidden' }}>
             {language === 'ko' ? product.description_ko : product.description_en}
           </p>
         </div>
