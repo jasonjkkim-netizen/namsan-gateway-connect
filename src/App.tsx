@@ -32,6 +32,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+
 // WhatsApp phone number for customer support (Hong Kong)
 const WHATSAPP_PHONE = "85294448661";
 
