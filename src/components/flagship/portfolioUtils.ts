@@ -104,47 +104,39 @@ export function buildReturnSeries(
 }
 
 // ── Projection ──
+// Expected return uses target_annual_return if available, otherwise defaults
+// This is a forward-looking assumption, NOT backward-looking actual performance
 export function calcExpectedGroupReturn(group: GroupData): number {
-  if (group.id === 'bonds') {
-    const totalW = group.totalWeight;
-    if (totalW === 0) return 0;
-    return group.items.reduce((s, i) => s + (i.weight / totalW) * (i.targetAnnualReturn || 0), 0);
-  }
-  if (group.id === 'shares' || group.id === 'others') {
-    const defaultReturn = group.id === 'shares' 
-      ? DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual 
-      : DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual;
-    
-    const today = new Date();
-    const base = parseISO(BASE_DATE);
-    const daysElapsed = differenceInDays(today, base);
-    
-    // If BASE_DATE is in the future or very recent (< 60 days), use default assumptions
-    if (daysElapsed < 60) {
-      return defaultReturn;
-    }
-    
-    // Use actual performance annualized from real price data
-    const totalW = group.totalWeight;
-    if (totalW === 0) {
-      return defaultReturn;
-    }
-    
-    // Weighted actual return for the group
-    const actualReturn = group.items.reduce((s, i) => {
+  const totalW = group.totalWeight;
+  if (totalW === 0) return 0;
+
+  // For all asset types: prefer targetAnnualReturn if set
+  const hasTargetReturns = group.items.some(i => i.targetAnnualReturn != null);
+  
+  if (hasTargetReturns) {
+    // Weighted average of target annual returns
+    return group.items.reduce((s, i) => {
       const w = i.weight / totalW;
-      const ret = calcItemReturn(i);
-      return s + w * ret;
+      const target = i.targetAnnualReturn ?? getDefaultReturn(group.id, i.assetType);
+      return s + w * target;
     }, 0);
-    
-    // Annualize: (1 + actualReturn)^(365/daysElapsed) - 1
-    const annualized = Math.pow(1 + actualReturn, 365 / daysElapsed) - 1;
-    
-    // Cap unrealistic returns at 50% annual max, floor at -50%
-    const capped = Math.max(-0.5, Math.min(0.5, annualized));
-    return capped;
   }
-  return DEFAULT_ASSUMPTIONS.cashReturnAnnual;
+
+  // Fallback to default assumptions by group
+  return getDefaultReturn(group.id);
+}
+
+function getDefaultReturn(groupId: string, assetType?: string): number {
+  if (groupId === 'bonds' || assetType === 'bond') {
+    return 0.065; // 6.5% default for bonds
+  }
+  if (groupId === 'shares') {
+    return DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual; // 10%
+  }
+  if (groupId === 'others') {
+    return DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual; // 5%
+  }
+  return DEFAULT_ASSUMPTIONS.cashReturnAnnual; // 0%
 }
 
 export function calcProjection(
