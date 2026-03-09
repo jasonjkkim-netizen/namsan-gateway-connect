@@ -54,6 +54,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
 
   const [investmentAmount, setInvestmentAmount] = useState(10_000_000);
   const [horizon, setHorizon] = useState<'eoy' | '12m'>('eoy');
+  const [activeFees, setActiveFees] = useState<PresetFeeStructure>(DEFAULT_FEES);
 
   const daysToHorizon = useMemo(() => {
     const today = new Date();
@@ -75,10 +76,10 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
     return groups.reduce((s, g) => s + ((groupWeights[g.id] || 0) / totalW) * calcExpectedGroupReturn(g), 0);
   }, [groupWeights, groups]);
 
-  // Fee calculations with waterfall
+  // Fee calculations with waterfall using active preset fees
   const feeBreakdown = useMemo(
-    () => calcFeeBreakdown(investmentAmount, blendedExpectedReturn, DEFAULT_FEES, daysToHorizon),
-    [investmentAmount, blendedExpectedReturn, daysToHorizon],
+    () => calcFeeBreakdown(investmentAmount, blendedExpectedReturn, activeFees, daysToHorizon),
+    [investmentAmount, blendedExpectedReturn, activeFees, daysToHorizon],
   );
 
   const netProfit = projection.profit - feeBreakdown.totalFee;
@@ -90,6 +91,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
 
   const applyPreset = (preset: typeof PRESETS[0]) => {
     setGroupWeights({ ...preset.groupWeights });
+    setActiveFees(preset.fees);
     setTimeout(() => simulatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
