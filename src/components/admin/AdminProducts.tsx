@@ -456,8 +456,12 @@ export function AdminProducts() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '목표수익률' : 'Target Return (%)'}</Label>
-                <Input type="number" step="0.1" value={formData.target_return} onChange={(e) => setFormData({ ...formData, target_return: e.target.value })} />
+                <Label>{language === 'ko' ? '년 수익률 (%)' : 'Annual Return (%)'}</Label>
+                <Input type="number" step="0.1" value={formData.target_return} onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({ ...formData, target_return: val, fixed_return_percent: val });
+                }} />
+                <p className="text-[9px] text-muted-foreground">{language === 'ko' ? '세전 수익률 · 단순 수익률과 연동' : 'Before tax · Synced with Simple Return'}</p>
               </div>
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '최소투자금' : 'Min Investment'}</Label>
