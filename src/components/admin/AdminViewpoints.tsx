@@ -367,7 +367,8 @@ export function AdminViewpoints() {
                                   <TableHead className="w-[40%]">{language === 'ko' ? '제목' : 'Title'}</TableHead>
                                   <TableHead>{language === 'ko' ? '이미지' : 'Image'}</TableHead>
                                   <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
-                                  <TableHead>{language === 'ko' ? '날짜/시간' : 'Date/Time'}</TableHead>
+                                  <TableHead>{language === 'ko' ? '등록일시' : 'Created'}</TableHead>
+                                  <TableHead>{language === 'ko' ? '수정일시' : 'Updated'}</TableHead>
                                   <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -411,9 +412,15 @@ export function AdminViewpoints() {
                                       }} />
                                     </TableCell>
                                     <TableCell className="text-xs whitespace-nowrap">
-                                      <div>{new Date(item.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+                                      <div className="font-medium">{new Date(item.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
                                       <div className="text-muted-foreground">
                                         {new Date(item.created_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-xs whitespace-nowrap">
+                                      <div className="font-medium">{new Date(item.updated_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+                                      <div className={`${item.updated_at !== item.created_at ? 'text-primary' : 'text-muted-foreground'}`}>
+                                        {new Date(item.updated_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
                                       </div>
                                     </TableCell>
                                     <TableCell>
