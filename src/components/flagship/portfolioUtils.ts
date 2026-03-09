@@ -25,14 +25,14 @@ export function calcStockReturn(basePrice: number, currentPrice: number): number
   return (currentPrice / basePrice) - 1;
 }
 
-export function calcBondAccrual(targetAnnualReturn: number, today: Date = new Date()): number {
-  const days = differenceInDays(today, parseISO(BASE_DATE));
+export function calcBondAccrual(targetAnnualReturn: number, baseDate: Date = parseISO(BASE_DATE), today: Date = new Date()): number {
+  const days = differenceInDays(today, baseDate);
   return targetAnnualReturn * Math.max(days, 0) / 365;
 }
 
-export function calcItemReturn(item: PortfolioItem): number {
+export function calcItemReturn(item: PortfolioItem, baseDate: Date = parseISO(BASE_DATE)): number {
   if (item.assetType === 'bond' && item.targetAnnualReturn != null) {
-    return calcBondAccrual(item.targetAnnualReturn);
+    return calcBondAccrual(item.targetAnnualReturn, baseDate);
   }
   if (item.basePrice && item.currentPrice) {
     return calcStockReturn(item.basePrice, item.currentPrice);
@@ -41,13 +41,13 @@ export function calcItemReturn(item: PortfolioItem): number {
 }
 
 // ── Group-level aggregation ──
-export function buildGroups(items: PortfolioItem[]): GroupData[] {
+export function buildGroups(items: PortfolioItem[], baseDate: Date = parseISO(BASE_DATE)): GroupData[] {
   const groupIds: GroupId[] = ['shares', 'bonds', 'others'];
   return groupIds.map(gId => {
     const gItems = items.filter(i => i.groupId === gId);
     const totalWeight = gItems.reduce((s, i) => s + i.weight, 0);
     const performance = totalWeight > 0
-      ? gItems.reduce((s, i) => s + (i.weight / totalWeight) * calcItemReturn(i), 0)
+      ? gItems.reduce((s, i) => s + (i.weight / totalWeight) * calcItemReturn(i, baseDate), 0)
       : 0;
     return {
       id: gId,
