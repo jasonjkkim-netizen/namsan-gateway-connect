@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { Eye } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -18,22 +18,19 @@ interface NamsanViewpointSectionProps {
 }
 
 export function NamsanViewpointSection({ language }: NamsanViewpointSectionProps) {
-  const [viewpoints, setViewpoints] = useState<Viewpoint[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetch() {
+  const { data: viewpoints = [], isLoading: loading } = useQuery({
+    queryKey: ['namsan-viewpoints'],
+    queryFn: async () => {
       const { data } = await supabase
         .from('namsan_viewpoints')
         .select('*')
         .eq('is_active', true)
         .order('display_order', { ascending: true })
         .limit(1);
-      if (data) setViewpoints(data as Viewpoint[]);
-      setLoading(false);
-    }
-    fetch();
-  }, []);
+      return (data as Viewpoint[]) || [];
+    },
+    staleTime: 30 * 1000, // 30초 후 자동 refetch
+  });
 
   if (loading) {
     return (
