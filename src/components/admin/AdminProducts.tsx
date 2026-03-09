@@ -363,7 +363,11 @@ export function AdminProducts() {
                   </TableCell>
                   <TableCell>{product.default_currency || product.currency || 'KRW'}</TableCell>
                   <TableCell>
-                    {product.target_return_percent ? `${product.target_return_percent}%` : product.target_return ? formatPercent(product.target_return) : '-'}
+                    {product.target_return_percent
+                      ? (language === 'ko' ? `년 ${product.target_return_percent}%` : `${product.target_return_percent}% p.a.`)
+                      : product.target_return
+                        ? (language === 'ko' ? `년 ${product.target_return}%` : `${product.target_return}% p.a.`)
+                        : '-'}
                   </TableCell>
                   <TableCell>
                     {product.upfront_commission_percent ? `${product.upfront_commission_percent}%` : '-'}
