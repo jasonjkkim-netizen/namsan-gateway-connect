@@ -328,7 +328,7 @@ export function AdminProducts() {
               <TableHead>{language === 'ko' ? '상품명' : 'Name'}</TableHead>
               <TableHead>{language === 'ko' ? '유형' : 'Type'}</TableHead>
               <TableHead>{language === 'ko' ? '통화' : 'Currency'}</TableHead>
-              <TableHead>{language === 'ko' ? '목표수익률' : 'Target Return'}</TableHead>
+              <TableHead>{language === 'ko' ? '년 수익률' : 'Annual Return'}</TableHead>
               <TableHead>{language === 'ko' ? '선취수수료' : 'Upfront Comm.'}</TableHead>
               <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
               <TableHead>{language === 'ko' ? '활성' : 'Active'}</TableHead>
