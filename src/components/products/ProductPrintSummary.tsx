@@ -70,13 +70,13 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
   }
   if (product.fixed_return_percent != null) {
     rows.push({
-      label: language === 'ko' ? '\uB2E8\uC21C \uC218\uC775\uB960' : 'Simple960' : 'Simple Return',
+      label: language === 'ko' ? '단순 수익률' : 'Simple Return',
       value: language === 'ko' ? `년 ${product.fixed_return_percent}%` : `${product.fixed_return_percent}% p.a.`,
     });
   }
   if (product.target_return_percent != null) {
     rows.push({
-      label: langu '\uCD5C\uB300 \uC218\uC775\uB960' : 'Maximum' : 'Maximumet Return %',
+      label: language === 'ko' ? '최대 수익률' : 'Maximum Return %',
       value: formatPercent(product.target_return_percent),
     });
   }
