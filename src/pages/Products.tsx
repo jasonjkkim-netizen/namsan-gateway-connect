@@ -287,7 +287,7 @@ export default function Products() {
                               <Button 
                                 size="sm" 
                                 className="w-full btn-gold group"
-                                onClick={() => navigate(`/products/${product.id}`)}
+                                onClick={() => setPreviewProduct(product)}
                               >
                                 {t('learnMore')}
                                 <ArrowRight className="ml-2 h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
