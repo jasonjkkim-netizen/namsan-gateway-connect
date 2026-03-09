@@ -128,21 +128,23 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
   });
 
   return (
-    <div ref={ref} className="hidden print:block print-summary" style={{ fontFamily: 'serif' }}>
+    <div ref={ref} className="print-summary" style={{ fontFamily: 'serif', display: 'none' }}>
       <style>{`
         @media print {
-          body * { visibility: hidden !important; }
-          .print-summary, .print-summary * { visibility: visible !important; }
+          body > *:not(.print-summary) { display: none !important; }
           .print-summary {
-            position: fixed !important;
+            display: block !important;
+            position: absolute !important;
             left: 0; top: 0;
             width: 100%;
-            padding: 40px 60px;
+            padding: 30px 50px;
             background: white !important;
             color: black !important;
-            font-size: 12pt;
-            line-height: 1.6;
+            font-size: 10pt;
+            line-height: 1.4;
+            page-break-after: avoid;
           }
+          @page { margin: 15mm; size: A4; }
         }
       `}</style>
 
