@@ -564,8 +564,12 @@ export function AdminProducts() {
                   <Input type="number" step="0.01" value={formData.target_return_percent} onChange={(e) => setFormData({ ...formData, target_return_percent: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{language === 'ko' ? '\uB2E8\uC21C \uC218\uC775\uB960 (%)' : 'Simple Return (%)'}</Label>
-                  <Input type="number" step="0.01" value={formData.fixed_return_percent} onChange={(e) => setFormData({ ...formData, fixed_return_percent: e.target.value })} />
+                  <Label>{language === 'ko' ? '단순 수익률 (%)' : 'Simple Return (%)'}</Label>
+                  <Input type="number" step="0.01" value={formData.fixed_return_percent} onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({ ...formData, fixed_return_percent: val, target_return: val });
+                  }} />
+                  <p className="text-[9px] text-muted-foreground">{language === 'ko' ? '년 수익률과 연동' : 'Synced with Annual Return'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
