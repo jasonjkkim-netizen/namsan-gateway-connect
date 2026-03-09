@@ -55,7 +55,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
     }
   }, [items, initialWeights, hasInitialized]);
 
-  const groups = useMemo(() => buildGroups(items, baseDate), [items, baseDate]);
+  const groups = useMemo(() => buildGroups(items), [items]);
   
   const baseDateLabel = ko 
     ? format(baseDate, 'yyyy년 M월 d일', { locale: koLocale })
@@ -86,7 +86,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
     );
   }
 
-  const baseDateLabel = ko ? BASE_DATE_LABEL_KO : BASE_DATE_LABEL_EN;
+  
 
   // Calculate total allocation and blended performance
   const rawTotal = groups.reduce((sum, g) => sum + g.totalWeight, 0);
@@ -248,8 +248,8 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       {/* Disclaimer */}
       <p className="text-[11px] text-muted-foreground text-center max-w-3xl mx-auto leading-relaxed">
         {ko
-          ? `${BASE_DATE_LABEL_KO} 이후 수익률은 이용 가능한 가격 데이터를 기반으로 합니다. 채권은 목표 연간 수익률을 사용하며, 실제 체결 및 가격은 다를 수 있습니다. 투자 시뮬레이션은 예측치이며 수익을 보장하지 않습니다.`
-          : `Performance since ${BASE_DATE_LABEL_EN} is based on available price data. Bonds use target annual yield; actual execution and pricing may differ. Projections are not guarantees.`}
+          ? `${baseDateLabel} 이후 수익률은 이용 가능한 가격 데이터를 기반으로 합니다. 채권은 목표 연간 수익률을 사용하며, 실제 체결 및 가격은 다를 수 있습니다. 투자 시뮬레이션은 예측치이며 수익을 보장하지 않습니다.`
+          : `Performance since ${baseDateLabel} is based on available price data. Bonds use target annual yield; actual execution and pricing may differ. Projections are not guarantees.`}
       </p>
 
       {/* Report Dialog */}
