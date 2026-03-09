@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
+import { format, parseISO } from 'date-fns';
+import { ko as koLocale } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePortfolioData } from './usePortfolioData';
-import { GroupId, GROUP_META, BASE_DATE_LABEL_KO, BASE_DATE_LABEL_EN } from './portfolioTypes';
+import { GroupId, GROUP_META, BASE_DATE } from './portfolioTypes';
 import { buildGroups, calcItemReturn, formatPct } from './portfolioUtils';
 import { FlagshipCharts } from './FlagshipCharts';
 import { FlagshipSimulator } from './FlagshipSimulator';
@@ -13,7 +15,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Minus, FileText } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { TrendingUp, TrendingDown, Minus, FileText, CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface FlagshipPortfolioProps {
   chartsOnly?: boolean;
