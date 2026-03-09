@@ -93,7 +93,7 @@ export const PRESETS: PortfolioScenario[] = [
     descEn: 'Bond-focused stable portfolio',
     groupWeights: { shares: 30, bonds: 70, others: 0, cash: 0 },
     targetReturn: 0.07,
-    fees: { managementFeeRate: 0.02, performanceFeeRate: 0.20, performanceHurdle: 0.07 },
+    fees: { managementFeeRate: 0.01, performanceFeeRate: 0.20, performanceHurdle: 0.07 },
   },
   {
     id: 'mid',
@@ -103,7 +103,7 @@ export const PRESETS: PortfolioScenario[] = [
     descEn: 'Balanced stock and bond portfolio',
     groupWeights: { shares: 50, bonds: 50, others: 0, cash: 0 },
     targetReturn: 0.08,
-    fees: { managementFeeRate: 0.02, performanceFeeRate: 0.20, performanceHurdle: 0.08 },
+    fees: { managementFeeRate: 0.015, performanceFeeRate: 0.20, performanceHurdle: 0.08 },
   },
   {
     id: 'high',

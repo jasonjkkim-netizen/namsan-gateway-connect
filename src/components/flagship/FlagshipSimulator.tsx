@@ -19,7 +19,7 @@ const GROUP_COLORS: Record<string, string> = {
 
 // Default fee structure (used for the main simulator)
 const DEFAULT_FEES: PresetFeeStructure = {
-  managementFeeRate: 0.02,
+  managementFeeRate: 0.015,
   performanceFeeRate: 0.20,
   performanceHurdle: 0.08,
 };
@@ -189,7 +189,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
           </h4>
           <div className="space-y-2 text-xs">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">{ko ? '운용 수수료' : 'Management Fee'}</span>
+              <span className="text-muted-foreground">{ko ? '관리 수수료 (후취)' : 'Management Fee (Deferred)'}</span>
               <span className="font-mono font-medium">
                 {ko ? `년 ${(activeFees.managementFeeRate * 100).toFixed(1)}%` : `${(activeFees.managementFeeRate * 100).toFixed(1)}% p.a.`}
               </span>
@@ -213,7 +213,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
             </div>
             {feeBreakdown.mgmtFee > 0 && (
               <div className="flex justify-between text-[10px] pl-2">
-                <span className="text-muted-foreground">{ko ? '└ 운용 수수료' : '└ Management'}</span>
+                <span className="text-muted-foreground">{ko ? '└ 관리 수수료' : '└ Management'}</span>
                 <span className="font-mono text-destructive">-{formatKRW(feeBreakdown.mgmtFee)}</span>
               </div>
             )}
@@ -306,7 +306,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                 {/* Management Fee row */}
                 <tr className="border-b border-border/50 text-destructive">
                   <td className="py-2 font-medium">
-                    {ko ? '운용 수수료' : 'Management Fee'}
+                    {ko ? '관리 수수료 (후취)' : 'Management Fee (Deferred)'}
                   </td>
                   <td className="py-2 text-right font-mono">—</td>
                   <td className="py-2 text-right font-mono">
@@ -411,7 +411,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                   {/* Fee breakdown */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">{ko ? '운용 수수료' : 'Mgmt Fee'}</span>
+                      <span className="text-muted-foreground">{ko ? '관리 수수료 (후취)' : 'Mgmt Fee (Deferred)'}</span>
                       <span className="font-mono text-destructive">
                         -{ko ? `년 ${(preset.fees.managementFeeRate * 100).toFixed(1)}%` : `${(preset.fees.managementFeeRate * 100).toFixed(1)}% p.a.`}
                       </span>
