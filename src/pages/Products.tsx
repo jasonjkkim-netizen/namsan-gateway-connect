@@ -55,6 +55,7 @@ export default function Products() {
   const [flagshipProductIds, setFlagshipProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAccessControl, setHasAccessControl] = useState(false);
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
