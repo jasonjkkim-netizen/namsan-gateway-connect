@@ -328,7 +328,7 @@ export function AdminProducts() {
               <TableHead>{language === 'ko' ? '상품명' : 'Name'}</TableHead>
               <TableHead>{language === 'ko' ? '유형' : 'Type'}</TableHead>
               <TableHead>{language === 'ko' ? '통화' : 'Currency'}</TableHead>
-              <TableHead>{language === 'ko' ? '목표수익률' : 'Target Return'}</TableHead>
+              <TableHead>{language === 'ko' ? '년 수익률' : 'Annual Return'}</TableHead>
               <TableHead>{language === 'ko' ? '선취수수료' : 'Upfront Comm.'}</TableHead>
               <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
               <TableHead>{language === 'ko' ? '활성' : 'Active'}</TableHead>
@@ -363,7 +363,11 @@ export function AdminProducts() {
                   </TableCell>
                   <TableCell>{product.default_currency || product.currency || 'KRW'}</TableCell>
                   <TableCell>
-                    {product.target_return_percent ? `${product.target_return_percent}%` : product.target_return ? formatPercent(product.target_return) : '-'}
+                    {product.target_return_percent
+                      ? (language === 'ko' ? `년 ${product.target_return_percent}%` : `${product.target_return_percent}% p.a.`)
+                      : product.target_return
+                        ? (language === 'ko' ? `년 ${product.target_return}%` : `${product.target_return}% p.a.`)
+                        : '-'}
                   </TableCell>
                   <TableCell>
                     {product.upfront_commission_percent ? `${product.upfront_commission_percent}%` : '-'}
@@ -456,8 +460,12 @@ export function AdminProducts() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '목표수익률' : 'Target Return (%)'}</Label>
-                <Input type="number" step="0.1" value={formData.target_return} onChange={(e) => setFormData({ ...formData, target_return: e.target.value })} />
+                <Label>{language === 'ko' ? '년 수익률 (%)' : 'Annual Return (%)'}</Label>
+                <Input type="number" step="0.1" value={formData.target_return} onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({ ...formData, target_return: val, fixed_return_percent: val });
+                }} />
+                <p className="text-[9px] text-muted-foreground">{language === 'ko' ? '세전 수익률 · 단순 수익률과 연동' : 'Before tax · Synced with Simple Return'}</p>
               </div>
               <div className="space-y-2">
                 <Label>{language === 'ko' ? '최소투자금' : 'Min Investment'}</Label>
@@ -560,8 +568,12 @@ export function AdminProducts() {
                   <Input type="number" step="0.01" value={formData.target_return_percent} onChange={(e) => setFormData({ ...formData, target_return_percent: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{language === 'ko' ? '\uB2E8\uC21C \uC218\uC775\uB960 (%)' : 'Simple Return (%)'}</Label>
-                  <Input type="number" step="0.01" value={formData.fixed_return_percent} onChange={(e) => setFormData({ ...formData, fixed_return_percent: e.target.value })} />
+                  <Label>{language === 'ko' ? '단순 수익률 (%)' : 'Simple Return (%)'}</Label>
+                  <Input type="number" step="0.01" value={formData.fixed_return_percent} onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData({ ...formData, fixed_return_percent: val, target_return: val });
+                  }} />
+                  <p className="text-[9px] text-muted-foreground">{language === 'ko' ? '년 수익률과 연동' : 'Synced with Annual Return'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
