@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MiniPieChart } from '@/components/flagship/MiniPieChart';
 import { PRESETS } from '@/components/flagship/portfolioTypes';
 import type { GroupId } from '@/components/flagship/portfolioTypes';
+import { ProductPreviewDialog } from '@/components/products/ProductPreviewDialog';
 
 interface Product {
   id: string;
@@ -54,6 +55,7 @@ export default function Products() {
   const [flagshipProductIds, setFlagshipProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasAccessControl, setHasAccessControl] = useState(false);
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp },
@@ -285,7 +287,7 @@ export default function Products() {
                               <Button 
                                 size="sm" 
                                 className="w-full btn-gold group"
-                                onClick={() => navigate(`/products/${product.id}`)}
+                                onClick={() => setPreviewProduct(product)}
                               >
                                 {t('learnMore')}
                                 <ArrowRight className="ml-2 h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
@@ -306,6 +308,12 @@ export default function Products() {
             })}
           </Accordion>
         )}
+
+        <ProductPreviewDialog
+          product={previewProduct}
+          open={!!previewProduct}
+          onOpenChange={(open) => !open && setPreviewProduct(null)}
+        />
       </main>
     </div>
   );
