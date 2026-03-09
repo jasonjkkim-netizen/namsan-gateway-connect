@@ -45,9 +45,10 @@ interface Props {
   groups: GroupData[];
   groupWeights: Record<GroupId, number>;
   setGroupWeights: (w: Record<GroupId, number>) => void;
+  baseDate?: Date;
 }
 
-export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights }: Props) {
+export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights, baseDate }: Props) {
   const { language } = useLanguage();
   const ko = language === 'ko';
   const simulatorRef = useRef<HTMLDivElement>(null);
@@ -64,6 +65,13 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
     }
     return 365;
   }, [horizon]);
+
+  // Days since base date for projection calculation
+  const daysSinceBase = useMemo(() => {
+    if (!baseDate) return 365;
+    const today = new Date();
+    return Math.max(differenceInDays(today, baseDate), 1);
+  }, [baseDate]);
 
   const projection = useMemo(
     () => calcProjection(investmentAmount, groupWeights, groups, daysToHorizon),

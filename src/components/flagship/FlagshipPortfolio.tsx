@@ -277,6 +277,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
         groups={groups}
         groupWeights={groupWeights}
         setGroupWeights={setGroupWeights}
+        baseDate={baseDate}
       />
 
       {/* Disclaimer */}
