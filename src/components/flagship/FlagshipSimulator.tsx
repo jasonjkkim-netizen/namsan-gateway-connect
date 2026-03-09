@@ -229,7 +229,9 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
               {ko ? '예상 연 수익률' : 'Expected Annual Return'}
               <span className="ml-1.5 opacity-70 italic">{beforeTaxLabel}</span>
             </p>
-            <p className="text-2xl font-mono font-bold text-accent">{formatPct(blendedExpectedReturn)}</p>
+            <p className="text-2xl font-mono font-bold text-accent">
+              {ko ? `년 ${(blendedExpectedReturn * 100).toFixed(2)}%` : `${(blendedExpectedReturn * 100).toFixed(2)}% p.a.`}
+            </p>
           </div>
 
           {/* Gross / Fee / Net */}
