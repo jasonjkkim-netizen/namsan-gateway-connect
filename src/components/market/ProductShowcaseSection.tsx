@@ -187,8 +187,13 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                     <TableCell className="text-xs text-center whitespace-nowrap">
                       {product.maturity_date ? formatDate(product.maturity_date) : '-'}
                     </TableCell>
-                    <TableCell className="text-xs text-right font-semibold text-accent whitespace-nowrap">
-                      {product.target_return != null ? (language === 'ko' ? `년 ${product.target_return}%` : `${product.target_return}% p.a.`) : '-'}
+                    <TableCell className="text-xs text-right whitespace-nowrap">
+                      {product.target_return != null ? (
+                        <div>
+                          <span className="font-semibold text-accent">{language === 'ko' ? `년 ${product.target_return}%` : `${product.target_return}% p.a.`}</span>
+                          <span className="block text-[9px] text-muted-foreground">{language === 'ko' ? '세전' : 'pre-tax'}</span>
+                        </div>
+                      ) : '-'}
                     </TableCell>
                     <TableCell className="text-xs text-right whitespace-nowrap">
                       {product.fundraising_amount != null ? product.fundraising_amount.toLocaleString() : '-'}
