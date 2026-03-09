@@ -112,8 +112,9 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             <TableRow className="bg-muted/50">
               <TableHead className="font-semibold">{ko ? '그룹' : 'Group'}</TableHead>
               <TableHead className="text-right font-semibold w-28">{ko ? '배분 (%)' : 'Allocation (%)'}</TableHead>
-              <TableHead className="text-right font-semibold hidden sm:table-cell w-28">
-                {ko ? '수익률' : 'Performance'}
+              <TableHead className="text-right font-semibold hidden sm:table-cell w-36">
+                <div>{ko ? '수익률' : 'Performance'}</div>
+                <div className="text-[10px] font-normal text-muted-foreground italic">{ko ? '(수수료·세금 차감전)' : '(Before Fees & Tax)'}</div>
               </TableHead>
               <TableHead className="hidden md:table-cell font-semibold">{ko ? '비고' : 'Notes'}</TableHead>
             </TableRow>
@@ -198,12 +199,15 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             <div className="flex-1 text-left font-semibold text-sm">
               {ko ? '합계' : 'Total'}
             </div>
-            <div className="w-28 text-right text-sm font-mono font-semibold pr-4">
+            <div className="w-36 text-right text-sm font-mono font-semibold pr-4">
               100.0%
             </div>
-            <div className={`w-28 text-right text-sm font-mono font-semibold hidden sm:flex items-center justify-end gap-1 pr-4 ${totalPerfColor}`}>
-              <TotalPerfIcon className="h-3 w-3" />
-              {formatPct(totalPerformance)}
+            <div className={`w-36 text-right text-sm font-mono font-semibold hidden sm:flex flex-col items-end pr-4 ${totalPerfColor}`}>
+              <div className="flex items-center gap-1">
+                <TotalPerfIcon className="h-3 w-3" />
+                {formatPct(totalPerformance)}
+              </div>
+              <span className="text-[10px] font-normal text-muted-foreground italic">{ko ? '(수수료·세금 차감전)' : '(Before Fees & Tax)'}</span>
             </div>
             <div className="w-20 hidden md:block" />
           </div>

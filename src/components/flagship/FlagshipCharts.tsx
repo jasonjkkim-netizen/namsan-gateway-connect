@@ -91,9 +91,10 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
 
       {/* Line Chart */}
       <div className="bg-background rounded-lg border border-border p-4">
-        <h3 className="text-sm font-semibold mb-3">
-          {ko ? '포트폴리오 수익률 추이' : 'Portfolio Performance'}
-        </h3>
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold">{ko ? '포트폴리오 수익률 추이' : 'Portfolio Performance'}</h3>
+          <p className="text-[10px] text-muted-foreground italic">{ko ? '(수수료·세금 차감전)' : '(Before Fees & Tax)'}</p>
+        </div>
         <div className="h-48">
           {lineSeries.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
