@@ -24,26 +24,32 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const { items, loading } = usePortfolioData();
   const ko = language === 'ko';
 
-  const [groupWeights, setGroupWeights] = useState<Record<GroupId, number>>({
-    shares: 50, bonds: 40, others: 10, cash: 0,
-  });
+  // Calculate initial weights from data
+  const initialWeights = useMemo(() => {
+    if (items.length === 0) return { shares: 50, bonds: 40, others: 10, cash: 0 };
+    const w: Record<GroupId, number> = { shares: 0, bonds: 0, others: 0, cash: 0 };
+    items.forEach(i => { w[i.groupId] = (w[i.groupId] || 0) + i.weight; });
+    const total = Object.values(w).reduce((s, v) => s + v, 0);
+    if (total > 0) {
+      (Object.keys(w) as GroupId[]).forEach(k => { w[k] = Math.round(w[k] / total * 100 * 10) / 10; });
+    }
+    return w;
+  }, [items]);
+
+  const [groupWeights, setGroupWeights] = useState<Record<GroupId, number>>(initialWeights);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState('');
 
-  const groups = useMemo(() => buildGroups(items), [items]);
-
-  // Sync initial weights from data
+  // Sync weights from data only on first load
   useMemo(() => {
-    if (items.length > 0) {
-      const w: Record<GroupId, number> = { shares: 0, bonds: 0, others: 0, cash: 0 };
-      items.forEach(i => { w[i.groupId] = (w[i.groupId] || 0) + i.weight; });
-      const total = Object.values(w).reduce((s, v) => s + v, 0);
-      if (total > 0) {
-        (Object.keys(w) as GroupId[]).forEach(k => { w[k] = Math.round(w[k] / total * 100 * 10) / 10; });
-        setGroupWeights(w);
-      }
+    if (items.length > 0 && !hasInitialized) {
+      setGroupWeights(initialWeights);
+      setHasInitialized(true);
     }
-  }, [items]);
+  }, [items, initialWeights, hasInitialized]);
+
+  const groups = useMemo(() => buildGroups(items), [items]);
 
   if (loading) {
     return (
