@@ -128,6 +128,34 @@ export function AdminViewpoints() {
     toast.success(language === 'ko' ? '이미지 업로드 완료' : 'Image uploaded');
   }
 
+  async function openBlogPicker() {
+    setBlogLoading(true);
+    setBlogPickerOpen(true);
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('id, title_ko, title_en, content_ko, content_en, thumbnail_url, published_at')
+      .eq('is_active', true)
+      .order('published_at', { ascending: false })
+      .limit(50);
+    setBlogPosts(data || []);
+    setBlogLoading(false);
+  }
+
+  function selectBlogPost(post: typeof blogPosts[0]) {
+    setFormData({
+      title_ko: post.title_ko,
+      title_en: post.title_en,
+      content_ko: post.content_ko,
+      content_en: post.content_en,
+      image_url: post.thumbnail_url,
+      is_active: true,
+    });
+    setEditingItem(null);
+    setBlogPickerOpen(false);
+    setDialogOpen(true);
+    toast.success(language === 'ko' ? '블로그 내용이 복사되었습니다' : 'Blog content copied');
+  }
+
   // Blog sync removed - viewpoints and blog are managed separately
 
   async function handleSubmit(e: React.FormEvent) {
