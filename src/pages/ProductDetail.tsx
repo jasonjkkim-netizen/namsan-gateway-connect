@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
@@ -11,11 +11,12 @@ import {
 } from '@/components/ui/dialog';
 import { 
   ArrowLeft, TrendingUp, Calendar, DollarSign, Briefcase, Building2, 
-  Landmark, LineChart, Layers, Clock, Target, Shield, FileText, Download, Eye
+  Landmark, LineChart, Layers, Clock, Target, Shield, FileText, Download, Eye, Printer
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConsultationButton } from '@/components/ConsultationButton';
 import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart';
+import { ProductPrintSummary } from '@/components/products/ProductPrintSummary';
 
 interface Product {
   id: string;
