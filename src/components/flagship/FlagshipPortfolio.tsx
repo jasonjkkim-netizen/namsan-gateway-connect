@@ -112,8 +112,9 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             <TableRow className="bg-muted/50">
               <TableHead className="font-semibold">{ko ? '그룹' : 'Group'}</TableHead>
               <TableHead className="text-right font-semibold w-28">{ko ? '배분 (%)' : 'Allocation (%)'}</TableHead>
-              <TableHead className="text-right font-semibold hidden sm:table-cell w-28">
-                {ko ? '수익률' : 'Performance'}
+              <TableHead className="text-right font-semibold hidden sm:table-cell w-36">
+                <div>{ko ? '수익률' : 'Performance'}</div>
+                <div className="text-[10px] font-normal text-muted-foreground italic">{ko ? '(수수료·세금 차감전)' : '(Before Fees & Tax)'}</div>
               </TableHead>
               <TableHead className="hidden md:table-cell font-semibold">{ko ? '비고' : 'Notes'}</TableHead>
             </TableRow>
