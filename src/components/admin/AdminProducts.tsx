@@ -556,11 +556,11 @@ export function AdminProducts() {
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>{language === 'ko' ? '목표 수익률 (%)' : 'Target Return (%)'}</Label>
+                  <Label>{language === 'ko' ? '최대 수익률 (%)' : 'Maximumm Return (%)'}</Label>
                   <Input type="number" step="0.01" value={formData.target_return_percent} onChange={(e) => setFormData({ ...formData, target_return_percent: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{language === 'ko' ? '최대 수익률 (%)' : 'Max Return (%)'}</Label>
+                  <Label>{language === 'ko' ? '\uB2E8\uC21C \uC218\uC775\uB960 (%)' : 'Simple Return (%)'}</Label>
                   <Input type="number" step="0.01" value={formData.fixed_return_percent} onChange={(e) => setFormData({ ...formData, fixed_return_percent: e.target.value })} />
                 </div>
               </div>

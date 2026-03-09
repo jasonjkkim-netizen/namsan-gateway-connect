@@ -66,7 +66,7 @@ const translations: Translations = {
   
   // Products
   newProducts: { en: 'New Products', ko: '신규 상품' },
-  targetReturn: { en: 'Target Return', ko: '목표 수익률' },
+  targetReturn: { en: 'Maximum Return', ko: '최대 수익률' },
   minimumInvestment: { en: 'Minimum Investment', ko: '최소 투자금액' },
   deadline: { en: '募集 Deadline', ko: '모집 마감일' },
   learnMore: { en: 'Learn More', ko: '자세히 보기' },

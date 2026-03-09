@@ -266,7 +266,7 @@ export default function ProductDetail() {
               <CardHeader className="pb-1 pt-2 md:pt-3 px-2 md:px-3">
                 <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1 whitespace-nowrap">
                   <TrendingUp className="h-3 w-3 md:h-3.5 md:w-3.5 text-accent" />
-                  {language === 'ko' ? '목표 수익률' : 'Target Return'}
+                  {language === 'ko' ? '최대 수익률' : 'Maximum Return'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-2 md:px-3 pb-2 md:pb-3">
@@ -417,7 +417,7 @@ export default function ProductDetail() {
               )}
               {product.fixed_return_percent != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
-                  <span className="text-muted-foreground">{language === 'ko' ? '확정 수익률' : 'Fixed Return'}</span>
+                  <span className="text-muted-foreground">{language === 'ko' ? '단순 수익률' : 'Simple Return'}</span>
                   <div className="text-right">
                     <span className="font-medium text-accent">
                       {language === 'ko' ? `년 ${product.fixed_return_percent}%` : `${product.fixed_return_percent}% p.a.`}
@@ -430,7 +430,7 @@ export default function ProductDetail() {
               )}
               {product.target_return_percent != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
-                  <span className="text-muted-foreground">{language === 'ko' ? '목표 수익률' : 'Target Return'}</span>
+                  <span className="text-muted-foreground">{language === 'ko' ? '최대 수익률' : 'Maximum Return'}</span>
                   <span className="font-medium text-accent">{formatPercent(product.target_return_percent)}</span>
                 </div>
               )}
