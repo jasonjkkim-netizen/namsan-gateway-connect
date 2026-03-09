@@ -435,7 +435,9 @@ export default function ProductDetail() {
               {product.target_return_percent != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
                   <span className="text-muted-foreground">{language === 'ko' ? '최대 수익률' : 'Maximum Return'}</span>
-                  <span className="font-medium text-accent">{formatPercent(product.target_return_percent)}</span>
+                  <span className="font-medium text-accent">
+                    {language === 'ko' ? `년 ${product.target_return_percent}%` : `${product.target_return_percent}% p.a.`}
+                  </span>
                 </div>
               )}
               {product.management_fee_percent != null && (

@@ -143,7 +143,7 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
                 <TableHead className="text-xs font-medium whitespace-nowrap">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-center">{language === 'ko' ? '투자만기일' : 'Maturity'}</TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-right">
-                  <span>{language === 'ko' ? '최대 수익률' : 'Maximum Return'}</span>
+                  <span>{language === 'ko' ? '년 수익률' : 'Annual Return'}</span>
                   <span className="block text-[9px] font-normal text-muted-foreground">{language === 'ko' ? '세전 수익률' : 'Before Tax'}</span>
                 </TableHead>
                 <TableHead className="text-xs font-medium whitespace-nowrap text-right">{language === 'ko' ? '모집 금액' : 'Fundraising'}</TableHead>
