@@ -111,23 +111,23 @@ export function calcExpectedGroupReturn(group: GroupData): number {
     return group.items.reduce((s, i) => s + (i.weight / totalW) * (i.targetAnnualReturn || 0), 0);
   }
   if (group.id === 'shares' || group.id === 'others') {
+    const defaultReturn = group.id === 'shares' 
+      ? DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual 
+      : DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual;
+    
     const today = new Date();
     const base = parseISO(BASE_DATE);
     const daysElapsed = differenceInDays(today, base);
     
-    // If BASE_DATE is in the future or very recent, use default assumptions
-    if (daysElapsed <= 30) {
-      return group.id === 'shares' 
-        ? DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual 
-        : DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual;
+    // If BASE_DATE is in the future or very recent (< 60 days), use default assumptions
+    if (daysElapsed < 60) {
+      return defaultReturn;
     }
     
     // Use actual performance annualized from real price data
     const totalW = group.totalWeight;
     if (totalW === 0) {
-      return group.id === 'shares' 
-        ? DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual 
-        : DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual;
+      return defaultReturn;
     }
     
     // Weighted actual return for the group
@@ -136,9 +136,13 @@ export function calcExpectedGroupReturn(group: GroupData): number {
       const ret = calcItemReturn(i);
       return s + w * ret;
     }, 0);
+    
     // Annualize: (1 + actualReturn)^(365/daysElapsed) - 1
     const annualized = Math.pow(1 + actualReturn, 365 / daysElapsed) - 1;
-    return annualized;
+    
+    // Cap unrealistic returns at 50% annual max, floor at -50%
+    const capped = Math.max(-0.5, Math.min(0.5, annualized));
+    return capped;
   }
   return DEFAULT_ASSUMPTIONS.cashReturnAnnual;
 }
