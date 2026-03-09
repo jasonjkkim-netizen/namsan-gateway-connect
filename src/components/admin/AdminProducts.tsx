@@ -560,7 +560,7 @@ export function AdminProducts() {
                   <Input type="number" step="0.01" value={formData.target_return_percent} onChange={(e) => setFormData({ ...formData, target_return_percent: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{language === 'ko' ? 단순 수익률 (%)' : 'Simplex Return (%)'}</Label>
+                  <Label>{language === 'ko' ? '\uB2E8\uC21C \uC218\uC775\uB960 (%)' : 'Simple Return (%)'}</Label>
                   <Input type="number" step="0.01" value={formData.fixed_return_percent} onChange={(e) => setFormData({ ...formData, fixed_return_percent: e.target.value })} />
                 </div>
               </div>
