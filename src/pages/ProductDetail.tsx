@@ -266,7 +266,7 @@ export default function ProductDetail() {
               <CardHeader className="pb-1 pt-2 md:pt-3 px-2 md:px-3">
                 <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1 whitespace-nowrap">
                   <TrendingUp className="h-3 w-3 md:h-3.5 md:w-3.5 text-accent" />
-                  {language === 'ko' ? '목표 수익률' : 'Target Return'}
+                  {language === 'ko' ? '최대 수익률' : 'Maximum Return'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-2 md:px-3 pb-2 md:pb-3">
