@@ -81,6 +81,11 @@ export default function ProductDetail() {
   const [imageZoom, setImageZoom] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isFlagshipProduct, setIsFlagshipProduct] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
