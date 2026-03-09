@@ -226,10 +226,14 @@ export function AdminViewpoints() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{language === 'ko' ? '남산 뷰 포인트 관리' : 'Namsan View Point Management'}</CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAdd} size="sm"><Plus className="h-4 w-4 mr-2" />{language === 'ko' ? '추가' : 'Add'}</Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button onClick={openBlogPicker} size="sm" variant="outline">
+            <BookOpen className="h-4 w-4 mr-2" />{language === 'ko' ? '블로그에서 가져오기' : 'Import from Blog'}
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAdd} size="sm"><Plus className="h-4 w-4 mr-2" />{language === 'ko' ? '추가' : 'Add'}</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
