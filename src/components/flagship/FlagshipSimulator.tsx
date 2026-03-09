@@ -19,7 +19,7 @@ const GROUP_COLORS: Record<string, string> = {
 
 // Default fee structure (used for the main simulator)
 const DEFAULT_FEES: PresetFeeStructure = {
-  managementFeeRate: 0.02,
+  managementFeeRate: 0.015,
   performanceFeeRate: 0.20,
   performanceHurdle: 0.08,
 };
