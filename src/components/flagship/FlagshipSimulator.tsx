@@ -54,6 +54,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
 
   const [investmentAmount, setInvestmentAmount] = useState(10_000_000);
   const [horizon, setHorizon] = useState<'eoy' | '12m'>('eoy');
+  const [activeFees, setActiveFees] = useState<PresetFeeStructure>(DEFAULT_FEES);
 
   const daysToHorizon = useMemo(() => {
     const today = new Date();
@@ -75,10 +76,10 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
     return groups.reduce((s, g) => s + ((groupWeights[g.id] || 0) / totalW) * calcExpectedGroupReturn(g), 0);
   }, [groupWeights, groups]);
 
-  // Fee calculations with waterfall
+  // Fee calculations with waterfall using active preset fees
   const feeBreakdown = useMemo(
-    () => calcFeeBreakdown(investmentAmount, blendedExpectedReturn, DEFAULT_FEES, daysToHorizon),
-    [investmentAmount, blendedExpectedReturn, daysToHorizon],
+    () => calcFeeBreakdown(investmentAmount, blendedExpectedReturn, activeFees, daysToHorizon),
+    [investmentAmount, blendedExpectedReturn, activeFees, daysToHorizon],
   );
 
   const netProfit = projection.profit - feeBreakdown.totalFee;
@@ -90,6 +91,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
 
   const applyPreset = (preset: typeof PRESETS[0]) => {
     setGroupWeights({ ...preset.groupWeights });
+    setActiveFees(preset.fees);
     setTimeout(() => simulatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
@@ -189,7 +191,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
             <div className="flex justify-between">
               <span className="text-muted-foreground">{ko ? '운용 수수료' : 'Management Fee'}</span>
               <span className="font-mono font-medium">
-                {ko ? `년 ${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}%` : `${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}% p.a.`}
+                {ko ? `년 ${(activeFees.managementFeeRate * 100).toFixed(1)}%` : `${(activeFees.managementFeeRate * 100).toFixed(1)}% p.a.`}
               </span>
             </div>
             <div className="flex justify-between">
@@ -197,9 +199,9 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                 {ko ? '성과 보수' : 'Performance Fee'}
               </span>
               <span className="font-mono font-medium">
-                {(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}%
+                {(activeFees.performanceFeeRate * 100).toFixed(0)}%
                 <span className="text-muted-foreground ml-1">
-                  ({ko ? `${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}% 초과분` : `over ${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}%`})
+                  ({ko ? `${(activeFees.performanceHurdle * 100).toFixed(0)}% 초과분` : `over ${(activeFees.performanceHurdle * 100).toFixed(0)}%`})
                 </span>
               </span>
             </div>
@@ -308,7 +310,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                   </td>
                   <td className="py-2 text-right font-mono">—</td>
                   <td className="py-2 text-right font-mono">
-                    {ko ? `-년 ${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}%` : `-${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}% p.a.`}
+                    {ko ? `-년 ${(activeFees.managementFeeRate * 100).toFixed(1)}%` : `-${(activeFees.managementFeeRate * 100).toFixed(1)}% p.a.`}
                   </td>
                   <td className="py-2 text-right font-mono">-{formatKRW(feeBreakdown.mgmtFee)}</td>
                 </tr>
@@ -317,8 +319,8 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                   <tr className="border-b border-border/50 text-destructive">
                     <td className="py-2 font-medium">
                       {ko
-                        ? `성과 보수 (${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}% 초과분의 ${(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}%)`
-                        : `Perf. Fee (${(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}% over ${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}%)`}
+                        ? `성과 보수 (${(activeFees.performanceHurdle * 100).toFixed(0)}% 초과분의 ${(activeFees.performanceFeeRate * 100).toFixed(0)}%)`
+                        : `Perf. Fee (${(activeFees.performanceFeeRate * 100).toFixed(0)}% over ${(activeFees.performanceHurdle * 100).toFixed(0)}%)`}
                     </td>
                     <td className="py-2 text-right font-mono">—</td>
                     <td className="py-2 text-right font-mono">—</td>
