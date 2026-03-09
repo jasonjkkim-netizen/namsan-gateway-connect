@@ -55,7 +55,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
     }
   }, [items, initialWeights, hasInitialized]);
 
-  const groups = useMemo(() => buildGroups(items), [items]);
+  const groups = useMemo(() => buildGroups(items, baseDate), [items, baseDate]);
   
   const baseDateLabel = ko 
     ? format(baseDate, 'yyyy년 M월 d일', { locale: koLocale })
@@ -207,7 +207,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
                       </TableHeader>
                       <TableBody>
                         {group.items.map(item => {
-                          const itemRet = calcItemReturn(item);
+                          const itemRet = calcItemReturn(item, baseDate);
                           const retColor = itemRet > 0 ? 'text-green-600' : itemRet < 0 ? 'text-red-500' : 'text-muted-foreground';
                           return (
                             <TableRow key={item.id} className="text-xs">
