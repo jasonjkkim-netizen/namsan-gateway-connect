@@ -112,7 +112,7 @@ export const PRESETS: PortfolioScenario[] = [
     descKo: '주식 중심의 공격적 포트폴리오',
     descEn: 'Stock-focused aggressive portfolio',
     groupWeights: { shares: 70, bonds: 30, others: 0, cash: 0 },
-    targetReturn: 0.10,
+    targetReturn: 0.09,
     fees: { managementFeeRate: 0.02, performanceFeeRate: 0.20, performanceHurdle: 0.09 },
   },
 ];
