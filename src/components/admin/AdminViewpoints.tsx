@@ -43,6 +43,9 @@ export function AdminViewpoints() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [blogPickerOpen, setBlogPickerOpen] = useState(false);
+  const [blogPosts, setBlogPosts] = useState<{ id: string; title_ko: string; title_en: string; content_ko: string; content_en: string; thumbnail_url: string | null; published_at: string }[]>([]);
+  const [blogLoading, setBlogLoading] = useState(false);
   const [formData, setFormData] = useState({
     title_ko: '',
     title_en: '',
