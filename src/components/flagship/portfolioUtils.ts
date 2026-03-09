@@ -111,13 +111,25 @@ export function calcExpectedGroupReturn(group: GroupData): number {
     return group.items.reduce((s, i) => s + (i.weight / totalW) * (i.targetAnnualReturn || 0), 0);
   }
   if (group.id === 'shares' || group.id === 'others') {
-    // Use actual performance annualized from real price data
-    const totalW = group.totalWeight;
-    if (totalW === 0) return group.id === 'shares' ? DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual : DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual;
     const today = new Date();
     const base = parseISO(BASE_DATE);
     const daysElapsed = differenceInDays(today, base);
-    if (daysElapsed <= 0) return group.id === 'shares' ? DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual : DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual;
+    
+    // If BASE_DATE is in the future or very recent, use default assumptions
+    if (daysElapsed <= 30) {
+      return group.id === 'shares' 
+        ? DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual 
+        : DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual;
+    }
+    
+    // Use actual performance annualized from real price data
+    const totalW = group.totalWeight;
+    if (totalW === 0) {
+      return group.id === 'shares' 
+        ? DEFAULT_ASSUMPTIONS.expectedReturnStocksAnnual 
+        : DEFAULT_ASSUMPTIONS.expectedReturnOthersAnnual;
+    }
+    
     // Weighted actual return for the group
     const actualReturn = group.items.reduce((s, i) => {
       const w = i.weight / totalW;
