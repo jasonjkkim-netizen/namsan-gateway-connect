@@ -27,6 +27,7 @@ interface Product {
   description_en: string | null;
   description_ko: string | null;
   target_return: number | null;
+  fixed_return_percent: number | null;
   minimum_investment: number | null;
   募集_deadline: string | null;
   status: string;
