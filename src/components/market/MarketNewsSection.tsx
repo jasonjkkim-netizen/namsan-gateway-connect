@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Newspaper, RefreshCw, ExternalLink } from 'lucide-react';
@@ -11,45 +11,25 @@ interface MarketNewsSectionProps {
 
 export function MarketNewsSection({ language }: MarketNewsSectionProps) {
   const { user } = useAuth();
-  const [content, setContent] = useState<string>('');
-  const [citations, setCitations] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  async function fetchNews() {
-    setLoading(true);
-    setError(null);
+  const { data, isLoading: loading, error } = useQuery({
+    queryKey: ['market-news'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('market-news');
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to fetch news');
+      return { content: data.content as string, citations: (data.citations || []) as string[] };
+    },
+    enabled: !!user,
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
 
-    try {
-      const { data, error: fnError } = await supabase.functions.invoke('market-news');
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['market-news'] });
+  };
 
-      if (fnError) throw fnError;
-
-      if (data?.success) {
-        setContent(data.content);
-        setCitations(data.citations || []);
-      } else {
-        throw new Error(data?.error || 'Failed to fetch news');
-      }
-    } catch (err) {
-      console.error('Error fetching market news:', err);
-      setError(
-        language === 'ko'
-          ? '시장 뉴스를 불러오는데 실패했습니다'
-          : 'Failed to load market news'
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (user) {
-      fetchNews();
-    }
-  }, [user]);
-
-  // Only show for authenticated users
   if (!user) return null;
 
   return (
@@ -64,7 +44,7 @@ export function MarketNewsSection({ language }: MarketNewsSectionProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={fetchNews}
+          onClick={handleRefresh}
           disabled={loading}
           className="h-7 px-2"
         >
@@ -84,24 +64,26 @@ export function MarketNewsSection({ language }: MarketNewsSectionProps) {
           </div>
         ) : error ? (
           <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground mb-3">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchNews}>
+            <p className="text-sm text-muted-foreground mb-3">
+              {language === 'ko' ? '시장 뉴스를 불러오는데 실패했습니다' : 'Failed to load market news'}
+            </p>
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
               {language === 'ko' ? '다시 시도' : 'Retry'}
             </Button>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="prose prose-sm dark:prose-invert max-w-none text-xs leading-relaxed">
-              <ReactMarkdown>{content}</ReactMarkdown>
+              <ReactMarkdown>{data?.content || ''}</ReactMarkdown>
             </div>
 
-            {citations.length > 0 && (
+            {data?.citations && data.citations.length > 0 && (
               <div className="pt-3 border-t border-border">
                 <p className="text-xs text-muted-foreground mb-2">
                   {language === 'ko' ? '출처' : 'Sources'}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {citations.slice(0, 5).map((url, index) => {
+                  {data.citations.slice(0, 5).map((url, index) => {
                     let domain = '';
                     try {
                       domain = new URL(url).hostname.replace('www.', '');
