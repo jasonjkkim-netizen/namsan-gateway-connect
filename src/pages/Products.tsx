@@ -27,6 +27,7 @@ interface Product {
   description_en: string | null;
   description_ko: string | null;
   target_return: number | null;
+  fixed_return_percent: number | null;
   minimum_investment: number | null;
   募集_deadline: string | null;
   status: string;
@@ -258,11 +259,15 @@ export default function Products() {
                             </p>
 
                             <div className="space-y-2 mb-4 text-sm">
-                              {product.target_return && (
+                              {(product.fixed_return_percent || product.target_return) && (
                                 <div className="flex items-center gap-2">
                                   <TrendingUp className="h-3.5 w-3.5 text-accent" />
                                   <span className="text-muted-foreground">{t('targetReturn')}:</span>
-                                  <span className="font-medium text-accent">{formatPercent(product.target_return)}</span>
+                                  <span className="font-medium text-accent">
+                                    {language === 'ko'
+                                      ? `년 ${(product.fixed_return_percent || product.target_return)?.toFixed(2)}%`
+                                      : `${(product.fixed_return_percent || product.target_return)?.toFixed(2)}% p.a.`}
+                                  </span>
                                 </div>
                               )}
                               
