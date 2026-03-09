@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown, Search, CalendarIcon, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown, Search, CalendarIcon, X, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendContentNotification } from '@/lib/send-content-notification';
 import { RichPasteEditor } from './RichPasteEditor';
