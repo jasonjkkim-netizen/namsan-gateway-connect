@@ -191,7 +191,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
             <div className="flex justify-between">
               <span className="text-muted-foreground">{ko ? '운용 수수료' : 'Management Fee'}</span>
               <span className="font-mono font-medium">
-                {ko ? `년 ${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}%` : `${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}% p.a.`}
+                {ko ? `년 ${(activeFees.managementFeeRate * 100).toFixed(1)}%` : `${(activeFees.managementFeeRate * 100).toFixed(1)}% p.a.`}
               </span>
             </div>
             <div className="flex justify-between">
@@ -199,9 +199,9 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                 {ko ? '성과 보수' : 'Performance Fee'}
               </span>
               <span className="font-mono font-medium">
-                {(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}%
+                {(activeFees.performanceFeeRate * 100).toFixed(0)}%
                 <span className="text-muted-foreground ml-1">
-                  ({ko ? `${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}% 초과분` : `over ${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}%`})
+                  ({ko ? `${(activeFees.performanceHurdle * 100).toFixed(0)}% 초과분` : `over ${(activeFees.performanceHurdle * 100).toFixed(0)}%`})
                 </span>
               </span>
             </div>
@@ -310,7 +310,7 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                   </td>
                   <td className="py-2 text-right font-mono">—</td>
                   <td className="py-2 text-right font-mono">
-                    {ko ? `-년 ${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}%` : `-${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}% p.a.`}
+                    {ko ? `-년 ${(activeFees.managementFeeRate * 100).toFixed(1)}%` : `-${(activeFees.managementFeeRate * 100).toFixed(1)}% p.a.`}
                   </td>
                   <td className="py-2 text-right font-mono">-{formatKRW(feeBreakdown.mgmtFee)}</td>
                 </tr>
@@ -319,8 +319,8 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                   <tr className="border-b border-border/50 text-destructive">
                     <td className="py-2 font-medium">
                       {ko
-                        ? `성과 보수 (${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}% 초과분의 ${(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}%)`
-                        : `Perf. Fee (${(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}% over ${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}%)`}
+                        ? `성과 보수 (${(activeFees.performanceHurdle * 100).toFixed(0)}% 초과분의 ${(activeFees.performanceFeeRate * 100).toFixed(0)}%)`
+                        : `Perf. Fee (${(activeFees.performanceFeeRate * 100).toFixed(0)}% over ${(activeFees.performanceHurdle * 100).toFixed(0)}%)`}
                     </td>
                     <td className="py-2 text-right font-mono">—</td>
                     <td className="py-2 text-right font-mono">—</td>
