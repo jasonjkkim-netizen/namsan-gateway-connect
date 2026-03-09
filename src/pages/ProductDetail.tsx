@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
@@ -11,11 +11,12 @@ import {
 } from '@/components/ui/dialog';
 import { 
   ArrowLeft, TrendingUp, Calendar, DollarSign, Briefcase, Building2, 
-  Landmark, LineChart, Layers, Clock, Target, Shield, FileText, Download, Eye
+  Landmark, LineChart, Layers, Clock, Target, Shield, FileText, Download, Eye, Printer
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ConsultationButton } from '@/components/ConsultationButton';
 import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart';
+import { ProductPrintSummary } from '@/components/products/ProductPrintSummary';
 
 interface Product {
   id: string;
@@ -80,6 +81,11 @@ export default function ProductDetail() {
   const [imageZoom, setImageZoom] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isFlagshipProduct, setIsFlagshipProduct] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -206,15 +212,26 @@ export default function ProductDetail() {
       <Header />
       
       <main className="container py-8">
-        {/* Back Button */}
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/products')}
-          className="mb-6 -ml-2 text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {language === 'ko' ? '상품 목록으로' : 'Back to Products'}
-        </Button>
+        {/* Back Button & Print */}
+        <div className="flex items-center justify-between mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/products')}
+            className="-ml-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {language === 'ko' ? '상품 목록으로' : 'Back to Products'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrint}
+            className="gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            {language === 'ko' ? '요약 인쇄' : 'Print Summary'}
+          </Button>
+        </div>
 
         {/* Header Section */}
         <div className="mb-8 animate-fade-in">
@@ -579,7 +596,9 @@ export default function ProductDetail() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Print Summary (hidden, shown only during print) */}
+      {product && <ProductPrintSummary ref={printRef} product={product} />}
     </div>
   );
 }
-
