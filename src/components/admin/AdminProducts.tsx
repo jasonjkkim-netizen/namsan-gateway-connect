@@ -556,7 +556,7 @@ export function AdminProducts() {
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>{language === 'ko' ? '목표 수익률 (%)' : 'Target Return (%)'}</Label>
+                  <Label>{language === 'ko' ? '최대 수익률 (%)' : 'Maximum Return (%)'}</Label>
                   <Input type="number" step="0.01" value={formData.target_return_percent} onChange={(e) => setFormData({ ...formData, target_return_percent: e.target.value })} />
                 </div>
                 <div className="space-y-2">
