@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Newspaper, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,55 +18,39 @@ interface StockPickNewsSectionProps {
 }
 
 export function StockPickNewsSection({ language }: StockPickNewsSectionProps) {
-  const [news, setNews] = useState<StockNews[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  async function fetchNews() {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: dbErr } = await supabase
+  const { data: news = [], isLoading: loading, error } = useQuery({
+    queryKey: ['stock-pick-news'],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('stock_pick_news')
         .select('*')
         .order('created_at', { ascending: true });
-
-      if (dbErr) throw dbErr;
-
-      const mapped = (data || []).map((d: any) => ({
+      if (error) throw error;
+      return (data || []).map((d: any) => ({
         ...d,
         news_bullets: Array.isArray(d.news_bullets) ? d.news_bullets : [],
         citations: Array.isArray(d.citations) ? d.citations : [],
-      }));
-      setNews(mapped);
-    } catch (err) {
-      console.error('Error fetching stock news:', err);
-      setError(language === 'ko' ? '종목 뉴스를 불러오는데 실패했습니다' : 'Failed to load stock news');
-    } finally {
-      setLoading(false);
-    }
-  }
+      })) as StockNews[];
+    },
+    staleTime: 30 * 1000,
+  });
 
   async function handleRefresh() {
     setRefreshing(true);
     try {
       const { error: fnErr } = await supabase.functions.invoke('stock-pick-news');
       if (fnErr) throw fnErr;
-      await fetchNews();
+      await queryClient.invalidateQueries({ queryKey: ['stock-pick-news'] });
     } catch (err) {
       console.error('Error refreshing stock news:', err);
-      setError(language === 'ko' ? '뉴스 업데이트 실패' : 'Failed to refresh news');
     } finally {
       setRefreshing(false);
     }
   }
 
-  useEffect(() => {
-    fetchNews();
-  }, []);
-
-  // Filter out items where all bullets are the "no news found" placeholder
   const NO_NEWS_PLACEHOLDER = '검색 결과에서 해당 종목의 최신 뉴스를 찾을 수 없습니다';
   const filteredNews = news.filter(item =>
     item.news_bullets.length > 0 &&
@@ -75,7 +60,6 @@ export function StockPickNewsSection({ language }: StockPickNewsSectionProps) {
   const allCitations = filteredNews.length > 0 ? filteredNews[0].citations : [];
   const fetchedAt = filteredNews.length > 0 ? filteredNews[0].fetched_at : null;
 
-  // Hide entire section if no real news after filtering
   if (!loading && !error && filteredNews.length === 0) return null;
 
   return (
@@ -117,8 +101,10 @@ export function StockPickNewsSection({ language }: StockPickNewsSectionProps) {
           </div>
         ) : error ? (
           <div className="text-center py-6">
-            <p className="text-sm text-muted-foreground mb-3">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchNews}>
+            <p className="text-sm text-muted-foreground mb-3">
+              {language === 'ko' ? '종목 뉴스를 불러오는데 실패했습니다' : 'Failed to load stock news'}
+            </p>
+            <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['stock-pick-news'] })}>
               {language === 'ko' ? '다시 시도' : 'Retry'}
             </Button>
           </div>

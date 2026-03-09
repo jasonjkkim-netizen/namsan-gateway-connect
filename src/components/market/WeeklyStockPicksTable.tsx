@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { StockDetailDialog } from './StockDetailDialog';
 import { ExternalLink, RefreshCw } from 'lucide-react';
@@ -23,32 +24,18 @@ interface WeeklyStockPicksTableProps {
 }
 
 function StockTable({
-  stocks,
-  language,
-  market,
-  title,
-  onStockClick,
-  onUpdatePrices,
-  updatingPrices,
+  stocks, language, market, title, onStockClick, onUpdatePrices, updatingPrices,
 }: {
-  stocks: StockPick[];
-  language: string;
-  market: 'KR' | 'US';
-  title: string;
-  onStockClick: (stock: StockPick) => void;
-  onUpdatePrices: (market: 'KR' | 'US') => void;
-  updatingPrices: boolean;
+  stocks: StockPick[]; language: string; market: 'KR' | 'US'; title: string;
+  onStockClick: (stock: StockPick) => void; onUpdatePrices: (market: 'KR' | 'US') => void; updatingPrices: boolean;
 }) {
   if (stocks.length === 0) return null;
-
   const isKR = market === 'KR';
   const currencySymbol = isKR ? '원' : '$';
 
   const priceReferenceDate = stocks[0]?.price_reference_date
     ? new Date(stocks[0].price_reference_date)
-    : stocks[0]?.recommendation_date
-      ? new Date(stocks[0].recommendation_date)
-      : new Date();
+    : stocks[0]?.recommendation_date ? new Date(stocks[0].recommendation_date) : new Date();
 
   const formatDateHeader = (date: Date, lang: string) => {
     const month = date.getMonth() + 1;
@@ -81,13 +68,7 @@ function StockTable({
     <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
       <div className="p-3 border-b border-border flex items-center justify-between">
         <h3 className="font-serif font-medium text-sm">{title}</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onUpdatePrices(market)}
-          disabled={updatingPrices}
-          className="h-7 px-2"
-        >
+        <Button variant="ghost" size="sm" onClick={() => onUpdatePrices(market)} disabled={updatingPrices} className="h-7 px-2">
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${updatingPrices ? 'animate-spin' : ''}`} />
           <span className="text-xs">{language === 'ko' ? '업데이트' : 'Update'}</span>
         </Button>
@@ -95,31 +76,15 @@ function StockTable({
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead className="bg-muted/50">
-             <tr>
-              <th className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">
-                {language === 'ko' ? '추천 종목' : 'Stock'}
-              </th>
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">
-                {language === 'ko' ? '추가일' : 'Added'}
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-                {refDateHeader}
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-                {todayHeader}
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-                {language === 'ko' ? '수익률' : 'Return'}
-              </th>
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">
-                {language === 'ko' ? '매도일' : 'Sold'}
-              </th>
-              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-                {language === 'ko' ? '매도가' : 'Sold Price'}
-              </th>
-              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">
-                {language === 'ko' ? '링크' : 'Link'}
-              </th>
+            <tr>
+              <th className="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">{language === 'ko' ? '추천 종목' : 'Stock'}</th>
+              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">{language === 'ko' ? '추가일' : 'Added'}</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">{refDateHeader}</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">{todayHeader}</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">{language === 'ko' ? '수익률' : 'Return'}</th>
+              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">{language === 'ko' ? '매도일' : 'Sold'}</th>
+              <th className="px-3 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">{language === 'ko' ? '매도가' : 'Sold Price'}</th>
+              <th className="px-3 py-2 text-center font-medium text-muted-foreground whitespace-nowrap">{language === 'ko' ? '링크' : 'Link'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -132,118 +97,68 @@ function StockTable({
               const addedDateStr = `${addedDate.getMonth() + 1}/${addedDate.getDate()}`;
 
               return (
-                <tr
-                  key={stock.id}
-                  className="hover:bg-muted/30 transition-colors cursor-pointer"
-                  onClick={() => onStockClick(stock)}
-                >
+                <tr key={stock.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => onStockClick(stock)}>
                   <td className="px-3 py-2 font-medium whitespace-nowrap">{stock.stock_name}</td>
                   <td className="px-3 py-2 text-center text-muted-foreground whitespace-nowrap">{addedDateStr}</td>
-                  <td className="px-3 py-2 text-right">
-                    {stock.closing_price_at_recommendation > 0
-                      ? formatPrice(stock.closing_price_at_recommendation)
-                      : '-'}
-                  </td>
+                  <td className="px-3 py-2 text-right">{stock.closing_price_at_recommendation > 0 ? formatPrice(stock.closing_price_at_recommendation) : '-'}</td>
                   <td className="px-3 py-2 text-right">
                     {stockUrl ? (
-                      <a
-                        href={stockUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="text-primary hover:underline"
-                      >
+                      <a href={stockUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-primary hover:underline">
                         {stock.current_closing_price ? formatPrice(stock.current_closing_price) : '-'}
                       </a>
                     ) : (
                       <>{stock.current_closing_price ? formatPrice(stock.current_closing_price) : '-'}</>
                     )}
                   </td>
-                  <td className={`px-3 py-2 text-right font-medium ${
-                    returnValue !== null && returnValue > 0
-                      ? 'text-green-600'
-                      : returnValue !== null && returnValue < 0
-                        ? 'text-red-600'
-                        : ''
-                  }`}>
+                  <td className={`px-3 py-2 text-right font-medium ${returnValue !== null && returnValue > 0 ? 'text-green-600' : returnValue !== null && returnValue < 0 ? 'text-red-600' : ''}`}>
                     {calculateReturn(stock.closing_price_at_recommendation, stock.current_closing_price)}
                   </td>
                   <td className="px-3 py-2 text-center text-muted-foreground">
-                    {stock.sold_date ? (() => {
-                      const d = new Date(stock.sold_date);
-                      return `${d.getMonth() + 1}/${d.getDate()}`;
-                    })() : '-'}
+                    {stock.sold_date ? (() => { const d = new Date(stock.sold_date); return `${d.getMonth() + 1}/${d.getDate()}`; })() : '-'}
                   </td>
-                  <td className="px-3 py-2 text-right">
-                    {stock.sold_price ? formatPrice(stock.sold_price) : '-'}
-                  </td>
+                  <td className="px-3 py-2 text-right">{stock.sold_price ? formatPrice(stock.sold_price) : '-'}</td>
                   <td className="px-3 py-2 text-center">
                     {stockUrl ? (
-                      <a
-                        href={stockUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
+                      <a href={stockUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
                         className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-success hover:bg-success/80 text-success-foreground transition-colors"
-                        title={isKR
-                          ? (language === 'ko' ? '네이버 증권에서 보기' : 'View on Naver Finance')
-                          : (language === 'ko' ? 'Yahoo Finance에서 보기' : 'View on Yahoo Finance')
-                        }
-                      >
+                        title={isKR ? (language === 'ko' ? '네이버 증권에서 보기' : 'View on Naver Finance') : (language === 'ko' ? 'Yahoo Finance에서 보기' : 'View on Yahoo Finance')}>
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
+                    ) : (<span className="text-muted-foreground">-</span>)}
                   </td>
                 </tr>
               );
             })}
           </tbody>
           {(() => {
-            const validStocks = stocks.filter(
-              s => s.current_closing_price && s.closing_price_at_recommendation > 0
-            );
+            const validStocks = stocks.filter(s => s.current_closing_price && s.closing_price_at_recommendation > 0);
             if (validStocks.length === 0) return null;
             const totalWeight = validStocks.reduce((sum, s) => sum + s.closing_price_at_recommendation, 0);
             const weightedReturn = validStocks.reduce((sum, s) => {
               const ret = ((s.current_closing_price! - s.closing_price_at_recommendation) / s.closing_price_at_recommendation) * 100;
               return sum + ret * (s.closing_price_at_recommendation / totalWeight);
             }, 0);
-
-            // Realized return for sold stocks
-            const soldStocks = stocks.filter(
-              s => s.sold_price && s.closing_price_at_recommendation > 0
-            );
+            const soldStocks = stocks.filter(s => s.sold_price && s.closing_price_at_recommendation > 0);
             const soldWeight = soldStocks.reduce((sum, s) => sum + s.closing_price_at_recommendation, 0);
             const realizedReturn = soldStocks.length > 0
               ? soldStocks.reduce((sum, s) => {
                   const ret = ((s.sold_price! - s.closing_price_at_recommendation) / s.closing_price_at_recommendation) * 100;
                   return sum + ret * (s.closing_price_at_recommendation / soldWeight);
-                }, 0)
-              : null;
+                }, 0) : null;
 
             return (
               <tfoot className="border-t-2 border-border bg-muted/30">
                 <tr>
-                  <td colSpan={6} className="px-3 py-2 text-right font-semibold text-xs">
-                    {language === 'ko' ? '가중 평균 수익률' : 'Weighted Avg Return'}
-                  </td>
-                  <td className={`px-3 py-2 text-right font-bold text-xs ${
-                    weightedReturn > 0 ? 'text-green-600' : weightedReturn < 0 ? 'text-red-600' : ''
-                  }`}>
+                  <td colSpan={6} className="px-3 py-2 text-right font-semibold text-xs">{language === 'ko' ? '가중 평균 수익률' : 'Weighted Avg Return'}</td>
+                  <td className={`px-3 py-2 text-right font-bold text-xs ${weightedReturn > 0 ? 'text-green-600' : weightedReturn < 0 ? 'text-red-600' : ''}`}>
                     {weightedReturn >= 0 ? '+' : ''}{weightedReturn.toFixed(2)}%
                   </td>
                   <td className="px-3 py-2" />
                 </tr>
                 {realizedReturn !== null && (
                   <tr>
-                    <td colSpan={6} className="px-3 py-2 text-right font-semibold text-xs">
-                      {language === 'ko' ? '실현 수익률' : 'Realized Return'}
-                    </td>
-                    <td className={`px-3 py-2 text-right font-bold text-xs ${
-                      realizedReturn > 0 ? 'text-green-600' : realizedReturn < 0 ? 'text-red-600' : ''
-                    }`}>
+                    <td colSpan={6} className="px-3 py-2 text-right font-semibold text-xs">{language === 'ko' ? '실현 수익률' : 'Realized Return'}</td>
+                    <td className={`px-3 py-2 text-right font-bold text-xs ${realizedReturn > 0 ? 'text-green-600' : realizedReturn < 0 ? 'text-red-600' : ''}`}>
                       {realizedReturn >= 0 ? '+' : ''}{realizedReturn.toFixed(2)}%
                     </td>
                     <td className="px-3 py-2" />
@@ -259,56 +174,46 @@ function StockTable({
 }
 
 export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) {
-  const [stocks, setStocks] = useState<StockPick[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [updatingPrices, setUpdatingPrices] = useState(false);
   const [selectedStock, setSelectedStock] = useState<StockPick | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  async function fetchStocks() {
-    const { data } = await supabase
-      .from('weekly_stock_picks')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
-
-    if (data) setStocks(data as StockPick[]);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    fetchStocks();
-  }, []);
+  const { data: stocks = [], isLoading: loading } = useQuery({
+    queryKey: ['weekly-stock-picks'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('weekly_stock_picks')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      if (error) throw error;
+      return (data || []) as StockPick[];
+    },
+    staleTime: 30 * 1000,
+  });
 
   async function handleUpdatePrices(market: 'KR' | 'US') {
     setUpdatingPrices(true);
     toast.info(language === 'ko' ? '현재가 업데이트 중...' : 'Updating prices...');
-
     try {
       const marketStocks = stocks.filter(s => (s.market || 'KR') === market && s.stock_code);
       const { data, error } = await supabase.functions.invoke('fetch-stock-prices', {
-        body: {
-          stockCodes: marketStocks.map(s => ({ code: s.stock_code, name: s.stock_name })),
-          market,
-        }
+        body: { stockCodes: marketStocks.map(s => ({ code: s.stock_code, name: s.stock_name })), market },
       });
-
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error);
-
       let updatedCount = 0;
       for (const result of data.data) {
         if (result.currentPrice) {
-          await supabase
-            .from('weekly_stock_picks')
+          await supabase.from('weekly_stock_picks')
             .update({ current_closing_price: result.currentPrice, updated_at: new Date().toISOString() })
             .eq('stock_code', result.stockCode);
           updatedCount++;
         }
       }
-
       toast.success(language === 'ko' ? `${updatedCount}개 종목 업데이트 완료` : `Updated ${updatedCount} stocks`);
-      await fetchStocks();
+      await queryClient.invalidateQueries({ queryKey: ['weekly-stock-picks'] });
     } catch (err) {
       console.error('Price update error:', err);
       toast.error(language === 'ko' ? '업데이트 실패' : 'Update failed');
@@ -326,9 +231,7 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
     return (
       <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
         <div className="p-4 border-b border-border">
-          <h3 className="font-serif font-semibold">
-            {language === 'ko' ? '남산 관심 종목' : 'Namsan Stock Picks'}
-          </h3>
+          <h3 className="font-serif font-semibold">{language === 'ko' ? '남산 관심 종목' : 'Namsan Stock Picks'}</h3>
         </div>
         <div className="h-[100px] flex items-center justify-center">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
@@ -339,37 +242,13 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
 
   const krStocks = stocks.filter(s => (s.market || 'KR') === 'KR');
   const usStocks = stocks.filter(s => (s.market || 'KR') === 'US');
-
   if (krStocks.length === 0 && usStocks.length === 0) return null;
 
   return (
     <>
-      <StockTable
-        stocks={krStocks}
-        language={language}
-        market="KR"
-        title={language === 'ko' ? '남산 관심 종목 (국장)' : 'Namsan Stock Picks (KR)'}
-        onStockClick={handleStockClick}
-        onUpdatePrices={handleUpdatePrices}
-        updatingPrices={updatingPrices}
-      />
-
-      <StockTable
-        stocks={usStocks}
-        language={language}
-        market="US"
-        title={language === 'ko' ? '남산 관심 종목 (미장)' : 'Namsan Stock Picks (US)'}
-        onStockClick={handleStockClick}
-        onUpdatePrices={handleUpdatePrices}
-        updatingPrices={updatingPrices}
-      />
-
-      <StockDetailDialog
-        stock={selectedStock}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        language={language}
-      />
+      <StockTable stocks={krStocks} language={language} market="KR" title={language === 'ko' ? '남산 관심 종목 (국장)' : 'Namsan Stock Picks (KR)'} onStockClick={handleStockClick} onUpdatePrices={handleUpdatePrices} updatingPrices={updatingPrices} />
+      <StockTable stocks={usStocks} language={language} market="US" title={language === 'ko' ? '남산 관심 종목 (미장)' : 'Namsan Stock Picks (US)'} onStockClick={handleStockClick} onUpdatePrices={handleUpdatePrices} updatingPrices={updatingPrices} />
+      <StockDetailDialog stock={selectedStock} open={dialogOpen} onOpenChange={setDialogOpen} language={language} />
     </>
   );
 }

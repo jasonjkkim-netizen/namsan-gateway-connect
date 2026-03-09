@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ExternalLink, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,6 @@ interface MarketItem {
   updated_at: string;
 }
 
-// Category definitions for market items
 const MARKET_CATEGORIES = {
   indices: { ko: '주요 지수', en: 'Major Indices', order: [1, 2, 3] },
   crypto: { ko: '암호화폐', en: 'Cryptocurrency', order: [4, 5, 6] },
@@ -62,24 +62,21 @@ interface MarketOverviewSectionProps {
 }
 
 export function MarketOverviewSection({ language }: MarketOverviewSectionProps) {
-  const [items, setItems] = useState<MarketItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [updating, setUpdating] = useState(false);
 
-  async function fetchItems() {
-    const { data } = await supabase
-      .from('market_overview_items')
-      .select('*')
-      .eq('is_active', true)
-      .order('display_order', { ascending: true });
-
-    if (data) setItems(data as MarketItem[]);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    fetchItems();
-  }, []);
+  const { data: items = [], isLoading: loading } = useQuery({
+    queryKey: ['market-overview'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('market_overview_items')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+      return (data as MarketItem[]) || [];
+    },
+    staleTime: 30 * 1000,
+  });
 
   async function handleUpdatePrices() {
     setUpdating(true);
@@ -87,12 +84,10 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
       const { data, error } = await supabase.functions.invoke('fetch-market-indices', {
         body: { updateOverview: true },
       });
-
       if (error) throw error;
-
       if (data?.success) {
         toast.success(language === 'ko' ? '시장 데이터가 업데이트되었습니다' : 'Market data updated');
-        await fetchItems();
+        await queryClient.invalidateQueries({ queryKey: ['market-overview'] });
       } else {
         throw new Error(data?.error || 'Update failed');
       }
