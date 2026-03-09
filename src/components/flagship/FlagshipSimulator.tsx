@@ -290,7 +290,9 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                       {ko ? GROUP_META[b.groupId].nameKo : GROUP_META[b.groupId].nameEn}
                     </td>
                     <td className="py-2 text-right font-mono">{formatKRW(b.allocated)}</td>
-                    <td className="py-2 text-right font-mono">{formatPct(b.expectedReturn)}</td>
+                    <td className="py-2 text-right font-mono">
+                      {ko ? `년 ${(b.expectedReturn * 100).toFixed(2)}%` : `${(b.expectedReturn * 100).toFixed(2)}% p.a.`}
+                    </td>
                     <td className="py-2 text-right font-mono text-accent">{formatKRW(b.profit)}</td>
                   </tr>
                 ))}
@@ -300,14 +302,18 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                     {ko ? '수수료 (연간)' : 'Management Fee (annual)'}
                   </td>
                   <td className="py-2 text-right font-mono">—</td>
-                  <td className="py-2 text-right font-mono">-{formatPct(feeRate)}</td>
+                  <td className="py-2 text-right font-mono">
+                    {ko ? `-년 ${(feeRate * 100).toFixed(2)}%` : `-${(feeRate * 100).toFixed(2)}% p.a.`}
+                  </td>
                   <td className="py-2 text-right font-mono">-{formatKRW(feeAmount)}</td>
                 </tr>
                 {/* Net row */}
                 <tr className="font-semibold">
                   <td className="py-2">{ko ? '순 합계' : 'Net Total'}</td>
                   <td className="py-2 text-right font-mono">{formatKRW(investmentAmount)}</td>
-                  <td className="py-2 text-right font-mono">{formatPct(blendedExpectedReturn - feeRate)}</td>
+                  <td className="py-2 text-right font-mono">
+                    {ko ? `년 ${((blendedExpectedReturn - feeRate) * 100).toFixed(2)}%` : `${((blendedExpectedReturn - feeRate) * 100).toFixed(2)}% p.a.`}
+                  </td>
                   <td className="py-2 text-right font-mono text-foreground">{formatKRW(netProfit)}</td>
                 </tr>
               </tbody>
