@@ -64,19 +64,19 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
   });
   if (product.target_return != null) {
     rows.push({
-      label: language === 'ko' ? '최대 수익률' : 'Maximumm Return',
+      label: language === 'ko' ? '최대 수익률' : 'Maximummm Return',
       value: formatPercent(product.target_return),
     });
   }
   if (product.fixed_return_percent != null) {
     rows.push({
-      label: language === 'ko' ? 단순 수익률' : 'Simpled Return',
+      label: language === 'ko' ?단순 수익률' : 'Simpleled Return',
       value: language === 'ko' ? `년 ${product.fixed_return_percent}%` : `${product.fixed_return_percent}% p.a.`,
     });
   }
   if (product.target_return_percent != null) {
     rows.push({
-      label: language === 'ko' ? '목표 수익률' : 'Target Return %',
+      label: language === 'ko' ?최대 수익률' : 'Maximumet Return %',
       value: formatPercent(product.target_return_percent),
     });
   }

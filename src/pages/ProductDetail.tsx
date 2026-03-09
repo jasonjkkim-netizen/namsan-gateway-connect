@@ -430,7 +430,7 @@ export default function ProductDetail() {
               )}
               {product.target_return_percent != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
-                  <span className="text-muted-foreground">{language === 'ko' ? '목표 수익률' : 'Target Return'}</span>
+                  <span className="text-muted-foreground">{language === 'ko' ? '최대 수익률' : 'Maximum Return'}</span>
                   <span className="font-medium text-accent">{formatPercent(product.target_return_percent)}</span>
                 </div>
               )}
