@@ -62,22 +62,17 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
     label: language === 'ko' ? '통화' : 'Currency',
     value: (product.default_currency || product.currency || 'USD').toUpperCase(),
   });
-  if (product.target_return != null) {
+  if (product.fixed_return_percent != null || product.target_return != null) {
+    const val = product.fixed_return_percent ?? product.target_return;
     rows.push({
-      label: language === 'ko' ? '최대 수익률' : 'Maximummm Return',
-      value: formatPercent(product.target_return),
-    });
-  }
-  if (product.fixed_return_percent != null) {
-    rows.push({
-      label: language === 'ko' ? '단순 수익률' : 'Simple Return',
-      value: language === 'ko' ? `년 ${product.fixed_return_percent}%` : `${product.fixed_return_percent}% p.a.`,
+      label: language === 'ko' ? '년 수익률' : 'Annual Return',
+      value: language === 'ko' ? `년 ${val}%` : `${val}% p.a.`,
     });
   }
   if (product.target_return_percent != null) {
     rows.push({
-      label: language === 'ko' ? '최대 수익률' : 'Maximum Return %',
-      value: formatPercent(product.target_return_percent),
+      label: language === 'ko' ? '최대 수익률' : 'Maximum Return',
+      value: language === 'ko' ? `년 ${product.target_return_percent}%` : `${product.target_return_percent}% p.a.`,
     });
   }
   if (product.management_fee_percent != null) {

@@ -261,18 +261,22 @@ export default function ProductDetail() {
 
         {/* Key Metrics */}
         <div className="grid gap-2 md:gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(0, 1fr))' }}>
-          {product.target_return && (
+          {(product.fixed_return_percent || product.target_return) && (
             <Card className="card-elevated animate-fade-in" style={{ animationDelay: '100ms' }}>
               <CardHeader className="pb-1 pt-2 md:pt-3 px-2 md:px-3">
                 <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1 whitespace-nowrap">
                   <TrendingUp className="h-3 w-3 md:h-3.5 md:w-3.5 text-accent" />
-                  {language === 'ko' ? '최대 수익률' : 'Maximum Return'}
+                  {language === 'ko' ? '년 수익률' : 'Annual Return'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-2 md:px-3 pb-2 md:pb-3">
-                <p className="text-sm md:text-xl font-bold text-accent whitespace-nowrap">{formatPercent(product.target_return)}</p>
+                <p className="text-sm md:text-xl font-bold text-accent whitespace-nowrap">
+                  {language === 'ko'
+                    ? `년 ${(product.fixed_return_percent || product.target_return)?.toFixed(2)}%`
+                    : `${(product.fixed_return_percent || product.target_return)?.toFixed(2)}% p.a.`}
+                </p>
                 <p className="text-[9px] md:text-xs text-muted-foreground mt-0.5">
-                  {language === 'ko' ? '연간 예상' : 'Annual expected'}
+                  {language === 'ko' ? '세전 수익률' : 'Before Tax'}
                 </p>
               </CardContent>
             </Card>
@@ -431,7 +435,9 @@ export default function ProductDetail() {
               {product.target_return_percent != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
                   <span className="text-muted-foreground">{language === 'ko' ? '최대 수익률' : 'Maximum Return'}</span>
-                  <span className="font-medium text-accent">{formatPercent(product.target_return_percent)}</span>
+                  <span className="font-medium text-accent">
+                    {language === 'ko' ? `년 ${product.target_return_percent}%` : `${product.target_return_percent}% p.a.`}
+                  </span>
                 </div>
               )}
               {product.management_fee_percent != null && (
