@@ -288,6 +288,45 @@ export function AdminViewpoints() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
+
+        {/* Blog Picker Dialog */}
+        <Dialog open={blogPickerOpen} onOpenChange={setBlogPickerOpen}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{language === 'ko' ? '블로그 글 선택' : 'Select Blog Post'}</DialogTitle>
+            </DialogHeader>
+            {blogLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+              </div>
+            ) : blogPosts.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">{language === 'ko' ? '블로그 글이 없습니다' : 'No blog posts'}</p>
+            ) : (
+              <div className="space-y-2">
+                {blogPosts.map(post => (
+                  <button
+                    key={post.id}
+                    onClick={() => selectBlogPost(post)}
+                    className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      {post.thumbnail_url && (
+                        <img src={post.thumbnail_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{language === 'ko' ? post.title_ko : post.title_en}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {new Date(post.published_at).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
         {items.length === 0 ? (
