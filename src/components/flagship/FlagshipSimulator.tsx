@@ -367,7 +367,9 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                       {ko ? '기대수익률' : 'Exp. Return'}
                       <span className="block text-[10px] opacity-70 italic">{beforeTaxLabel}</span>
                     </span>
-                    <span className="font-mono font-medium text-accent text-right">{formatPct(presetReturn)}</span>
+                    <span className="font-mono font-medium text-accent text-right">
+                      {ko ? `년 ${(presetReturn * 100).toFixed(2)}%` : `${(presetReturn * 100).toFixed(2)}% p.a.`}
+                    </span>
                   </div>
 
                   <div className="flex justify-between text-xs">
