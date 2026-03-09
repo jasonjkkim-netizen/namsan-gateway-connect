@@ -66,12 +66,6 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
     return 365;
   }, [horizon]);
 
-  // Days since base date for projection calculation
-  const daysSinceBase = useMemo(() => {
-    if (!baseDate) return 365;
-    const today = new Date();
-    return Math.max(differenceInDays(today, baseDate), 1);
-  }, [baseDate]);
 
   const projection = useMemo(
     () => calcProjection(investmentAmount, groupWeights, groups, daysToHorizon),
