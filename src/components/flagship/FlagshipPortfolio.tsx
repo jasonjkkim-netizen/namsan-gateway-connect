@@ -45,6 +45,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const [hasInitialized, setHasInitialized] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState('');
+  const [baseDate, setBaseDate] = useState<Date>(parseISO(BASE_DATE));
 
   // Sync weights from data only on first load
   useMemo(() => {
@@ -54,7 +55,11 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
     }
   }, [items, initialWeights, hasInitialized]);
 
-  const groups = useMemo(() => buildGroups(items), [items]);
+  const groups = useMemo(() => buildGroups(items, baseDate), [items, baseDate]);
+  
+  const baseDateLabel = ko 
+    ? format(baseDate, 'yyyy년 M월 d일', { locale: koLocale })
+    : format(baseDate, 'MMM d, yyyy');
 
   if (loading) {
     return (
