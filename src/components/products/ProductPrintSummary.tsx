@@ -126,10 +126,13 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
     <div ref={ref} className="print-summary" style={{ fontFamily: 'serif', display: 'none' }}>
       <style>{`
         @media print {
-          body > *:not(.print-summary) { display: none !important; }
+          body * { visibility: hidden !important; }
+          .print-summary, .print-summary * {
+            visibility: visible !important;
+          }
           .print-summary {
             display: block !important;
-            position: absolute !important;
+            position: fixed !important;
             left: 0; top: 0;
             width: 100%;
             padding: 30px 50px;
@@ -137,7 +140,7 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
             color: black !important;
             font-size: 10pt;
             line-height: 1.4;
-            page-break-after: avoid;
+            z-index: 99999;
           }
           @page { margin: 15mm; size: A4; }
         }
