@@ -417,7 +417,7 @@ export default function ProductDetail() {
               )}
               {product.fixed_return_percent != null && (
                 <div className="flex justify-between py-2.5 border-b border-border">
-                  <span className="text-muted-foreground">{language === 'ko' ? '확정 수익률' : 'Fixed Return'}</span>
+                  <span className="text-muted-foreground">{language === 'ko' ? '단순 수익률' : 'Simple Return'}</span>
                   <div className="text-right">
                     <span className="font-medium text-accent">
                       {language === 'ko' ? `년 ${product.fixed_return_percent}%` : `${product.fixed_return_percent}% p.a.`}
