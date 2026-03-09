@@ -308,6 +308,12 @@ export default function Products() {
             })}
           </Accordion>
         )}
+
+        <ProductPreviewDialog
+          product={previewProduct}
+          open={!!previewProduct}
+          onOpenChange={(open) => !open && setPreviewProduct(null)}
+        />
       </main>
     </div>
   );
