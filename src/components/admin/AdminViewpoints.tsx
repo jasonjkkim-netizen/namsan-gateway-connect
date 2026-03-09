@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown, Search, CalendarIcon, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Upload, Image, Archive, Eye, ArrowUp, ArrowDown, Search, CalendarIcon, X, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendContentNotification } from '@/lib/send-content-notification';
 import { RichPasteEditor } from './RichPasteEditor';
@@ -43,6 +43,9 @@ export function AdminViewpoints() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [blogPickerOpen, setBlogPickerOpen] = useState(false);
+  const [blogPosts, setBlogPosts] = useState<{ id: string; title_ko: string; title_en: string; content_ko: string; content_en: string; thumbnail_url: string | null; published_at: string }[]>([]);
+  const [blogLoading, setBlogLoading] = useState(false);
   const [formData, setFormData] = useState({
     title_ko: '',
     title_en: '',
@@ -125,6 +128,34 @@ export function AdminViewpoints() {
     toast.success(language === 'ko' ? '이미지 업로드 완료' : 'Image uploaded');
   }
 
+  async function openBlogPicker() {
+    setBlogLoading(true);
+    setBlogPickerOpen(true);
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('id, title_ko, title_en, content_ko, content_en, thumbnail_url, published_at')
+      .eq('is_active', true)
+      .order('published_at', { ascending: false })
+      .limit(50);
+    setBlogPosts(data || []);
+    setBlogLoading(false);
+  }
+
+  function selectBlogPost(post: typeof blogPosts[0]) {
+    setFormData({
+      title_ko: post.title_ko,
+      title_en: post.title_en,
+      content_ko: post.content_ko,
+      content_en: post.content_en,
+      image_url: post.thumbnail_url,
+      is_active: true,
+    });
+    setEditingItem(null);
+    setBlogPickerOpen(false);
+    setDialogOpen(true);
+    toast.success(language === 'ko' ? '블로그 내용이 복사되었습니다' : 'Blog content copied');
+  }
+
   // Blog sync removed - viewpoints and blog are managed separately
 
   async function handleSubmit(e: React.FormEvent) {
@@ -195,10 +226,14 @@ export function AdminViewpoints() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{language === 'ko' ? '남산 뷰 포인트 관리' : 'Namsan View Point Management'}</CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openAdd} size="sm"><Plus className="h-4 w-4 mr-2" />{language === 'ko' ? '추가' : 'Add'}</Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Button onClick={openBlogPicker} size="sm" variant="outline">
+            <BookOpen className="h-4 w-4 mr-2" />{language === 'ko' ? '블로그에서 가져오기' : 'Import from Blog'}
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openAdd} size="sm"><Plus className="h-4 w-4 mr-2" />{language === 'ko' ? '추가' : 'Add'}</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -251,6 +286,45 @@ export function AdminViewpoints() {
                 <Button type="submit" disabled={saving}>{saving ? (language === 'ko' ? '저장 중...' : 'Saving...') : editingItem ? (language === 'ko' ? '수정' : 'Update') : (language === 'ko' ? '추가' : 'Add')}</Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+        </div>
+
+        {/* Blog Picker Dialog */}
+        <Dialog open={blogPickerOpen} onOpenChange={setBlogPickerOpen}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{language === 'ko' ? '블로그 글 선택' : 'Select Blog Post'}</DialogTitle>
+            </DialogHeader>
+            {blogLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+              </div>
+            ) : blogPosts.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">{language === 'ko' ? '블로그 글이 없습니다' : 'No blog posts'}</p>
+            ) : (
+              <div className="space-y-2">
+                {blogPosts.map(post => (
+                  <button
+                    key={post.id}
+                    onClick={() => selectBlogPost(post)}
+                    className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      {post.thumbnail_url && (
+                        <img src={post.thumbnail_url} alt="" className="h-10 w-10 rounded object-cover flex-shrink-0" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{language === 'ko' ? post.title_ko : post.title_en}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {new Date(post.published_at).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </CardHeader>
