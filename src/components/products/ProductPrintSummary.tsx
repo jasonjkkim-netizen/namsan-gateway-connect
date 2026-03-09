@@ -149,17 +149,17 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
       `}</style>
 
       {/* Header */}
-      <div style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '16px', marginBottom: '24px' }}>
+      <div style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '10px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '20pt', fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
+            <h1 style={{ fontSize: '16pt', fontWeight: 700, margin: 0, lineHeight: 1.2 }}>
               {language === 'ko' ? product.name_ko : product.name_en}
             </h1>
             {product.name_en && language === 'ko' && (
-              <p style={{ fontSize: '11pt', color: '#666', margin: '4px 0 0' }}>{product.name_en}</p>
+              <p style={{ fontSize: '9pt', color: '#666', margin: '2px 0 0' }}>{product.name_en}</p>
             )}
           </div>
-          <div style={{ textAlign: 'right', fontSize: '9pt', color: '#888' }}>
+          <div style={{ textAlign: 'right', fontSize: '8pt', color: '#888' }}>
             <p style={{ margin: 0 }}>NAMSAN PARTNERS</p>
             <p style={{ margin: '2px 0 0' }}>{today}</p>
           </div>
