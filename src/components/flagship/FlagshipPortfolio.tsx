@@ -105,6 +105,40 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
         <h2 className="text-2xl md:text-3xl font-serif font-semibold text-foreground">
           {ko ? 'Namsan Flagship 투자 현황' : 'Namsan Flagship Investment Status'}
         </h2>
+        
+        {/* Date Picker */}
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <span className="text-sm text-muted-foreground">
+            {ko ? '기준일:' : 'Base Date:'}
+          </span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[180px] justify-start text-left font-normal",
+                  !baseDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {baseDateLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={baseDate}
+                onSelect={(date) => date && setBaseDate(date)}
+                disabled={(date) =>
+                  date > new Date() || date < new Date("2020-01-01")
+                }
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
         <p className="text-sm text-muted-foreground mt-2 max-w-2xl mx-auto">
           {ko
             ? `${baseDateLabel} 기준 포트폴리오 성과 및 자산 배분 현황`
