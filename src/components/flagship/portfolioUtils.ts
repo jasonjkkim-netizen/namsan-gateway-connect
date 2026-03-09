@@ -63,9 +63,10 @@ export function buildGroups(items: PortfolioItem[]): GroupData[] {
 export function buildReturnSeries(
   items: PortfolioItem[],
   groupWeights: Record<GroupId, number>,
+  customBaseDate?: Date,
 ): { date: string; value: number }[] {
   const today = new Date();
-  const base = parseISO(BASE_DATE);
+  const base = customBaseDate || parseISO(BASE_DATE);
   if (today <= base) return [];
 
   const days = eachDayOfInterval({ start: base, end: today });

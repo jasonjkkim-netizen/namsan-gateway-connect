@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
+import { format, parseISO } from 'date-fns';
+import { ko as koLocale } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePortfolioData } from './usePortfolioData';
-import { GroupId, GROUP_META, BASE_DATE_LABEL_KO, BASE_DATE_LABEL_EN } from './portfolioTypes';
+import { GroupId, GROUP_META, BASE_DATE } from './portfolioTypes';
 import { buildGroups, calcItemReturn, formatPct } from './portfolioUtils';
 import { FlagshipCharts } from './FlagshipCharts';
 import { FlagshipSimulator } from './FlagshipSimulator';
@@ -13,7 +15,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Minus, FileText } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { TrendingUp, TrendingDown, Minus, FileText, CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface FlagshipPortfolioProps {
   chartsOnly?: boolean;
@@ -40,6 +45,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const [hasInitialized, setHasInitialized] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState('');
+  const [baseDate, setBaseDate] = useState<Date>(parseISO(BASE_DATE));
 
   // Sync weights from data only on first load
   useMemo(() => {
@@ -50,6 +56,10 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   }, [items, initialWeights, hasInitialized]);
 
   const groups = useMemo(() => buildGroups(items), [items]);
+  
+  const baseDateLabel = ko 
+    ? format(baseDate, 'yyyy년 M월 d일', { locale: koLocale })
+    : format(baseDate, 'MMM d, yyyy');
 
   if (loading) {
     return (
@@ -71,12 +81,12 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             {ko ? 'Namsan Flagship 포트폴리오' : 'Namsan Flagship Portfolio'}
           </h2>
         </div>
-        <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide />
+        <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide baseDate={baseDate} />
       </div>
     );
   }
 
-  const baseDateLabel = ko ? BASE_DATE_LABEL_KO : BASE_DATE_LABEL_EN;
+  
 
   // Calculate total allocation and blended performance
   const rawTotal = groups.reduce((sum, g) => sum + g.totalWeight, 0);
@@ -95,6 +105,40 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
         <h2 className="text-2xl md:text-3xl font-serif font-semibold text-foreground">
           {ko ? 'Namsan Flagship 투자 현황' : 'Namsan Flagship Investment Status'}
         </h2>
+        
+        {/* Date Picker */}
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <span className="text-sm text-muted-foreground">
+            {ko ? '기준일:' : 'Base Date:'}
+          </span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[180px] justify-start text-left font-normal",
+                  !baseDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {baseDateLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                selected={baseDate}
+                onSelect={(date) => date && setBaseDate(date)}
+                disabled={(date) =>
+                  date > new Date() || date < new Date("2020-01-01")
+                }
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
         <p className="text-sm text-muted-foreground mt-2 max-w-2xl mx-auto">
           {ko
             ? `${baseDateLabel} 기준 포트폴리오 성과 및 자산 배분 현황`
@@ -221,7 +265,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       </div>
 
       {/* Charts side by side below table */}
-      <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide />
+      <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide baseDate={baseDate} />
 
       {/* AI Analysis & CIO Commentary */}
       <PortfolioAnalysis items={items} groups={groups} onAnalysisChange={setAiAnalysis} />
@@ -238,8 +282,8 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       {/* Disclaimer */}
       <p className="text-[11px] text-muted-foreground text-center max-w-3xl mx-auto leading-relaxed">
         {ko
-          ? `${BASE_DATE_LABEL_KO} 이후 수익률은 이용 가능한 가격 데이터를 기반으로 합니다. 채권은 목표 연간 수익률을 사용하며, 실제 체결 및 가격은 다를 수 있습니다. 투자 시뮬레이션은 예측치이며 수익을 보장하지 않습니다.`
-          : `Performance since ${BASE_DATE_LABEL_EN} is based on available price data. Bonds use target annual yield; actual execution and pricing may differ. Projections are not guarantees.`}
+          ? `${baseDateLabel} 이후 수익률은 이용 가능한 가격 데이터를 기반으로 합니다. 채권은 목표 연간 수익률을 사용하며, 실제 체결 및 가격은 다를 수 있습니다. 투자 시뮬레이션은 예측치이며 수익을 보장하지 않습니다.`
+          : `Performance since ${baseDateLabel} is based on available price data. Bonds use target annual yield; actual execution and pricing may differ. Projections are not guarantees.`}
       </p>
 
       {/* Report Dialog */}

@@ -16,9 +16,10 @@ interface Props {
   groups: GroupData[];
   groupWeights: Record<GroupId, number>;
   sideBySide?: boolean;
+  baseDate?: Date;
 }
 
-export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false }: Props) {
+export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false, baseDate }: Props) {
   const { language } = useLanguage();
   const ko = language === 'ko';
 
@@ -31,8 +32,8 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
     }));
 
   const lineSeries = useMemo(
-    () => buildReturnSeries(items, groupWeights),
-    [items, groupWeights],
+    () => buildReturnSeries(items, groupWeights, baseDate),
+    [items, groupWeights, baseDate],
   );
 
   const CustomTooltip = ({ active, payload }: any) => {
