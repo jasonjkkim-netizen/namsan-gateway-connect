@@ -179,18 +179,18 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
       )}
 
       {/* Key Metrics Table */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '12pt', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444' }}>
+      <div style={{ marginBottom: '14px' }}>
+        <h2 style={{ fontSize: '10pt', fontWeight: 600, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444' }}>
           {language === 'ko' ? '투자 요약' : 'Investment Summary'}
         </h2>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <tbody>
             {rows.map((row, i) => (
               <tr key={i} style={{ borderBottom: '1px solid #e5e5e5' }}>
-                <td style={{ padding: '8px 12px 8px 0', fontSize: '10pt', color: '#666', width: '40%' }}>
+                <td style={{ padding: '5px 8px 5px 0', fontSize: '9pt', color: '#666', width: '40%' }}>
                   {row.label}
                 </td>
-                <td style={{ padding: '8px 0', fontSize: '10pt', fontWeight: 600, textAlign: 'right' }}>
+                <td style={{ padding: '5px 0', fontSize: '9pt', fontWeight: 600, textAlign: 'right' }}>
                   {row.value}
                 </td>
               </tr>
@@ -200,8 +200,8 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
       </div>
 
       {/* Disclaimer */}
-      <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #ccc' }}>
-        <p style={{ fontSize: '8pt', color: '#999', lineHeight: 1.5 }}>
+      <div style={{ marginTop: '20px', paddingTop: '10px', borderTop: '1px solid #ccc' }}>
+        <p style={{ fontSize: '7pt', color: '#999', lineHeight: 1.4 }}>
           {language === 'ko'
             ? '본 자료는 투자 참고용이며, 투자 권유를 목적으로 하지 않습니다. 투자 전 반드시 상품설명서를 확인하시기 바랍니다. 과거 수익률이 미래 수익을 보장하지 않습니다.'
             : 'This document is for informational purposes only and does not constitute investment advice. Please review the product prospectus before investing. Past performance does not guarantee future results.'}
