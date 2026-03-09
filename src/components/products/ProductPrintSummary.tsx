@@ -70,7 +70,7 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
   }
   if (product.fixed_return_percent != null) {
     rows.push({
-      label: language === 'ko' ?단순 수익률' : 'Simpleled Return',
+      label: language === 'ko' ? '\uB2E8\uC21C \uC218\uC775\uB960' : 'Simple Return',
       value: language === 'ko' ? `년 ${product.fixed_return_percent}%` : `${product.fixed_return_percent}% p.a.`,
     });
   }
