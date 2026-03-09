@@ -128,36 +128,38 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
   });
 
   return (
-    <div ref={ref} className="hidden print:block print-summary" style={{ fontFamily: 'serif' }}>
+    <div ref={ref} className="print-summary" style={{ fontFamily: 'serif', display: 'none' }}>
       <style>{`
         @media print {
-          body * { visibility: hidden !important; }
-          .print-summary, .print-summary * { visibility: visible !important; }
+          body > *:not(.print-summary) { display: none !important; }
           .print-summary {
-            position: fixed !important;
+            display: block !important;
+            position: absolute !important;
             left: 0; top: 0;
             width: 100%;
-            padding: 40px 60px;
+            padding: 30px 50px;
             background: white !important;
             color: black !important;
-            font-size: 12pt;
-            line-height: 1.6;
+            font-size: 10pt;
+            line-height: 1.4;
+            page-break-after: avoid;
           }
+          @page { margin: 15mm; size: A4; }
         }
       `}</style>
 
       {/* Header */}
-      <div style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '16px', marginBottom: '24px' }}>
+      <div style={{ borderBottom: '2px solid #1a1a1a', paddingBottom: '10px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '20pt', fontWeight: 700, margin: 0, lineHeight: 1.3 }}>
+            <h1 style={{ fontSize: '16pt', fontWeight: 700, margin: 0, lineHeight: 1.2 }}>
               {language === 'ko' ? product.name_ko : product.name_en}
             </h1>
             {product.name_en && language === 'ko' && (
-              <p style={{ fontSize: '11pt', color: '#666', margin: '4px 0 0' }}>{product.name_en}</p>
+              <p style={{ fontSize: '9pt', color: '#666', margin: '2px 0 0' }}>{product.name_en}</p>
             )}
           </div>
-          <div style={{ textAlign: 'right', fontSize: '9pt', color: '#888' }}>
+          <div style={{ textAlign: 'right', fontSize: '8pt', color: '#888' }}>
             <p style={{ margin: 0 }}>NAMSAN PARTNERS</p>
             <p style={{ margin: '2px 0 0' }}>{today}</p>
           </div>
@@ -166,29 +168,29 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
 
       {/* Description */}
       {(product.description_ko || product.description_en) && (
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '12pt', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444' }}>
+        <div style={{ marginBottom: '14px' }}>
+          <h2 style={{ fontSize: '10pt', fontWeight: 600, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444' }}>
             {language === 'ko' ? '상품 개요' : 'Product Overview'}
           </h2>
-          <p style={{ fontSize: '11pt', color: '#333', whiteSpace: 'pre-line', lineHeight: 1.7 }}>
+          <p style={{ fontSize: '9pt', color: '#333', whiteSpace: 'pre-line', lineHeight: 1.5, maxHeight: '120px', overflow: 'hidden' }}>
             {language === 'ko' ? product.description_ko : product.description_en}
           </p>
         </div>
       )}
 
       {/* Key Metrics Table */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '12pt', fontWeight: 600, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444' }}>
+      <div style={{ marginBottom: '14px' }}>
+        <h2 style={{ fontSize: '10pt', fontWeight: 600, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px', color: '#444' }}>
           {language === 'ko' ? '투자 요약' : 'Investment Summary'}
         </h2>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <tbody>
             {rows.map((row, i) => (
               <tr key={i} style={{ borderBottom: '1px solid #e5e5e5' }}>
-                <td style={{ padding: '8px 12px 8px 0', fontSize: '10pt', color: '#666', width: '40%' }}>
+                <td style={{ padding: '5px 8px 5px 0', fontSize: '9pt', color: '#666', width: '40%' }}>
                   {row.label}
                 </td>
-                <td style={{ padding: '8px 0', fontSize: '10pt', fontWeight: 600, textAlign: 'right' }}>
+                <td style={{ padding: '5px 0', fontSize: '9pt', fontWeight: 600, textAlign: 'right' }}>
                   {row.value}
                 </td>
               </tr>
@@ -198,13 +200,13 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
       </div>
 
       {/* Disclaimer */}
-      <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #ccc' }}>
-        <p style={{ fontSize: '8pt', color: '#999', lineHeight: 1.5 }}>
+      <div style={{ marginTop: '20px', paddingTop: '10px', borderTop: '1px solid #ccc' }}>
+        <p style={{ fontSize: '7pt', color: '#999', lineHeight: 1.4 }}>
           {language === 'ko'
             ? '본 자료는 투자 참고용이며, 투자 권유를 목적으로 하지 않습니다. 투자 전 반드시 상품설명서를 확인하시기 바랍니다. 과거 수익률이 미래 수익을 보장하지 않습니다.'
             : 'This document is for informational purposes only and does not constitute investment advice. Please review the product prospectus before investing. Past performance does not guarantee future results.'}
         </p>
-        <p style={{ fontSize: '8pt', color: '#bbb', marginTop: '8px' }}>
+        <p style={{ fontSize: '7pt', color: '#bbb', marginTop: '4px' }}>
           © {new Date().getFullYear()} Namsan Partners. All rights reserved.
         </p>
       </div>
