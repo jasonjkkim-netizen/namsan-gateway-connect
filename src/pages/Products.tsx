@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MiniPieChart } from '@/components/flagship/MiniPieChart';
 import { PRESETS } from '@/components/flagship/portfolioTypes';
 import type { GroupId } from '@/components/flagship/portfolioTypes';
+import { ProductPreviewDialog } from '@/components/products/ProductPreviewDialog';
 
 interface Product {
   id: string;
