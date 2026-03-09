@@ -49,6 +49,8 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
     }
   }, [items, initialWeights, hasInitialized]);
 
+  const groups = useMemo(() => buildGroups(items), [items]);
+
   if (loading) {
     return (
       <div className="space-y-4">
