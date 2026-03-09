@@ -596,7 +596,9 @@ export default function ProductDetail() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Print Summary (hidden, shown only during print) */}
+      {product && <ProductPrintSummary ref={printRef} product={product} />}
     </div>
   );
 }
-
