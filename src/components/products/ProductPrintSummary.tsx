@@ -206,7 +206,7 @@ export const ProductPrintSummary = forwardRef<HTMLDivElement, Props>(({ product 
             ? '본 자료는 투자 참고용이며, 투자 권유를 목적으로 하지 않습니다. 투자 전 반드시 상품설명서를 확인하시기 바랍니다. 과거 수익률이 미래 수익을 보장하지 않습니다.'
             : 'This document is for informational purposes only and does not constitute investment advice. Please review the product prospectus before investing. Past performance does not guarantee future results.'}
         </p>
-        <p style={{ fontSize: '8pt', color: '#bbb', marginTop: '8px' }}>
+        <p style={{ fontSize: '7pt', color: '#bbb', marginTop: '4px' }}>
           © {new Date().getFullYear()} Namsan Partners. All rights reserved.
         </p>
       </div>
