@@ -81,7 +81,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             {ko ? 'Namsan Flagship 포트폴리오' : 'Namsan Flagship Portfolio'}
           </h2>
         </div>
-        <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide />
+        <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide baseDate={baseDate} />
       </div>
     );
   }
@@ -265,7 +265,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       </div>
 
       {/* Charts side by side below table */}
-      <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide />
+      <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide baseDate={baseDate} />
 
       {/* AI Analysis & CIO Commentary */}
       <PortfolioAnalysis items={items} groups={groups} onAnalysisChange={setAiAnalysis} />
