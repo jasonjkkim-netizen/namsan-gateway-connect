@@ -76,10 +76,31 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   if (chartsOnly) {
     return (
       <div className="animate-fade-in">
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
           <h2 className="font-serif font-medium text-sm">
             {ko ? 'Namsan Flagship 포트폴리오' : 'Namsan Flagship Portfolio'}
           </h2>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{ko ? '기준일:' : 'Base:'}</span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                  <CalendarIcon className="h-3 w-3" />
+                  {baseDateLabel}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={baseDate}
+                  onSelect={(date) => date && setBaseDate(date)}
+                  disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
         <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide baseDate={baseDate} />
       </div>
