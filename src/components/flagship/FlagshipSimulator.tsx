@@ -1,14 +1,13 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { differenceInDays } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { GroupId, GroupData, PortfolioItem, PRESETS, GROUP_META } from './portfolioTypes';
+import { GroupId, GroupData, PortfolioItem, PRESETS, GROUP_META, PresetFeeStructure } from './portfolioTypes';
 import { normalizeWeights, calcProjection, formatKRW, formatPct, calcExpectedGroupReturn } from './portfolioUtils';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { Zap, Shield, TrendingUp, RotateCcw } from 'lucide-react';
+import { Zap, Shield, TrendingUp } from 'lucide-react';
 
 const PRESET_ICONS = { low: Shield, mid: Zap, high: TrendingUp };
 const GROUP_COLORS: Record<string, string> = {
@@ -18,12 +17,27 @@ const GROUP_COLORS: Record<string, string> = {
   cash: 'hsl(var(--muted-foreground))',
 };
 
-// Fee reference: at 9% expected annual return → 2% fee (linear)
-const FEE_REF_RETURN = 0.09;
-const FEE_MAX_RATE = 0.02;
+// Default fee structure (used for the main simulator)
+const DEFAULT_FEES: PresetFeeStructure = {
+  managementFeeRate: 0.02,
+  performanceFeeRate: 0.20,
+  performanceHurdle: 0.08,
+};
 
-function calcAutoFeeRate(expectedReturn: number): number {
-  return Math.min(FEE_MAX_RATE, Math.max(0, (expectedReturn / FEE_REF_RETURN) * FEE_MAX_RATE));
+function calcFeeBreakdown(
+  investmentAmount: number,
+  expectedReturn: number,
+  fees: PresetFeeStructure,
+  daysToHorizon: number,
+) {
+  const proRata = daysToHorizon / 365;
+  const mgmtFee = investmentAmount * fees.managementFeeRate * proRata;
+
+  // Performance fee: 20% of excess return above hurdle
+  const excessReturn = Math.max(0, expectedReturn - fees.performanceHurdle);
+  const perfFee = investmentAmount * excessReturn * proRata * fees.performanceFeeRate;
+
+  return { mgmtFee, perfFee, totalFee: mgmtFee + perfFee };
 }
 
 interface Props {
@@ -40,7 +54,6 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
 
   const [investmentAmount, setInvestmentAmount] = useState(10_000_000);
   const [horizon, setHorizon] = useState<'eoy' | '12m'>('eoy');
-  const [feeOverride, setFeeOverride] = useState<number | null>(null);
 
   const daysToHorizon = useMemo(() => {
     const today = new Date();
@@ -62,34 +75,26 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
     return groups.reduce((s, g) => s + ((groupWeights[g.id] || 0) / totalW) * calcExpectedGroupReturn(g), 0);
   }, [groupWeights, groups]);
 
-  const autoFeeRate = useMemo(() => calcAutoFeeRate(blendedExpectedReturn), [blendedExpectedReturn]);
-  const feeRate = feeOverride !== null ? feeOverride : autoFeeRate;
+  // Fee calculations with waterfall
+  const feeBreakdown = useMemo(
+    () => calcFeeBreakdown(investmentAmount, blendedExpectedReturn, DEFAULT_FEES, daysToHorizon),
+    [investmentAmount, blendedExpectedReturn, daysToHorizon],
+  );
 
-  // Sync auto-fee when expected return changes (if not manually overridden)
-  useEffect(() => {
-    if (feeOverride === null) return; // already on auto
-    // do nothing if manually overridden
-  }, [blendedExpectedReturn]);
-
-  // Fee & net calculations
-  const feeAmount = investmentAmount * feeRate * (daysToHorizon / 365);
-  const netProfit = projection.profit - feeAmount;
+  const netProfit = projection.profit - feeBreakdown.totalFee;
   const netEndValue = investmentAmount + netProfit;
 
   const handleWeightChange = (gId: GroupId, newVal: number) => {
-    setFeeOverride(null); // reset to auto when allocation changes
     setGroupWeights(normalizeWeights(groupWeights, gId, newVal));
   };
 
   const applyPreset = (preset: typeof PRESETS[0]) => {
-    setFeeOverride(null);
     setGroupWeights({ ...preset.groupWeights });
     setTimeout(() => simulatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
   };
 
   const activeGroups: GroupId[] = ['shares', 'bonds', 'others'];
-
-  const beforeTaxLabel = ko ? '(수수료·세금 차감전)' : '(Before Fees & Tax)';
+  const beforeTaxLabel = ko ? '(세금 차감전)' : '(Before Tax)';
 
   return (
     <div className="space-y-8">
@@ -175,49 +180,47 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
           })}
         </div>
 
-        {/* Fee Rate Slider */}
+        {/* Fixed Fee Structure Display */}
         <div className="mb-6 p-4 bg-muted/20 rounded-lg border border-border/60">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium">
-                {ko ? '연간 수수료율' : 'Annual Fee Rate'}
-              </label>
-              <Badge variant="outline" className="text-[10px] py-0 h-4">
-                {ko ? '수익률 연동' : 'Return-linked'}
-              </Badge>
-              {feeOverride !== null && (
-                <button
-                  onClick={() => setFeeOverride(null)}
-                  className="flex items-center gap-0.5 text-[10px] text-accent underline"
-                >
-                  <RotateCcw className="h-2.5 w-2.5" />
-                  {ko ? '자동으로' : 'Auto'}
-                </button>
-              )}
+          <h4 className="text-sm font-medium mb-3">
+            {ko ? '수수료 구조' : 'Fee Structure'}
+          </h4>
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{ko ? '운용 수수료' : 'Management Fee'}</span>
+              <span className="font-mono font-medium">
+                {ko ? `년 ${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}%` : `${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}% p.a.`}
+              </span>
             </div>
-            <div className="text-right">
-              <span className="text-base font-mono font-bold text-accent">{formatPct(feeRate)}</span>
-              {feeOverride === null && (
-                <span className="text-[10px] text-muted-foreground ml-1">
-                  {ko ? '(자동)' : '(auto)'}
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">
+                {ko ? '성과 보수' : 'Performance Fee'}
+              </span>
+              <span className="font-mono font-medium">
+                {(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}%
+                <span className="text-muted-foreground ml-1">
+                  ({ko ? `${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}% 초과분` : `over ${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}%`})
                 </span>
-              )}
+              </span>
             </div>
-          </div>
-          <Slider
-            value={[feeRate * 100]}
-            onValueChange={([v]) => setFeeOverride(v / 100)}
-            min={0}
-            max={2}
-            step={0.05}
-            className="w-full"
-          />
-          <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-            <span>0%</span>
-            <span className="italic text-center">
-              {ko ? '기대수익률 기반 자동 계산 · 최대 2%' : 'Auto-calculated from expected return · Max 2%'}
-            </span>
-            <span>2%</span>
+            <div className="border-t border-border/50 pt-2 flex justify-between font-medium">
+              <span className="text-muted-foreground">
+                {ko ? `예상 수수료 (${daysToHorizon}일)` : `Est. Fees (${daysToHorizon}d)`}
+              </span>
+              <span className="font-mono text-destructive">-{formatKRW(feeBreakdown.totalFee)}</span>
+            </div>
+            {feeBreakdown.mgmtFee > 0 && (
+              <div className="flex justify-between text-[10px] pl-2">
+                <span className="text-muted-foreground">{ko ? '└ 운용 수수료' : '└ Management'}</span>
+                <span className="font-mono text-destructive">-{formatKRW(feeBreakdown.mgmtFee)}</span>
+              </div>
+            )}
+            {feeBreakdown.perfFee > 0 && (
+              <div className="flex justify-between text-[10px] pl-2">
+                <span className="text-muted-foreground">{ko ? '└ 성과 보수' : '└ Performance'}</span>
+                <span className="font-mono text-destructive">-{formatKRW(feeBreakdown.perfFee)}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -245,15 +248,17 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
             </div>
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground mb-0.5">
-                {ko ? '수수료 (연환산)' : 'Management Fee'}
-                <span className="block opacity-70">{formatPct(feeRate)} p.a.</span>
+                {ko ? '총 수수료' : 'Total Fees'}
+                <span className="block opacity-70">
+                  {ko ? '(운용 + 성과)' : '(Mgmt + Perf)'}
+                </span>
               </p>
-              <p className="text-base font-mono font-semibold text-destructive">-{formatKRW(feeAmount)}</p>
+              <p className="text-base font-mono font-semibold text-destructive">-{formatKRW(feeBreakdown.totalFee)}</p>
             </div>
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground mb-0.5">
                 {ko ? '순 수익' : 'Net Profit'}
-                <span className="block opacity-70">{ko ? '(수수료 차감후)' : '(after fee)'}</span>
+                <span className="block opacity-70">{ko ? '(수수료 차감후)' : '(after fees)'}</span>
               </p>
               <p className="text-base font-mono font-semibold text-foreground">{formatKRW(netProfit)}</p>
             </div>
@@ -296,24 +301,35 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                     <td className="py-2 text-right font-mono text-accent">{formatKRW(b.profit)}</td>
                   </tr>
                 ))}
-                {/* Fee row */}
+                {/* Management Fee row */}
                 <tr className="border-b border-border/50 text-destructive">
                   <td className="py-2 font-medium">
-                    {ko ? '수수료 (연간)' : 'Management Fee (annual)'}
+                    {ko ? '운용 수수료' : 'Management Fee'}
                   </td>
                   <td className="py-2 text-right font-mono">—</td>
                   <td className="py-2 text-right font-mono">
-                    {ko ? `-년 ${(feeRate * 100).toFixed(2)}%` : `-${(feeRate * 100).toFixed(2)}% p.a.`}
+                    {ko ? `-년 ${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}%` : `-${(DEFAULT_FEES.managementFeeRate * 100).toFixed(1)}% p.a.`}
                   </td>
-                  <td className="py-2 text-right font-mono">-{formatKRW(feeAmount)}</td>
+                  <td className="py-2 text-right font-mono">-{formatKRW(feeBreakdown.mgmtFee)}</td>
                 </tr>
+                {/* Performance Fee row */}
+                {feeBreakdown.perfFee > 0 && (
+                  <tr className="border-b border-border/50 text-destructive">
+                    <td className="py-2 font-medium">
+                      {ko
+                        ? `성과 보수 (${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}% 초과분의 ${(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}%)`
+                        : `Perf. Fee (${(DEFAULT_FEES.performanceFeeRate * 100).toFixed(0)}% over ${(DEFAULT_FEES.performanceHurdle * 100).toFixed(0)}%)`}
+                    </td>
+                    <td className="py-2 text-right font-mono">—</td>
+                    <td className="py-2 text-right font-mono">—</td>
+                    <td className="py-2 text-right font-mono">-{formatKRW(feeBreakdown.perfFee)}</td>
+                  </tr>
+                )}
                 {/* Net row */}
                 <tr className="font-semibold">
                   <td className="py-2">{ko ? '순 합계' : 'Net Total'}</td>
                   <td className="py-2 text-right font-mono">{formatKRW(investmentAmount)}</td>
-                  <td className="py-2 text-right font-mono">
-                    {ko ? `년 ${((blendedExpectedReturn - feeRate) * 100).toFixed(2)}%` : `${((blendedExpectedReturn - feeRate) * 100).toFixed(2)}% p.a.`}
-                  </td>
+                  <td className="py-2 text-right font-mono">—</td>
                   <td className="py-2 text-right font-mono text-foreground">{formatKRW(netProfit)}</td>
                 </tr>
               </tbody>
@@ -335,9 +351,8 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
               const totalW = Object.values(preset.groupWeights).reduce((a, b) => a + b, 0);
               return s + ((preset.groupWeights[g.id] || 0) / (totalW || 1)) * calcExpectedGroupReturn(g);
             }, 0);
-            const presetFeeRate = calcAutoFeeRate(presetReturn);
-            const presetFeeAmount = investmentAmount * presetFeeRate * (daysToHorizon / 365);
-            const presetNetEndValue = presetProjection.endValue - presetFeeAmount;
+            const presetFees = calcFeeBreakdown(investmentAmount, presetReturn, preset.fees, daysToHorizon);
+            const presetNetEndValue = presetProjection.endValue - presetFees.totalFee;
 
             const miniPie = Object.entries(preset.groupWeights)
               .filter(([, v]) => v > 0)
@@ -370,6 +385,17 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                     </ResponsiveContainer>
                   </div>
 
+                  {/* Target Return */}
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">
+                      {ko ? '목표수익률' : 'Target Return'}
+                    </span>
+                    <span className="font-mono font-bold text-foreground">
+                      {ko ? `년 ${(preset.targetReturn * 100).toFixed(0)}%` : `${(preset.targetReturn * 100).toFixed(0)}% p.a.`}
+                    </span>
+                  </div>
+
+                  {/* Expected Return */}
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">
                       {ko ? '기대수익률' : 'Exp. Return'}
@@ -380,9 +406,25 @@ export function FlagshipSimulator({ items, groups, groupWeights, setGroupWeights
                     </span>
                   </div>
 
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">{ko ? '수수료율' : 'Fee Rate'}</span>
-                    <span className="font-mono text-destructive">-{formatPct(presetFeeRate)}</span>
+                  {/* Fee breakdown */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{ko ? '운용 수수료' : 'Mgmt Fee'}</span>
+                      <span className="font-mono text-destructive">
+                        -{ko ? `년 ${(preset.fees.managementFeeRate * 100).toFixed(1)}%` : `${(preset.fees.managementFeeRate * 100).toFixed(1)}% p.a.`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        {ko ? '성과 보수' : 'Perf. Fee'}
+                      </span>
+                      <span className="font-mono text-destructive">
+                        {(preset.fees.performanceFeeRate * 100).toFixed(0)}%
+                        <span className="text-muted-foreground ml-1 text-[10px]">
+                          ({ko ? `${(preset.fees.performanceHurdle * 100).toFixed(0)}%↑` : `>${(preset.fees.performanceHurdle * 100).toFixed(0)}%`})
+                        </span>
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex justify-between text-xs border-t border-border/50 pt-2">

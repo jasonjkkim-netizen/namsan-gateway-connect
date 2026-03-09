@@ -67,6 +67,23 @@ export const DEFAULT_ASSUMPTIONS = {
   cashReturnAnnual: 0.00,
 };
 
+export interface PresetFeeStructure {
+  managementFeeRate: number;   // annual management fee (e.g. 0.02 = 2%)
+  performanceFeeRate: number;  // performance fee rate (e.g. 0.20 = 20%)
+  performanceHurdle: number;   // hurdle rate (e.g. 0.07 = 7%)
+}
+
+export interface PortfolioScenario {
+  id: 'low' | 'mid' | 'high';
+  nameKo: string;
+  nameEn: string;
+  descKo: string;
+  descEn: string;
+  groupWeights: Record<GroupId, number>;
+  targetReturn: number;        // target annual return (e.g. 0.07 = 7%)
+  fees: PresetFeeStructure;
+}
+
 export const PRESETS: PortfolioScenario[] = [
   {
     id: 'low',
@@ -75,6 +92,8 @@ export const PRESETS: PortfolioScenario[] = [
     descKo: '채권 중심의 안정적 포트폴리오',
     descEn: 'Bond-focused stable portfolio',
     groupWeights: { shares: 30, bonds: 70, others: 0, cash: 0 },
+    targetReturn: 0.07,
+    fees: { managementFeeRate: 0.02, performanceFeeRate: 0.20, performanceHurdle: 0.07 },
   },
   {
     id: 'mid',
@@ -83,6 +102,8 @@ export const PRESETS: PortfolioScenario[] = [
     descKo: '주식과 채권의 균형 잡힌 포트폴리오',
     descEn: 'Balanced stock and bond portfolio',
     groupWeights: { shares: 50, bonds: 50, others: 0, cash: 0 },
+    targetReturn: 0.08,
+    fees: { managementFeeRate: 0.02, performanceFeeRate: 0.20, performanceHurdle: 0.08 },
   },
   {
     id: 'high',
@@ -91,5 +112,7 @@ export const PRESETS: PortfolioScenario[] = [
     descKo: '주식 중심의 공격적 포트폴리오',
     descEn: 'Stock-focused aggressive portfolio',
     groupWeights: { shares: 70, bonds: 30, others: 0, cash: 0 },
+    targetReturn: 0.10,
+    fees: { managementFeeRate: 0.02, performanceFeeRate: 0.20, performanceHurdle: 0.09 },
   },
 ];
