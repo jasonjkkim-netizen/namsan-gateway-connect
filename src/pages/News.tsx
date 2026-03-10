@@ -73,8 +73,8 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
                     </span>
                   </TableCell>
                   <TableCell className="text-[10px] md:text-xs text-muted-foreground align-top hidden md:table-cell">
-                    <div className="max-h-[120px] overflow-y-auto leading-relaxed">
-                      {language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}
+                    <div className="max-h-[120px] overflow-y-auto leading-relaxed prose prose-sm dark:prose-invert max-w-none [&_img]:max-w-[25%] [&_img]:h-auto [&_img]:rounded-md">
+                      <ReactMarkdown>{language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}</ReactMarkdown>
                     </div>
                   </TableCell>
                   <TableCell className="text-right align-top">
