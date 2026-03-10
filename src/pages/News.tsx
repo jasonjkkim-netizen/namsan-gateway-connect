@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { format, subDays, isAfter } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 
 interface InterestNews {
   id: string;
