@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { format, subDays, isAfter } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 
 interface InterestNews {
   id: string;
@@ -72,8 +73,8 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
                     </span>
                   </TableCell>
                   <TableCell className="text-[10px] md:text-xs text-muted-foreground align-top hidden md:table-cell">
-                    <div className="max-h-[120px] overflow-y-auto leading-relaxed">
-                      {language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}
+                    <div className="max-h-[120px] overflow-y-auto leading-relaxed prose prose-sm dark:prose-invert max-w-none [&_img]:max-w-[25%] [&_img]:h-auto [&_img]:rounded-md">
+                      <ReactMarkdown>{language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}</ReactMarkdown>
                     </div>
                   </TableCell>
                   <TableCell className="text-right align-top">
@@ -92,8 +93,8 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
                 </TableRow>
                 {isExpanded && (
                   <TableRow key={`${item.id}-content`} className="md:hidden bg-muted/30">
-                    <TableCell colSpan={3} className="text-[10px] text-muted-foreground leading-relaxed py-2 px-3">
-                      {language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}
+                    <TableCell colSpan={3} className="text-[10px] text-muted-foreground leading-relaxed py-2 px-3 prose prose-sm dark:prose-invert max-w-none [&_img]:max-w-[50%] [&_img]:h-auto [&_img]:rounded-md">
+                      <ReactMarkdown>{language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}</ReactMarkdown>
                     </TableCell>
                   </TableRow>
                 )}
