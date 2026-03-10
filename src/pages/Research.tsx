@@ -180,17 +180,6 @@ export default function Research() {
                       {language === 'ko' ? report.summary_ko : report.summary_en}
                     </p>
 
-                    {report.admin_note && (
-                      <div className="mb-3 p-3 rounded-md bg-primary/5 border border-primary/10">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                          <span className="text-xs font-medium text-primary">
-                            {language === 'ko' ? '운용역 코멘트' : 'Manager Comment'}
-                          </span>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{report.admin_note}</p>
-                      </div>
-                    )}
                     
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
