@@ -286,11 +286,12 @@ Deno.serve(async (req) => {
     // 11. Send notifications to ancestors about new investment
     if (insertedCount > 0) {
       try {
+        const internalSecret = Deno.env.get("INTERNAL_SERVICE_SECRET");
         await fetch(`${supabaseUrl}/functions/v1/notify-sales`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${serviceRoleKey}`,
+            ...(internalSecret ? { "x-internal-secret": internalSecret } : {}),
           },
           body: JSON.stringify({
             type: "investment_created",

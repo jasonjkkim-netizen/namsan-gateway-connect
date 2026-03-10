@@ -158,33 +158,63 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate the caller
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const anonClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const resendKey = Deno.env.get("RESEND_API_KEY");
+
+    // ── Authentication: support internal service calls OR user JWT ──
+    const internalSecret = Deno.env.get("INTERNAL_SERVICE_SECRET");
+    const internalHeader = req.headers.get("x-internal-secret");
+    const isInternalCall = internalSecret && internalHeader && internalHeader === internalSecret;
+
+    if (!isInternalCall) {
+      // Validate user JWT and enforce role authorization
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const anonClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims?.sub) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const callerId = claimsData.claims.sub as string;
+
+      // Server-side role check: must be admin OR have a sales role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerId)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("sales_role")
+        .eq("user_id", callerId)
+        .single();
+
+      if (!roleData && !profileData?.sales_role) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     const payload: NotificationPayload = await req.json();
 
