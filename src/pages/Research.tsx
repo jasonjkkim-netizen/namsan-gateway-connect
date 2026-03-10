@@ -17,8 +17,8 @@ interface Report {
   category: string;
   summary_en: string | null;
   summary_ko: string | null;
-  admin_note: string | null;
   pdf_url: string | null;
+  external_url: string | null;
   publication_date: string;
 }
 
