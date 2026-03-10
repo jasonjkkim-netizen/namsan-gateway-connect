@@ -156,7 +156,7 @@ export function RichPasteEditor({ value, onChange, placeholder, rows = 6, onImag
         rows={rows}
         className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
       />
-      <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
         <span>📋 텍스트/이미지 붙여넣기 지원</span>
         <span>•</span>
         <span>Markdown 지원</span>
