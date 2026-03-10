@@ -6,6 +6,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Simple in-memory rate limiter
+const rateLimiter = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(userId: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const userLimit = rateLimiter.get(userId);
+  if (!userLimit || now > userLimit.resetAt) {
+    rateLimiter.set(userId, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (userLimit.count >= maxRequests) return false;
+  userLimit.count++;
+  return true;
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of rateLimiter.entries()) {
+    if (now > value.resetAt) rateLimiter.delete(key);
+  }
+}, 60000);
+
 const SYSTEM_PROMPT = `You are a senior investment analyst at Namsan Partners, a premier Korean investment firm. 
 You are analyzing the firm's Flagship Portfolio for risk/return assessment.
 
@@ -69,6 +91,15 @@ serve(async (req) => {
       });
     }
 
+    // Rate limiting: 5 requests per minute per user
+    const userId = claimsData.claims.sub as string;
+    if (!checkRateLimit(userId, 5, 60000)) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please wait before requesting another analysis." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { portfolioData, language } = await req.json();
 
     if (!portfolioData || !Array.isArray(portfolioData)) {
@@ -76,6 +107,33 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Cap array length to prevent abuse
+    if (portfolioData.length > 100) {
+      return new Response(JSON.stringify({ error: "Portfolio data exceeds maximum of 100 items" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate each item has expected shape and reasonable field lengths
+    for (const item of portfolioData) {
+      if (typeof item !== 'object' || item === null) {
+        return new Response(JSON.stringify({ error: "Invalid portfolio item" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (typeof item.name === 'string' && item.name.length > 200) {
+        return new Response(JSON.stringify({ error: "Portfolio item name too long" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (typeof item.group === 'string' && item.group.length > 200) {
+        return new Response(JSON.stringify({ error: "Portfolio item group too long" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
