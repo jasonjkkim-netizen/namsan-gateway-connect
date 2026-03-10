@@ -47,7 +47,7 @@ export default function Research() {
     async function fetchReports() {
       const { data } = await supabase
         .from('research_reports')
-        .select('*')
+        .select('id, title_en, title_ko, category, summary_en, summary_ko, pdf_url, external_url, publication_date, is_active, created_at')
         .eq('is_active', true)
         .order('publication_date', { ascending: false });
       
