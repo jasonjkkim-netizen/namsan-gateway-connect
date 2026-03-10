@@ -274,11 +274,11 @@ export function AdminInterestNews() {
             </div>
             <div>
               <Label>{language === 'ko' ? '본문 (한국어)' : 'Content (Korean)'}</Label>
-              <Textarea value={formData.content_ko} onChange={e => setFormData(p => ({ ...p, content_ko: e.target.value }))} rows={2} />
+              <RichPasteEditor value={formData.content_ko} onChange={v => setFormData(p => ({ ...p, content_ko: v }))} rows={3} />
             </div>
             <div>
               <Label>{language === 'ko' ? '본문 (영어)' : 'Content (English)'}</Label>
-              <Textarea value={formData.content_en} onChange={e => setFormData(p => ({ ...p, content_en: e.target.value }))} rows={2} />
+              <RichPasteEditor value={formData.content_en} onChange={v => setFormData(p => ({ ...p, content_en: v }))} rows={3} />
             </div>
             <div>
               <Label>URL</Label>

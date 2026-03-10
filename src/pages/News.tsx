@@ -93,8 +93,8 @@ function NewsTable({ items, language }: { items: InterestNews[]; language: strin
                 </TableRow>
                 {isExpanded && (
                   <TableRow key={`${item.id}-content`} className="md:hidden bg-muted/30">
-                    <TableCell colSpan={3} className="text-[10px] text-muted-foreground leading-relaxed py-2 px-3">
-                      {language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}
+                    <TableCell colSpan={3} className="text-[10px] text-muted-foreground leading-relaxed py-2 px-3 prose prose-sm dark:prose-invert max-w-none [&_img]:max-w-[50%] [&_img]:h-auto [&_img]:rounded-md">
+                      <ReactMarkdown>{language === 'ko' ? item.content_ko : (item.content_en || item.content_ko)}</ReactMarkdown>
                     </TableCell>
                   </TableRow>
                 )}
