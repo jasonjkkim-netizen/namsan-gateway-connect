@@ -218,6 +218,36 @@ Deno.serve(async (req) => {
 
     const payload: NotificationPayload = await req.json();
 
+    // Restrict admin-only notification types for non-internal calls
+    if (!isInternalCall) {
+      const adminOnlyTypes = ['bulk_role_notification', 'role_approved', 'role_changed', 'commission_rate_changed'];
+      if (adminOnlyTypes.includes(payload.type)) {
+        // Re-check: caller must be admin for these types
+        const authHeader = req.headers.get("Authorization");
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+        const anonClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader! } },
+        });
+        const token = authHeader!.replace("Bearer ", "");
+        const { data: claimsData } = await anonClient.auth.getClaims(token);
+        const callerId = claimsData?.claims?.sub as string;
+
+        const { data: adminRole } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", callerId)
+          .eq("role", "admin")
+          .maybeSingle();
+
+        if (!adminRole) {
+          return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     // ── Role Approved ──
     if (payload.type === "role_approved") {
       if (!payload.user_id || !payload.user_name || !payload.role) {

@@ -17,8 +17,8 @@ interface Report {
   category: string;
   summary_en: string | null;
   summary_ko: string | null;
-  admin_note: string | null;
   pdf_url: string | null;
+  external_url: string | null;
   publication_date: string;
 }
 
@@ -47,7 +47,7 @@ export default function Research() {
     async function fetchReports() {
       const { data } = await supabase
         .from('research_reports')
-        .select('*')
+        .select('id, title_en, title_ko, category, summary_en, summary_ko, pdf_url, external_url, publication_date, is_active, created_at')
         .eq('is_active', true)
         .order('publication_date', { ascending: false });
       
@@ -180,17 +180,6 @@ export default function Research() {
                       {language === 'ko' ? report.summary_ko : report.summary_en}
                     </p>
 
-                    {report.admin_note && (
-                      <div className="mb-3 p-3 rounded-md bg-primary/5 border border-primary/10">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                          <span className="text-xs font-medium text-primary">
-                            {language === 'ko' ? '운용역 코멘트' : 'Manager Comment'}
-                          </span>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{report.admin_note}</p>
-                      </div>
-                    )}
                     
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
