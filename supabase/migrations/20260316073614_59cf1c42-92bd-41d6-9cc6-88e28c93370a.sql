@@ -1,0 +1,1 @@
+UPDATE investment_products SET name_ko = '남산 안전형 포트폴리오 (3년)' WHERE id = 'eaf3a6bc-c79b-4a97-a101-e31714ac5790';
