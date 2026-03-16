@@ -242,19 +242,19 @@ export function RiskReturnMatrix() {
               </YAxis>
               <Tooltip content={<CustomTooltip language={language} />} />
               
-              {/* HK Savings Insurance Benchmark - vertical reference line */}
+              {/* HK Savings Insurance Benchmark - horizontal reference line at benchmark risk level */}
               <ReferenceLine
-                x={benchmarkRate}
+                y={BENCHMARK_RISK}
                 stroke="hsl(var(--primary))"
                 strokeDasharray="8 4"
-                strokeOpacity={0.6}
+                strokeOpacity={0.5}
                 strokeWidth={1.5}
               >
                 <Label
                   value={benchmarkLabel}
-                  position="top"
-                  offset={8}
-                  style={{ fill: 'hsl(var(--primary))', fontSize: 10, fontWeight: 500 }}
+                  position="right"
+                  offset={5}
+                  style={{ fill: 'hsl(var(--primary))', fontSize: 9, fontWeight: 500 }}
                 />
               </ReferenceLine>
 
@@ -266,6 +266,19 @@ export function RiskReturnMatrix() {
                 strokeOpacity={0.25}
               />
 
+              {/* Benchmark point */}
+              <Scatter data={benchmarkPoint} shape={(props: any) => {
+                const { cx, cy } = props;
+                if (!cx || !cy) return null;
+                return (
+                  <g>
+                    <rect x={cx - 12} y={cy - 12} width={24} height={24} rx={4} fill="hsl(var(--primary))" fillOpacity={0.12} stroke="hsl(var(--primary))" strokeWidth={1.5} strokeDasharray="4 2" />
+                    <circle cx={cx} cy={cy} r={6} fill="hsl(var(--primary))" fillOpacity={0.8} stroke="white" strokeWidth={2} />
+                  </g>
+                );
+              }} />
+
+              {/* Product scatter points */}
               <Scatter data={products} shape={<CustomDot />}>
                 {products.map((product, index) => (
                   <Cell key={index} fill={product.color} />
