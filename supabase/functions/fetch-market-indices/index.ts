@@ -334,6 +334,24 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Enforce admin role
+    const userId = claimsData.claims.sub as string;
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    const { data: roleData } = await serviceClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: 'Forbidden: admin only' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const body = await req.json().catch(() => ({}));
     const isAutoUpdate = body.autoUpdate === true;
     const updateOverview = body.updateOverview === true;
