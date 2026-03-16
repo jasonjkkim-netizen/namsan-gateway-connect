@@ -151,6 +151,22 @@ export function RiskReturnMatrix() {
               </YAxis>
               <Tooltip content={<CustomTooltip language={language} />} />
               
+              {/* Benchmark: 배당 보험 수익 8% (20년 만기) */}
+              <ReferenceLine
+                x={8}
+                stroke="hsl(var(--primary))"
+                strokeDasharray="8 4"
+                strokeOpacity={0.6}
+                strokeWidth={1.5}
+              >
+                <Label
+                  value={language === 'ko' ? '배당보험 8% (20년 만기)' : 'Dividend Insurance 8% (20yr)'}
+                  position="top"
+                  offset={8}
+                  style={{ fill: 'hsl(var(--primary))', fontSize: 10, fontWeight: 500 }}
+                />
+              </ReferenceLine>
+
               {/* Diagonal guide line from low-risk/low-return to high-risk/high-return */}
               <ReferenceLine
                 segment={[{ x: 6, y: 0 }, { x: 16, y: 10 }]}
