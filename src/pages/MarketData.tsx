@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw, Newspaper, Star, MessageSquare } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
+import { RiskReturnMatrix } from '@/components/market/RiskReturnMatrix';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
 import { MarketNewsSection } from '@/components/market/MarketNewsSection';
 import { StockPickNewsSection } from '@/components/market/StockPickNewsSection';
@@ -246,6 +247,9 @@ export default function MarketData() {
 
         {/* 한눈에 보는 시장 - Dynamic from DB */}
         <MarketOverviewSection language={language} />
+
+        {/* Risk-Return Matrix */}
+        <RiskReturnMatrix />
       </main>
     </div>
   );
