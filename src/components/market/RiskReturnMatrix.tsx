@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine, Label } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ProductPosition {
   name_ko: string;
   name_en: string;
-  returnRate: number; // after-fee max return %
-  risk: number; // assumed risk score (1-10 scale mapped to %)
+  returnRate: number;
+  risk: number;
   color: string;
   emoji: string;
 }
@@ -55,6 +60,22 @@ const products: ProductPosition[] = [
   },
 ];
 
+interface BenchmarkData {
+  average_return_percent: number;
+  range_low_percent?: number;
+  range_high_percent?: number;
+  maturity_years: number;
+  sample_products?: string[];
+  data_date?: string;
+  notes?: string;
+  updated_at?: string;
+}
+
+const DEFAULT_BENCHMARK: BenchmarkData = {
+  average_return_percent: 6.5,
+  maturity_years: 20,
+};
+
 const CustomTooltip = ({ active, payload, language }: any) => {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload as ProductPosition;
@@ -86,14 +107,73 @@ const CustomDot = (props: any) => {
 
 export function RiskReturnMatrix() {
   const { language } = useLanguage();
+  const queryClient = useQueryClient();
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const { data: benchmark } = useQuery({
+    queryKey: ['hk-insurance-benchmark'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'hk_insurance_benchmark')
+        .maybeSingle();
+      
+      if (error || !data) return DEFAULT_BENCHMARK;
+      const val = data.value as any;
+      if (typeof val?.average_return_percent === 'number') {
+        return val as BenchmarkData;
+      }
+      return DEFAULT_BENCHMARK;
+    },
+    staleTime: 30_000,
+  });
+
+  const benchmarkRate = benchmark?.average_return_percent ?? DEFAULT_BENCHMARK.average_return_percent;
+  const maturityYears = benchmark?.maturity_years ?? 20;
+
+  const handleRefreshBenchmark = async () => {
+    setIsUpdating(true);
+    try {
+      const response = await supabase.functions.invoke('fetch-hk-insurance-benchmark');
+      if (response.error) throw response.error;
+      await queryClient.invalidateQueries({ queryKey: ['hk-insurance-benchmark'] });
+      toast.success(language === 'ko' ? '벤치마크가 업데이트되었습니다' : 'Benchmark updated');
+    } catch (err) {
+      console.error('Benchmark update failed:', err);
+      toast.error(language === 'ko' ? '업데이트 실패' : 'Update failed');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const benchmarkLabel = language === 'ko'
+    ? `HK 배당보험 평균 ${benchmarkRate.toFixed(1)}% (${maturityYears}년)`
+    : `HK Savings Insurance Avg ${benchmarkRate.toFixed(1)}% (${maturityYears}yr)`;
+
+  const benchmarkSubtext = benchmark?.data_date
+    ? `${language === 'ko' ? '기준: ' : 'As of: '}${benchmark.data_date}`
+    : '';
 
   return (
     <Card className="card-elevated animate-fade-in mb-6">
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base font-serif">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          {language === 'ko' ? '리스크-리턴 매트릭스' : 'Risk-Return Matrix'}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base font-serif">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            {language === 'ko' ? '리스크-리턴 매트릭스' : 'Risk-Return Matrix'}
+          </CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshBenchmark}
+            disabled={isUpdating}
+            className="flex items-center gap-1.5 text-xs"
+          >
+            <RefreshCw className={`h-3 w-3 ${isUpdating ? 'animate-spin' : ''}`} />
+            {language === 'ko' ? '벤치마크 갱신' : 'Update Benchmark'}
+          </Button>
+        </div>
         <p className="text-xs text-muted-foreground">
           {language === 'ko'
             ? '남산 투자 상품 포지셔닝 (수수료 차감 후 기대 최대 수익률 기준)'
@@ -151,23 +231,23 @@ export function RiskReturnMatrix() {
               </YAxis>
               <Tooltip content={<CustomTooltip language={language} />} />
               
-              {/* Benchmark: 배당 보험 수익 8% (20년 만기) */}
+              {/* HK Savings Insurance Benchmark - vertical reference line */}
               <ReferenceLine
-                x={8}
+                x={benchmarkRate}
                 stroke="hsl(var(--primary))"
                 strokeDasharray="8 4"
                 strokeOpacity={0.6}
                 strokeWidth={1.5}
               >
                 <Label
-                  value={language === 'ko' ? '배당보험 8% (20년 만기)' : 'Dividend Insurance 8% (20yr)'}
+                  value={benchmarkLabel}
                   position="top"
                   offset={8}
                   style={{ fill: 'hsl(var(--primary))', fontSize: 10, fontWeight: 500 }}
                 />
               </ReferenceLine>
 
-              {/* Diagonal guide line from low-risk/low-return to high-risk/high-return */}
+              {/* Diagonal guide line */}
               <ReferenceLine
                 segment={[{ x: 6, y: 0 }, { x: 16, y: 10 }]}
                 stroke="hsl(var(--muted-foreground))"
@@ -200,6 +280,19 @@ export function RiskReturnMatrix() {
               </span>
             </div>
           ))}
+          {/* Benchmark legend item */}
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-4 h-0 border-t-2 border-dashed border-primary" />
+            <span className="text-xs text-muted-foreground">
+              {language === 'ko' ? 'HK 배당보험' : 'HK Savings Ins.'}
+            </span>
+            <span className="text-xs font-medium text-foreground">
+              {benchmarkRate.toFixed(1)}%
+            </span>
+            {benchmarkSubtext && (
+              <span className="text-[10px] text-muted-foreground">({benchmarkSubtext})</span>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
