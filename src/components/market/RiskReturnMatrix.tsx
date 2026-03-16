@@ -131,6 +131,17 @@ export function RiskReturnMatrix() {
 
   const benchmarkRate = benchmark?.average_return_percent ?? DEFAULT_BENCHMARK.average_return_percent;
   const maturityYears = benchmark?.maturity_years ?? 20;
+  const BENCHMARK_RISK = 1.5; // Savings insurance = very low risk
+
+  // Benchmark as a scatter point
+  const benchmarkPoint = [{
+    name_ko: `HK 배당보험 (${maturityYears}년)`,
+    name_en: `HK Savings Insurance (${maturityYears}yr)`,
+    returnRate: benchmarkRate,
+    risk: BENCHMARK_RISK,
+    color: 'hsl(var(--primary))',
+    emoji: '📊',
+  }];
 
   const handleRefreshBenchmark = async () => {
     setIsUpdating(true);
@@ -148,8 +159,8 @@ export function RiskReturnMatrix() {
   };
 
   const benchmarkLabel = language === 'ko'
-    ? `HK 배당보험 평균 ${benchmarkRate.toFixed(1)}% (${maturityYears}년)`
-    : `HK Savings Insurance Avg ${benchmarkRate.toFixed(1)}% (${maturityYears}yr)`;
+    ? `HK 배당보험 ${benchmarkRate.toFixed(1)}% (${maturityYears}년)`
+    : `HK Savings Ins. ${benchmarkRate.toFixed(1)}% (${maturityYears}yr)`;
 
   const benchmarkSubtext = benchmark?.data_date
     ? `${language === 'ko' ? '기준: ' : 'As of: '}${benchmark.data_date}`
