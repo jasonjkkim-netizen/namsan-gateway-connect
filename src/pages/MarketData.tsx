@@ -247,6 +247,9 @@ export default function MarketData() {
 
         {/* 한눈에 보는 시장 - Dynamic from DB */}
         <MarketOverviewSection language={language} />
+
+        {/* Risk-Return Matrix */}
+        <RiskReturnMatrix />
       </main>
     </div>
   );
