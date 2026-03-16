@@ -87,9 +87,9 @@ export interface PortfolioScenario {
 export const PRESETS: PortfolioScenario[] = [
   {
     id: 'low',
-    nameKo: '안정형',
+    nameKo: '안전형',
     nameEn: 'Low Risk',
-    descKo: '채권 중심의 안정적 포트폴리오',
+    descKo: '채권 중심의 안전한 포트폴리오',
     descEn: 'Bond-focused stable portfolio',
     groupWeights: { shares: 30, bonds: 70, others: 0, cash: 0 },
     targetReturn: 0.07,

@@ -35,7 +35,7 @@ const products: ProductPosition[] = [
     emoji: '🟢',
   },
   {
-    name_ko: '안정형 포트폴리오',
+    name_ko: '안전형 포트폴리오',
     name_en: 'Conservative Portfolio',
     returnRate: 9.5,
     risk: 3.5,
