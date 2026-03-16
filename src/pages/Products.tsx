@@ -119,7 +119,7 @@ export default function Products() {
 
   const getFundPresetWeights = (product: Product): Record<GroupId, number> | undefined => {
     const name = product.name_ko + product.name_en;
-    if (name.includes('안정') || name.toLowerCase().includes('conservative') || name.toLowerCase().includes('low risk')) {
+    if (name.includes('안전') || name.includes('안정') || name.toLowerCase().includes('conservative') || name.toLowerCase().includes('low risk')) {
       return PRESETS.find(p => p.id === 'low')?.groupWeights;
     }
     if (name.includes('균형') || name.toLowerCase().includes('balanced')) {
