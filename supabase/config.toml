@@ -42,5 +42,8 @@ verify_jwt = false
 [functions.register-member]
 verify_jwt = false
 
+[functions.fetch-hk-insurance-benchmark]
+verify_jwt = false
+
 [functions.update-flagship-prices]
 verify_jwt = false
