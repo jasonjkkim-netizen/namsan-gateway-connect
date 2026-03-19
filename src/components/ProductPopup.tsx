@@ -31,56 +31,59 @@ export function ProductPopup() {
   const { user } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
-  const [popup, setPopup] = useState<PopupAd | null>(null);
+  const [popups, setPopups] = useState<PopupAd[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
 
-    async function checkAndShowPopup() {
-      // Fetch active popups (get several to filter by date)
-      const { data: popups } = await supabase
+    async function checkAndShowPopups() {
+      const { data: allPopups } = await supabase
         .from('popup_ads')
         .select('*')
         .eq('is_active', true)
-        .order('display_order', { ascending: true })
-        .limit(10);
+        .order('display_order', { ascending: true });
 
-      if (!popups || popups.length === 0) return;
+      if (!allPopups || allPopups.length === 0) return;
 
       const today = new Date().toISOString().split('T')[0];
-      // Filter by date range
-      const activePopup = popups.find((p: any) => {
+      const dateFiltered = allPopups.filter((p: any) => {
         if (p.start_date && today < p.start_date) return false;
         if (p.end_date && today > p.end_date) return false;
         return true;
-      }) as PopupAd | undefined;
+      }) as PopupAd[];
 
-      if (!activePopup) return;
+      if (dateFiltered.length === 0) return;
 
-      // Check if user dismissed today
-      const { data: dismissal } = await supabase
+      // Check dismissals for all popups
+      const { data: dismissals } = await supabase
         .from('popup_dismissals')
-        .select('dismissed_at')
+        .select('popup_id, dismissed_at')
         .eq('user_id', user.id)
-        .eq('popup_id', activePopup.id)
-        .maybeSingle();
+        .in('popup_id', dateFiltered.map(p => p.id));
 
-      if (dismissal) {
-        const dismissedDate = new Date(dismissal.dismissed_at).toDateString();
-        const today = new Date().toDateString();
-        if (dismissedDate === today) return; // Already dismissed today
-      }
+      const todayStr = new Date().toDateString();
+      const dismissedToday = new Set(
+        (dismissals || [])
+          .filter(d => new Date(d.dismissed_at).toDateString() === todayStr)
+          .map(d => d.popup_id)
+      );
 
-      setPopup(activePopup);
+      const notDismissed = dateFiltered.filter(p => !dismissedToday.has(p.id));
+      if (notDismissed.length === 0) return;
+
+      setPopups(notDismissed);
+      setCurrentIndex(0);
       setOpen(true);
     }
 
-    checkAndShowPopup();
+    checkAndShowPopups();
   }, [user]);
 
+  const popup = popups[currentIndex] || null;
+
   const handleDismiss = async () => {
-    setOpen(false);
     if (!user || !popup) return;
 
     // Upsert dismissal record
@@ -90,10 +93,16 @@ export function ProductPopup() {
         { user_id: user.id, popup_id: popup.id, dismissed_at: new Date().toISOString() },
         { onConflict: 'user_id,popup_id' }
       );
+
+    // Show next popup or close
+    if (currentIndex < popups.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      setOpen(false);
+    }
   };
 
   const handleButtonClick = () => {
-    setOpen(false);
     if (popup?.button_link) {
       if (popup.button_link.startsWith('http')) {
         window.open(popup.button_link, '_blank');
@@ -101,6 +110,7 @@ export function ProductPopup() {
         navigate(popup.button_link);
       }
     }
+    handleDismiss();
   };
 
   if (!popup) return null;
