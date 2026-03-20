@@ -1,8 +1,66 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
+import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+}
+
+async function sendSms(to: string, content: string) {
+  const NAVER_ACCESS_KEY = Deno.env.get("NAVER_ACCESS_KEY");
+  const NAVER_SECRET_KEY = Deno.env.get("NAVER_SECRET_KEY");
+  const NAVER_SENS_SERVICE_ID = Deno.env.get("NAVER_SENS_SERVICE_ID");
+  const NAVER_SENS_CALLING_NUMBER = Deno.env.get("NAVER_SENS_CALLING_NUMBER");
+
+  if (!NAVER_ACCESS_KEY || !NAVER_SECRET_KEY || !NAVER_SENS_SERVICE_ID || !NAVER_SENS_CALLING_NUMBER) {
+    console.warn("Naver SENS SMS credentials not configured, skipping SMS");
+    return;
+  }
+
+  const cleaned = to.replace(/[^\d+]/g, "");
+  const recipient = cleaned.startsWith("0") ? "+82" + cleaned.slice(1) : cleaned.startsWith("+") ? cleaned : "+82" + cleaned;
+
+  const timestamp = Date.now().toString();
+  const uri = `/sms/v2/services/${NAVER_SENS_SERVICE_ID}/messages`;
+  const message = "POST " + uri + "\n" + timestamp + "\n" + NAVER_ACCESS_KEY;
+  const encoder = new TextEncoder();
+  const signature = hmac("sha256", encoder.encode(NAVER_SECRET_KEY), encoder.encode(message), "utf8", "base64") as string;
+
+  const contentBytes = new TextEncoder().encode(content).length;
+  const type = contentBytes > 80 ? "LMS" : "SMS";
+
+  try {
+    const response = await fetch(`https://sens.apigw.ntruss.com${uri}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "x-ncp-apigw-timestamp": timestamp,
+        "x-ncp-iam-access-key": NAVER_ACCESS_KEY,
+        "x-ncp-apigw-signature-v2": signature,
+      },
+      body: JSON.stringify({
+        type,
+        from: NAVER_SENS_CALLING_NUMBER.replace(/[^\d]/g, ""),
+        content,
+        messages: [{ to: recipient }],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      console.error("SMS send failed:", response.status, err);
+    } else {
+      console.log("SMS sent to:", recipient);
+    }
+  } catch (err) {
+    console.error("SMS send error:", err);
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
