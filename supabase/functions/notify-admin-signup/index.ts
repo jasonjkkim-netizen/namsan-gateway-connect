@@ -215,7 +215,16 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailHtml,
     });
 
-    console.log("Signup notification sent successfully:", emailResponse);
+    console.log("Signup notification email sent:", emailResponse);
+
+    // Send SMS to webmasters
+    if (recipientPhones.length > 0) {
+      const smsContent = `[남산파트너스] 신규 가입 승인 요청\n이름: ${userName}\n이메일: ${userEmail}\n연락처: ${userPhone || '-'}\n관리자 페이지에서 승인해 주세요.`;
+      for (const phone of recipientPhones) {
+        await sendSms(phone, smsContent);
+      }
+      console.log(`SMS sent to ${recipientPhones.length} webmaster(s)`);
+    }
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {
       status: 200,
