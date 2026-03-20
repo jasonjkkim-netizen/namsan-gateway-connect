@@ -113,16 +113,18 @@ Deno.serve(async (req) => {
 
     // Normalize recipients
     const recipients = (Array.isArray(to) ? to : [to]).map((phone) => {
-      // Strip non-digit except leading +
-      const cleaned = phone.replace(/[^\d+]/g, "");
-      // Convert Korean format: 010-xxxx-xxxx → +8210xxxxxxxx
-      if (cleaned.startsWith("0")) {
-        return { to: "+82" + cleaned.slice(1) };
+      // Strip all non-digit characters
+      const digits = phone.replace(/\D/g, "");
+      // Convert Korean format: 010xxxxxxxx → 8210xxxxxxxx
+      if (digits.startsWith("0")) {
+        return { to: "82" + digits.slice(1) };
       }
-      if (!cleaned.startsWith("+")) {
-        return { to: "+82" + cleaned };
+      // If already starts with 82, use as-is
+      if (digits.startsWith("82")) {
+        return { to: digits };
       }
-      return { to: cleaned };
+      // Default: prepend 82
+      return { to: "82" + digits };
     });
 
     // Determine SMS type: SMS (< 90 bytes), LMS (longer)
