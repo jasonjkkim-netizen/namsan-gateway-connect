@@ -1,7 +1,22 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "npm:resend@2.0.0";
-import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts";
+
+function toBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+async function hmacSha256Base64(key: string, message: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", encoder.encode(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(message));
+  return toBase64(signature);
+}
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -28,8 +43,7 @@ async function sendSms(to: string, content: string) {
   const timestamp = Date.now().toString();
   const uri = `/sms/v2/services/${NAVER_SENS_SERVICE_ID}/messages`;
   const message = "POST " + uri + "\n" + timestamp + "\n" + NAVER_ACCESS_KEY;
-  const encoder = new TextEncoder();
-  const signature = hmac("sha256", encoder.encode(NAVER_SECRET_KEY), encoder.encode(message), "utf8", "base64") as string;
+  const signature = await hmacSha256Base64(NAVER_SECRET_KEY, message);
 
   const contentBytes = new TextEncoder().encode(content).length;
   const type = contentBytes > 80 ? "LMS" : "SMS";

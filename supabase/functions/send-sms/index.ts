@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,16 +12,21 @@ interface SmsRequest {
   subject?: string; // for LMS (long messages)
 }
 
-function makeSignature(method: string, url: string, timestamp: string, accessKey: string, secretKey: string): string {
-  const space = " ";
-  const newLine = "\n";
-  const message = method + space + url + newLine + timestamp + newLine + accessKey;
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secretKey);
-  const msgData = encoder.encode(message);
+function toBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
 
-  // Use Web Crypto API for HMAC-SHA256
-  return hmac("sha256", keyData, msgData, "utf8", "base64") as string;
+async function makeSignature(method: string, url: string, timestamp: string, accessKey: string, secretKey: string): Promise<string> {
+  const message = method + " " + url + "\n" + timestamp + "\n" + accessKey;
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw", encoder.encode(secretKey), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(message));
+  return toBase64(signature);
 }
 
 Deno.serve(async (req) => {
@@ -127,7 +131,7 @@ Deno.serve(async (req) => {
 
     const timestamp = Date.now().toString();
     const uri = `/sms/v2/services/${NAVER_SENS_SERVICE_ID}/messages`;
-    const signature = makeSignature("POST", uri, timestamp, NAVER_ACCESS_KEY, NAVER_SECRET_KEY);
+    const signature = await makeSignature("POST", uri, timestamp, NAVER_ACCESS_KEY, NAVER_SECRET_KEY);
 
     const body: Record<string, unknown> = {
       type,
