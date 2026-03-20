@@ -25,7 +25,8 @@ const loginSchema = z.object({
 });
 
 const signUpSchema = loginSchema.extend({
-  fullName: z.string().min(1, 'Name is required').max(100),
+  fullName: z.string().max(100).optional().or(z.literal('')),
+  fullNameKo: z.string().min(1, 'Name is required').max(100),
   phone: z.string().min(10, 'Phone number must be at least 10 digits').max(20),
   address: z.string().min(5, 'Address must be at least 5 characters').max(500),
   birthYear: z.string().min(4, 'Year is required'),
