@@ -76,21 +76,21 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Fetch both webmasters and district managers
-    const { data: managerProfiles } = await serviceClient
+    // Fetch webmasters only
+    const { data: webmasterProfiles } = await serviceClient
       .from('profiles')
-      .select('email, sales_role')
-      .in('sales_role', ['webmaster', 'district_manager'])
+      .select('email')
+      .eq('sales_role', 'webmaster')
       .eq('is_approved', true)
       .or('is_deleted.is.null,is_deleted.eq.false')
       .or('is_rejected.is.null,is_rejected.eq.false');
 
-    // Collect manager emails, fallback to ADMIN_EMAIL if none found
-    const recipientEmails = managerProfiles && managerProfiles.length > 0
-      ? [...new Set(managerProfiles.map(p => p.email).filter(Boolean))]
+    // Collect webmaster emails, fallback to ADMIN_EMAIL if none found
+    const recipientEmails = webmasterProfiles && webmasterProfiles.length > 0
+      ? [...new Set(webmasterProfiles.map(p => p.email).filter(Boolean))]
       : [ADMIN_EMAIL];
 
-    console.log(`Sending signup notification to ${recipientEmails.length} manager(s) (webmaster + DM):`, recipientEmails);
+    console.log(`Sending signup notification to ${recipientEmails.length} webmaster(s):`, recipientEmails);
 
     const emailHtml = `
       <!DOCTYPE html>
