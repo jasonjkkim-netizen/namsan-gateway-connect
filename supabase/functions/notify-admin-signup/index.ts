@@ -43,8 +43,7 @@ async function sendSms(to: string, content: string) {
   const timestamp = Date.now().toString();
   const uri = `/sms/v2/services/${NAVER_SENS_SERVICE_ID}/messages`;
   const message = "POST " + uri + "\n" + timestamp + "\n" + NAVER_ACCESS_KEY;
-  const encoder = new TextEncoder();
-  const signature = hmac("sha256", encoder.encode(NAVER_SECRET_KEY), encoder.encode(message), "utf8", "base64") as string;
+  const signature = await hmacSha256Base64(NAVER_SECRET_KEY, message);
 
   const contentBytes = new TextEncoder().encode(content).length;
   const type = contentBytes > 80 ? "LMS" : "SMS";
