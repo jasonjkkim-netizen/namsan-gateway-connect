@@ -219,14 +219,30 @@ export default function Login() {
               {isSignUp && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">{t('fullName')} *</Label>
+                    <Label htmlFor="fullNameKo">
+                      {language === 'ko' ? '이름 (국문)' : 'Name (Korean)'} *
+                    </Label>
+                    <Input
+                      id="fullNameKo"
+                      type="text"
+                      value={fullNameKo}
+                      onChange={(e) => setFullNameKo(e.target.value)}
+                      placeholder={language === 'ko' ? '김민수' : '김민수'}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">
+                      {language === 'ko' ? '영문 이름 (선택)' : 'English Name (Optional)'}
+                    </Label>
                     <Input
                       id="fullName"
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Kim Minsoo"
-                      required
                       className="h-11"
                     />
                   </div>
