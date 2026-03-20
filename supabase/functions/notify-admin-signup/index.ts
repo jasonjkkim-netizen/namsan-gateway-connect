@@ -37,8 +37,8 @@ async function sendSms(to: string, content: string) {
     return;
   }
 
-  const cleaned = to.replace(/[^\d+]/g, "");
-  const recipient = cleaned.startsWith("0") ? "+82" + cleaned.slice(1) : cleaned.startsWith("+") ? cleaned : "+82" + cleaned;
+  const digits = to.replace(/\D/g, "");
+  const recipient = digits.startsWith("0") ? "82" + digits.slice(1) : digits.startsWith("82") ? digits : "82" + digits;
 
   const timestamp = Date.now().toString();
   const uri = `/sms/v2/services/${NAVER_SENS_SERVICE_ID}/messages`;
