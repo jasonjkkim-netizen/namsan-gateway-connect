@@ -360,21 +360,9 @@ export function AdminClients() {
     principal_agent: 3, agent: 4, client: 5,
   };
 
-  // Sort profiles by manager role level, then by name
+  // Sort profiles by created_at descending (most recent first)
   const sortedProfiles = [...filteredProfiles].sort((a, b) => {
-    const getManagerRole = (p: Profile) => {
-      if (!p.parent_id) return 99;
-      const manager = profiles.find(m => m.user_id === p.parent_id);
-      return roleOrder[manager?.sales_role || ''] ?? 99;
-    };
-    const levelA = getManagerRole(a);
-    const levelB = getManagerRole(b);
-    if (levelA !== levelB) return levelA - levelB;
-    // Within same manager group, sort by manager name then client name
-    const mNameA = getManagerName(a.parent_id) || 'zzz';
-    const mNameB = getManagerName(b.parent_id) || 'zzz';
-    if (mNameA !== mNameB) return mNameA.localeCompare(mNameB);
-    return a.full_name.localeCompare(b.full_name);
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   const renderRows = (list: Profile[], isDeletedSection: boolean) => {
