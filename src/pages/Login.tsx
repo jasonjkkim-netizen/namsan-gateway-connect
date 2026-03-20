@@ -110,6 +110,8 @@ export default function Login() {
                   phone,
                   address,
                   birthday,
+                  full_name_ko: fullNameKo,
+                  ...(fullName ? { full_name: fullName } : {}),
                 })
                 .eq('user_id', data.user.id);
               
