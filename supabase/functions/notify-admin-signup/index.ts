@@ -134,10 +134,10 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Fetch webmasters only
+    // Fetch webmasters only (email + phone for SMS)
     const { data: webmasterProfiles } = await serviceClient
       .from('profiles')
-      .select('email')
+      .select('email, phone')
       .eq('sales_role', 'webmaster')
       .eq('is_approved', true)
       .or('is_deleted.is.null,is_deleted.eq.false')
@@ -147,6 +147,11 @@ const handler = async (req: Request): Promise<Response> => {
     const recipientEmails = webmasterProfiles && webmasterProfiles.length > 0
       ? [...new Set(webmasterProfiles.map(p => p.email).filter(Boolean))]
       : [ADMIN_EMAIL];
+
+    // Collect webmaster phones for SMS
+    const recipientPhones = webmasterProfiles
+      ? webmasterProfiles.map(p => p.phone).filter(Boolean) as string[]
+      : [];
 
     console.log(`Sending signup notification to ${recipientEmails.length} webmaster(s):`, recipientEmails);
 
