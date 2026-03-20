@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
 
     const timestamp = Date.now().toString();
     const uri = `/sms/v2/services/${NAVER_SENS_SERVICE_ID}/messages`;
-    const signature = makeSignature("POST", uri, timestamp, NAVER_ACCESS_KEY, NAVER_SECRET_KEY);
+    const signature = await makeSignature("POST", uri, timestamp, NAVER_ACCESS_KEY, NAVER_SECRET_KEY);
 
     const body: Record<string, unknown> = {
       type,
