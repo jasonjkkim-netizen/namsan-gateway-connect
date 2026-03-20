@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
       ? [...new Set(managerProfiles.map(p => p.email).filter(Boolean))]
       : [ADMIN_EMAIL];
 
-    console.log(`Sending signup notification to ${recipientEmails.length} district manager(s):`, recipientEmails);
+    console.log(`Sending signup notification to ${recipientEmails.length} manager(s) (webmaster + DM):`, recipientEmails);
 
     const emailHtml = `
       <!DOCTYPE html>
