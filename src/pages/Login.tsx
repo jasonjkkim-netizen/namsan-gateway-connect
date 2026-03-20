@@ -25,7 +25,8 @@ const loginSchema = z.object({
 });
 
 const signUpSchema = loginSchema.extend({
-  fullName: z.string().min(1, 'Name is required').max(100),
+  fullName: z.string().max(100).optional().or(z.literal('')),
+  fullNameKo: z.string().min(1, 'Name is required').max(100),
   phone: z.string().min(10, 'Phone number must be at least 10 digits').max(20),
   address: z.string().min(5, 'Address must be at least 5 characters').max(500),
   birthYear: z.string().min(4, 'Year is required'),
@@ -44,6 +45,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [fullNameKo, setFullNameKo] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [birthYear, setBirthYear] = useState('');
@@ -75,7 +77,8 @@ export default function Login() {
         const validation = signUpSchema.safeParse({ 
           email, 
           password, 
-          fullName, 
+          fullName,
+          fullNameKo,
           phone,
           address,
           birthYear,
@@ -91,7 +94,8 @@ export default function Login() {
         // Create birthday date
         const birthday = `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`;
 
-        const { error, data } = await signUp(email, password, fullName);
+        const displayName = fullNameKo || fullName || email;
+        const { error, data } = await signUp(email, password, displayName);
         if (error) {
           toast.error(error.message);
         } else {
@@ -106,6 +110,8 @@ export default function Login() {
                   phone,
                   address,
                   birthday,
+                  full_name_ko: fullNameKo,
+                  ...(fullName ? { full_name: fullName } : {}),
                 })
                 .eq('user_id', data.user.id);
               
@@ -121,7 +127,7 @@ export default function Login() {
             try {
               await supabase.functions.invoke('notify-admin-signup', {
                 body: {
-                  userName: fullName,
+                  userName: fullNameKo || fullName,
                   userEmail: email,
                   userPhone: phone,
                   userAddress: address,
@@ -213,14 +219,30 @@ export default function Login() {
               {isSignUp && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">{t('fullName')} *</Label>
+                    <Label htmlFor="fullNameKo">
+                      {language === 'ko' ? '이름 (국문)' : 'Name (Korean)'} *
+                    </Label>
+                    <Input
+                      id="fullNameKo"
+                      type="text"
+                      value={fullNameKo}
+                      onChange={(e) => setFullNameKo(e.target.value)}
+                      placeholder={language === 'ko' ? '김민수' : '김민수'}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">
+                      {language === 'ko' ? '영문 이름 (선택)' : 'English Name (Optional)'}
+                    </Label>
                     <Input
                       id="fullName"
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Kim Minsoo"
-                      required
                       className="h-11"
                     />
                   </div>
