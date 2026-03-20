@@ -94,7 +94,8 @@ export default function Login() {
         // Create birthday date
         const birthday = `${birthYear}-${birthMonth.padStart(2, '0')}-${birthDay.padStart(2, '0')}`;
 
-        const { error, data } = await signUp(email, password, fullName);
+        const displayName = fullNameKo || fullName || email;
+        const { error, data } = await signUp(email, password, displayName);
         if (error) {
           toast.error(error.message);
         } else {
