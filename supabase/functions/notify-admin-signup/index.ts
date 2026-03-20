@@ -183,12 +183,12 @@ const handler = async (req: Request): Promise<Response> => {
             <p>새로운 사용자가 Namsan Korea 클라이언트 포털에 가입을 요청했습니다. 아래 정보를 확인하시고 승인해 주세요.</p>
             
             <table class="info-table">
-              <tr><th>이름 / Name</th><td><strong>${userName}</strong></td></tr>
-              <tr><th>이메일 / Email</th><td>${userEmail}</td></tr>
-              <tr><th>연락처 / Phone</th><td>${userPhone || '-'}</td></tr>
-              <tr><th>주소 / Address</th><td>${userAddress || '-'}</td></tr>
-              <tr><th>생년월일 / DOB</th><td>${userBirthday || '-'}</td></tr>
-              <tr><th>가입일 / Date</th><td>${signupDate}</td></tr>
+              <tr><th>이름 / Name</th><td><strong>${escapeHtml(userName)}</strong></td></tr>
+              <tr><th>이메일 / Email</th><td>${escapeHtml(userEmail)}</td></tr>
+              <tr><th>연락처 / Phone</th><td>${escapeHtml(userPhone || '-')}</td></tr>
+              <tr><th>주소 / Address</th><td>${escapeHtml(userAddress || '-')}</td></tr>
+              <tr><th>생년월일 / DOB</th><td>${escapeHtml(userBirthday || '-')}</td></tr>
+              <tr><th>가입일 / Date</th><td>${escapeHtml(signupDate)}</td></tr>
             </table>
             
             <p>Admin 대시보드에서 이 가입 요청을 승인하거나 거절할 수 있습니다.</p>
