@@ -127,7 +127,7 @@ export default function Login() {
             try {
               await supabase.functions.invoke('notify-admin-signup', {
                 body: {
-                  userName: fullName,
+                  userName: fullNameKo || fullName,
                   userEmail: email,
                   userPhone: phone,
                   userAddress: address,
