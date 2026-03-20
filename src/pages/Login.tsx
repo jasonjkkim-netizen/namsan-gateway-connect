@@ -77,7 +77,8 @@ export default function Login() {
         const validation = signUpSchema.safeParse({ 
           email, 
           password, 
-          fullName, 
+          fullName,
+          fullNameKo,
           phone,
           address,
           birthYear,
