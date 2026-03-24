@@ -197,6 +197,30 @@ async function processAsResearch(
     })
     .eq('update_id', msg.update_id);
 
+  // Notify all admins via in-app notification
+  const titleDisplay = payload.title_ko || payload.title_en;
+  const truncatedTitle = titleDisplay.length > 60 ? titleDisplay.slice(0, 60) + '...' : titleDisplay;
+
+  const { data: adminRoles } = await supabase
+    .from('user_roles')
+    .select('user_id')
+    .eq('role', 'admin');
+
+  if (adminRoles && adminRoles.length > 0) {
+    const notifications = adminRoles.map((r: any) => ({
+      user_id: r.user_id,
+      type: 'research',
+      title_en: `New Research from Telegram`,
+      title_ko: `텔레그램 리서치 자동 게시`,
+      body_en: `"${truncatedTitle}" has been auto-posted from Telegram.`,
+      body_ko: `"${truncatedTitle}"이(가) 텔레그램에서 자동 게시되었습니다.`,
+      link: '/admin',
+    }));
+
+    const { error: notifErr } = await supabase.from('notifications').insert(notifications);
+    if (notifErr) console.error('Failed to send admin notifications:', notifErr);
+  }
+
   console.log('Created research report:', report.id, 'from Telegram update:', msg.update_id);
 }
 
