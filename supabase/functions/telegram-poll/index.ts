@@ -144,6 +144,9 @@ async function processAsResearch(
 ) {
   const messageText = msg.text || '';
 
+  // Skip bot commands (e.g. /start, /help)
+  if (messageText.trim().startsWith('/')) return;
+
   // Skip if no meaningful content and no document
   if (!messageText.trim() && !msg.has_document) return;
 
