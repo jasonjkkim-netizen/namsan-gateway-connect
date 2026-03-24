@@ -31,7 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Search, Trash2, Upload, FileText, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Search, Trash2, Upload, FileText, ExternalLink, Bot } from 'lucide-react';
 
 interface ResearchReport {
   id: string;
