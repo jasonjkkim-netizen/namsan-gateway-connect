@@ -52,6 +52,7 @@ export function AdminResearch() {
   const [reports, setReports] = useState<ResearchReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'manual' | 'telegram'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<ResearchReport | null>(null);
 
