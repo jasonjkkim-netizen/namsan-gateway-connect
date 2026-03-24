@@ -203,7 +203,25 @@ export function AdminResearch() {
         <h2 className="text-xl font-serif font-semibold">
           {language === 'ko' ? '리서치 관리' : 'Research Management'}
         </h2>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+            {(['all', 'manual', 'telegram'] as const).map((filter) => (
+              <Button
+                key={filter}
+                variant={sourceFilter === filter ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setSourceFilter(filter)}
+              >
+                {filter === 'telegram' && <Bot className="h-3 w-3 mr-1" />}
+                {filter === 'all'
+                  ? (language === 'ko' ? '전체' : 'All')
+                  : filter === 'manual'
+                  ? (language === 'ko' ? '수동' : 'Manual')
+                  : 'Telegram'}
+              </Button>
+            ))}
+          </div>
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
