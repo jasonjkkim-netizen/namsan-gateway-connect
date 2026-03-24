@@ -184,11 +184,18 @@ export function AdminResearch() {
     }
   };
 
-  const filteredReports = reports.filter(
-    (r) =>
+  const isTelegramPost = (r: ResearchReport) => r.admin_note?.startsWith('Auto-posted from Telegram');
+
+  const filteredReports = reports.filter((r) => {
+    const matchesSearch =
       r.title_en.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.title_ko.includes(searchTerm)
-  );
+      r.title_ko.includes(searchTerm);
+    const matchesSource =
+      sourceFilter === 'all' ||
+      (sourceFilter === 'telegram' && isTelegramPost(r)) ||
+      (sourceFilter === 'manual' && !isTelegramPost(r));
+    return matchesSearch && matchesSource;
+  });
 
   return (
     <div className="card-elevated">
