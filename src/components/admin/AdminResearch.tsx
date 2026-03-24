@@ -31,7 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Search, Trash2, Upload, FileText, ExternalLink } from 'lucide-react';
+import { Plus, Edit, Search, Trash2, Upload, FileText, ExternalLink, Bot } from 'lucide-react';
 
 interface ResearchReport {
   id: string;
@@ -52,6 +52,7 @@ export function AdminResearch() {
   const [reports, setReports] = useState<ResearchReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'manual' | 'telegram'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<ResearchReport | null>(null);
 
@@ -183,11 +184,18 @@ export function AdminResearch() {
     }
   };
 
-  const filteredReports = reports.filter(
-    (r) =>
+  const isTelegramPost = (r: ResearchReport) => r.admin_note?.startsWith('Auto-posted from Telegram');
+
+  const filteredReports = reports.filter((r) => {
+    const matchesSearch =
       r.title_en.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.title_ko.includes(searchTerm)
-  );
+      r.title_ko.includes(searchTerm);
+    const matchesSource =
+      sourceFilter === 'all' ||
+      (sourceFilter === 'telegram' && isTelegramPost(r)) ||
+      (sourceFilter === 'manual' && !isTelegramPost(r));
+    return matchesSearch && matchesSource;
+  });
 
   return (
     <div className="card-elevated">
@@ -195,7 +203,25 @@ export function AdminResearch() {
         <h2 className="text-xl font-serif font-semibold">
           {language === 'ko' ? '리서치 관리' : 'Research Management'}
         </h2>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 rounded-lg border border-border p-1">
+            {(['all', 'manual', 'telegram'] as const).map((filter) => (
+              <Button
+                key={filter}
+                variant={sourceFilter === filter ? 'default' : 'ghost'}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setSourceFilter(filter)}
+              >
+                {filter === 'telegram' && <Bot className="h-3 w-3 mr-1" />}
+                {filter === 'all'
+                  ? (language === 'ko' ? '전체' : 'All')
+                  : filter === 'manual'
+                  ? (language === 'ko' ? '수동' : 'Manual')
+                  : 'Telegram'}
+              </Button>
+            ))}
+          </div>
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -217,7 +243,7 @@ export function AdminResearch() {
           <TableHeader>
             <TableRow>
               <TableHead>{language === 'ko' ? '제목' : 'Title'}</TableHead>
-              <TableHead>{language === 'ko' ? '카테고리' : 'Category'}</TableHead>
+              <TableHead>{language === 'ko' ? '소스' : 'Source'}</TableHead>
               <TableHead>{language === 'ko' ? '발행일' : 'Date'}</TableHead>
               <TableHead>{language === 'ko' ? '활성' : 'Active'}</TableHead>
               <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
@@ -236,7 +262,7 @@ export function AdminResearch() {
               ))
             ) : filteredReports.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
                 </TableCell>
               </TableRow>
@@ -246,7 +272,18 @@ export function AdminResearch() {
                   <TableCell className="font-medium">
                     {language === 'ko' ? report.title_ko : report.title_en}
                   </TableCell>
-                  <TableCell>{report.category}</TableCell>
+                  <TableCell>
+                    {isTelegramPost(report) ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        <Bot className="h-3 w-3" />
+                        Telegram
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                        {language === 'ko' ? '수동' : 'Manual'}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{formatDate(report.publication_date)}</TableCell>
                   <TableCell>{report.is_active ? '✓' : '✗'}</TableCell>
                   <TableCell>
