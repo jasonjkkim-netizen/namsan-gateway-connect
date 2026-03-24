@@ -1,0 +1,2 @@
+ALTER TABLE telegram_messages DROP CONSTRAINT telegram_messages_research_report_id_fkey;
+ALTER TABLE telegram_messages ADD CONSTRAINT telegram_messages_research_report_id_fkey FOREIGN KEY (research_report_id) REFERENCES research_reports(id) ON DELETE SET NULL;
