@@ -243,7 +243,7 @@ export function AdminResearch() {
           <TableHeader>
             <TableRow>
               <TableHead>{language === 'ko' ? '제목' : 'Title'}</TableHead>
-              <TableHead>{language === 'ko' ? '카테고리' : 'Category'}</TableHead>
+              <TableHead>{language === 'ko' ? '소스' : 'Source'}</TableHead>
               <TableHead>{language === 'ko' ? '발행일' : 'Date'}</TableHead>
               <TableHead>{language === 'ko' ? '활성' : 'Active'}</TableHead>
               <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
