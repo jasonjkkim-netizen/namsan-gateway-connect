@@ -272,7 +272,18 @@ export function AdminResearch() {
                   <TableCell className="font-medium">
                     {language === 'ko' ? report.title_ko : report.title_en}
                   </TableCell>
-                  <TableCell>{report.category}</TableCell>
+                  <TableCell>
+                    {isTelegramPost(report) ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        <Bot className="h-3 w-3" />
+                        Telegram
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                        {language === 'ko' ? '수동' : 'Manual'}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>{formatDate(report.publication_date)}</TableCell>
                   <TableCell>{report.is_active ? '✓' : '✗'}</TableCell>
                   <TableCell>
