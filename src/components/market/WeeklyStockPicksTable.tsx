@@ -33,9 +33,14 @@ function StockTable({
   const isKR = market === 'KR';
   const currencySymbol = isKR ? '원' : '$';
 
+  const parseDateStr = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
   const priceReferenceDate = stocks[0]?.price_reference_date
-    ? new Date(stocks[0].price_reference_date)
-    : stocks[0]?.recommendation_date ? new Date(stocks[0].recommendation_date) : new Date();
+    ? parseDateStr(stocks[0].price_reference_date)
+    : stocks[0]?.recommendation_date ? parseDateStr(stocks[0].recommendation_date) : new Date();
 
   const formatDateHeader = (date: Date, lang: string) => {
     const month = date.getMonth() + 1;
@@ -93,7 +98,8 @@ function StockTable({
                 ? ((stock.current_closing_price - stock.closing_price_at_recommendation) / stock.closing_price_at_recommendation) * 100
                 : null;
               const stockUrl = getStockLink(stock);
-              const addedDate = new Date(stock.recommendation_date);
+              const [ay, am, ad] = stock.recommendation_date.split('-').map(Number);
+              const addedDate = new Date(ay, am - 1, ad);
               const addedDateStr = `${addedDate.getMonth() + 1}/${addedDate.getDate()}`;
 
               return (
@@ -114,7 +120,7 @@ function StockTable({
                     {calculateReturn(stock.closing_price_at_recommendation, stock.current_closing_price)}
                   </td>
                   <td className="px-3 py-2 text-center text-muted-foreground">
-                    {stock.sold_date ? (() => { const d = new Date(stock.sold_date); return `${d.getMonth() + 1}/${d.getDate()}`; })() : '-'}
+                    {stock.sold_date ? (() => { const [sy, sm, sd] = stock.sold_date!.split('-').map(Number); const d = new Date(sy, sm - 1, sd); return `${d.getMonth() + 1}/${d.getDate()}`; })() : '-'}
                   </td>
                   <td className="px-3 py-2 text-right">{stock.sold_price ? formatPrice(stock.sold_price) : '-'}</td>
                   <td className="px-3 py-2 text-center">

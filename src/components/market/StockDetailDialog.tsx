@@ -37,7 +37,8 @@ export function StockDetailDialog({ stock, open, onOpenChange, language }: Stock
   const isNegative = returnValue !== null && returnValue < 0;
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
     return language === 'ko'
       ? `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
       : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
