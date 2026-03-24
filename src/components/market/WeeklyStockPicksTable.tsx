@@ -33,9 +33,14 @@ function StockTable({
   const isKR = market === 'KR';
   const currencySymbol = isKR ? '원' : '$';
 
+  const parseDateStr = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  };
+
   const priceReferenceDate = stocks[0]?.price_reference_date
-    ? new Date(stocks[0].price_reference_date)
-    : stocks[0]?.recommendation_date ? new Date(stocks[0].recommendation_date) : new Date();
+    ? parseDateStr(stocks[0].price_reference_date)
+    : stocks[0]?.recommendation_date ? parseDateStr(stocks[0].recommendation_date) : new Date();
 
   const formatDateHeader = (date: Date, lang: string) => {
     const month = date.getMonth() + 1;
