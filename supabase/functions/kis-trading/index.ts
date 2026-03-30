@@ -40,41 +40,65 @@ async function getAccessToken(): Promise<string> {
     return dbCache.access_token;
   }
 
-  // 3. Request new token from KIS
+  // 3. Request new token from KIS (with retry for rate limit)
   const appKey = Deno.env.get("KIS_APP_KEY");
   const appSecret = Deno.env.get("KIS_APP_SECRET");
   if (!appKey || !appSecret) throw new Error("KIS API keys not configured");
 
-  const res = await fetch(`${KIS_BASE}/oauth2/tokenP`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "client_credentials",
-      appkey: appKey,
-      appsecret: appSecret,
-    }),
-  });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    // Re-check DB cache before each attempt (another instance may have written it)
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 5000)); // wait 5s before retry
+      const { data: freshCache } = await sb
+        .from("kis_token_cache")
+        .select("access_token, expires_at")
+        .eq("id", 1)
+        .maybeSingle();
+      if (freshCache && new Date(freshCache.expires_at).getTime() > Date.now()) {
+        cachedToken = {
+          token: freshCache.access_token,
+          expiresAt: new Date(freshCache.expires_at).getTime(),
+        };
+        return freshCache.access_token;
+      }
+    }
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Token request failed [${res.status}]: ${text}`);
+    const res = await fetch(`${KIS_BASE}/oauth2/tokenP`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "client_credentials",
+        appkey: appKey,
+        appsecret: appSecret,
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      // Rate limited — retry after delay
+      if (res.status === 403 && text.includes("EGW00133")) {
+        console.warn(`Token rate limited, attempt ${attempt + 1}/3, retrying...`);
+        continue;
+      }
+      throw new Error(`Token request failed [${res.status}]: ${text}`);
+    }
+
+    const data = await res.json();
+    const expiresAt = Date.now() + 23 * 60 * 60 * 1000; // 23h
+
+    cachedToken = { token: data.access_token, expiresAt };
+
+    await sb.from("kis_token_cache").upsert({
+      id: 1,
+      access_token: data.access_token,
+      expires_at: new Date(expiresAt).toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    return data.access_token;
   }
 
-  const data = await res.json();
-  const expiresAt = Date.now() + 23 * 60 * 60 * 1000; // 23h
-
-  // Update in-memory cache
-  cachedToken = { token: data.access_token, expiresAt };
-
-  // Persist to DB (upsert)
-  await sb.from("kis_token_cache").upsert({
-    id: 1,
-    access_token: data.access_token,
-    expires_at: new Date(expiresAt).toISOString(),
-    updated_at: new Date().toISOString(),
-  });
-
-  return data.access_token;
+  throw new Error("Failed to obtain KIS token after 3 attempts (rate limited)");
 }
 
 function getAccountParts(): { cano: string; acntPrdtCd: string } {
