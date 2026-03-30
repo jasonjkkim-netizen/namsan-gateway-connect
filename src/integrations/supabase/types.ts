@@ -706,6 +706,27 @@ export type Database = {
         }
         Relationships: []
       }
+      kis_token_cache: {
+        Row: {
+          access_token: string
+          expires_at: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          expires_at: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          expires_at?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       market_indices: {
         Row: {
           change_percent: number | null
