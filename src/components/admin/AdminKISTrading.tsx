@@ -27,7 +27,7 @@ export function AdminKISTrading() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">
-              {language === 'ko' ? '📈 KIS 통합 트레이딩' : '📈 KIS Trading Dashboard'}
+              {language === 'ko' ? '📈 통합 트레이딩' : '📈 Trading Dashboard'}
             </CardTitle>
             <div className="flex items-center gap-2">
               {editing ? (
