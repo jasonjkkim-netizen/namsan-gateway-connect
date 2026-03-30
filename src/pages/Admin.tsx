@@ -93,6 +93,7 @@ export default function Admin() {
     { id: 'alerts', label: language === 'ko' ? '알림 관리' : 'Alerts', icon: Bell },
     { id: 'flagship', label: language === 'ko' ? 'Flagship' : 'Flagship', icon: PieChart },
     { id: 'board', label: language === 'ko' ? '고객의 소리' : 'Board', icon: MessageSquare },
+    { id: 'kis-trading', label: language === 'ko' ? 'KIS 트레이딩' : 'KIS Trading', icon: LineChart },
   ];
 
   return (
@@ -198,6 +199,10 @@ export default function Admin() {
 
           <TabsContent value="board">
             <AdminBoard />
+          </TabsContent>
+
+          <TabsContent value="kis-trading">
+            <AdminKISTrading />
           </TabsContent>
         </Tabs>
       </main>
