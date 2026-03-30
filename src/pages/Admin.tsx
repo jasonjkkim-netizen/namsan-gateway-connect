@@ -24,8 +24,9 @@ import { AdminAlerts } from '@/components/admin/AdminAlerts';
 import { AdminFlagshipPortfolio } from '@/components/admin/AdminFlagshipPortfolio';
 import { AdminBoard } from '@/components/admin/AdminBoard';
 import { AdminResearch } from '@/components/admin/AdminResearch';
+import { AdminKISTrading } from '@/components/admin/AdminKISTrading';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart, MessageSquare } from 'lucide-react';
+import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart, MessageSquare, LineChart } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
