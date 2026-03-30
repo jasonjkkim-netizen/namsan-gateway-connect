@@ -103,10 +103,12 @@ export function InterestNewsSection({ language }: Props) {
 
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
-      // Filter to today's items only
-      const today = new Date().toDateString();
-      const todayItems = items.filter(item => new Date(item.created_at).toDateString() === today);
-      return todayItems;
+      // Filter to last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      const recentItems = items.filter(item => new Date(item.created_at) >= sevenDaysAgo);
+      return recentItems;
     },
   });
 
