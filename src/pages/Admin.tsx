@@ -24,8 +24,9 @@ import { AdminAlerts } from '@/components/admin/AdminAlerts';
 import { AdminFlagshipPortfolio } from '@/components/admin/AdminFlagshipPortfolio';
 import { AdminBoard } from '@/components/admin/AdminBoard';
 import { AdminResearch } from '@/components/admin/AdminResearch';
+import { AdminKISTrading } from '@/components/admin/AdminKISTrading';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart, MessageSquare } from 'lucide-react';
+import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp, Star, BarChart3, Eye, BookOpen, Megaphone, Newspaper, Network, Coins, GitBranch, Bell, PieChart, MessageSquare, LineChart } from 'lucide-react';
 
 export default function Admin() {
   const { t, language } = useLanguage();
@@ -92,6 +93,7 @@ export default function Admin() {
     { id: 'alerts', label: language === 'ko' ? '알림 관리' : 'Alerts', icon: Bell },
     { id: 'flagship', label: language === 'ko' ? 'Flagship' : 'Flagship', icon: PieChart },
     { id: 'board', label: language === 'ko' ? '고객의 소리' : 'Board', icon: MessageSquare },
+    { id: 'kis-trading', label: language === 'ko' ? 'KIS 트레이딩' : 'KIS Trading', icon: LineChart },
   ];
 
   return (
@@ -197,6 +199,10 @@ export default function Admin() {
 
           <TabsContent value="board">
             <AdminBoard />
+          </TabsContent>
+
+          <TabsContent value="kis-trading">
+            <AdminKISTrading />
           </TabsContent>
         </Tabs>
       </main>
