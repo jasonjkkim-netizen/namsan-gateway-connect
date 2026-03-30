@@ -8,14 +8,39 @@ const corsHeaders = {
 
 const KIS_BASE = "https://openapi.koreainvestment.com:9443";
 
-// In-memory token cache
+// In-memory token cache (fallback)
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
+function getServiceClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+}
+
 async function getAccessToken(): Promise<string> {
+  // 1. Check in-memory cache
   if (cachedToken && Date.now() < cachedToken.expiresAt) {
     return cachedToken.token;
   }
 
+  // 2. Check DB cache (persists across cold starts)
+  const sb = getServiceClient();
+  const { data: dbCache } = await sb
+    .from("kis_token_cache")
+    .select("access_token, expires_at")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (dbCache && new Date(dbCache.expires_at).getTime() > Date.now()) {
+    cachedToken = {
+      token: dbCache.access_token,
+      expiresAt: new Date(dbCache.expires_at).getTime(),
+    };
+    return dbCache.access_token;
+  }
+
+  // 3. Request new token from KIS
   const appKey = Deno.env.get("KIS_APP_KEY");
   const appSecret = Deno.env.get("KIS_APP_SECRET");
   if (!appKey || !appSecret) throw new Error("KIS API keys not configured");
@@ -36,11 +61,19 @@ async function getAccessToken(): Promise<string> {
   }
 
   const data = await res.json();
-  // Token valid for ~24h, cache for 23h
-  cachedToken = {
-    token: data.access_token,
-    expiresAt: Date.now() + 23 * 60 * 60 * 1000,
-  };
+  const expiresAt = Date.now() + 23 * 60 * 60 * 1000; // 23h
+
+  // Update in-memory cache
+  cachedToken = { token: data.access_token, expiresAt };
+
+  // Persist to DB (upsert)
+  await sb.from("kis_token_cache").upsert({
+    id: 1,
+    access_token: data.access_token,
+    expires_at: new Date(expiresAt).toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
   return data.access_token;
 }
 
