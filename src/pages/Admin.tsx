@@ -201,9 +201,6 @@ export default function Admin() {
             <AdminBoard />
           </TabsContent>
 
-          <TabsContent value="kis-trading">
-            <AdminKISTrading />
-          </TabsContent>
         </Tabs>
       </main>
     </div>
