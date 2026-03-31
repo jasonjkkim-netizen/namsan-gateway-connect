@@ -93,7 +93,7 @@ export default function Admin() {
     { id: 'alerts', label: language === 'ko' ? '알림 관리' : 'Alerts', icon: Bell },
     { id: 'flagship', label: language === 'ko' ? 'Flagship' : 'Flagship', icon: PieChart },
     { id: 'board', label: language === 'ko' ? '고객의 소리' : 'Board', icon: MessageSquare },
-    { id: 'kis-trading', label: language === 'ko' ? '통합 트레이딩' : 'Trading', icon: LineChart },
+    
   ];
 
   return (
