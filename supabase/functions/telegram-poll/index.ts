@@ -227,6 +227,49 @@ async function processAsResearch(
   console.log('Created research report:', report.id, 'from Telegram update:', msg.update_id);
 }
 
+// Try structured format first: [제목]/[Title], [요약]/[Summary], [카테고리]/[Category]
+function tryStructuredParse(text: string): ReturnType<typeof fallbackParse> | null {
+  const lines = text.split('\n');
+  const fields: Record<string, string> = {};
+  let currentKey = '';
+  let currentLines: string[] = [];
+
+  const keyMap: Record<string, string> = {
+    '제목': 'title', 'title': 'title',
+    '요약': 'summary', 'summary': 'summary',
+    '카테고리': 'category', 'category': 'category',
+    'url': 'url', '링크': 'url',
+  };
+
+  for (const line of lines) {
+    const match = line.match(/^\[([^\]]+)\]\s*(.*)/i);
+    if (match) {
+      if (currentKey) fields[currentKey] = currentLines.join('\n').trim();
+      const rawKey = match[1].trim().toLowerCase();
+      currentKey = keyMap[rawKey] || rawKey;
+      currentLines = match[2] ? [match[2]] : [];
+    } else if (currentKey) {
+      currentLines.push(line);
+    }
+  }
+  if (currentKey) fields[currentKey] = currentLines.join('\n').trim();
+
+  // Must have at least a title to count as structured
+  if (!fields.title) return null;
+
+  const urlMatch = text.match(/https?:\/\/[^\s]+/);
+
+  return {
+    title_en: fields.title,
+    title_ko: fields.title,
+    category: fields.category || 'market_update',
+    summary_en: fields.summary || null,
+    summary_ko: fields.summary || null,
+    external_url: fields.url || (urlMatch ? urlMatch[0] : null),
+    _structured: true,
+  };
+}
+
 async function parseWithAI(text: string, lovableKey: string) {
   if (!text.trim()) {
     return {
@@ -239,6 +282,15 @@ async function parseWithAI(text: string, lovableKey: string) {
     };
   }
 
+  // 1) Try structured format first
+  const structured = tryStructuredParse(text);
+  if (structured) {
+    console.log('Parsed with structured format:', structured.title_en);
+    // If structured has Korean title, use AI only for translation
+    return await translateStructured(structured, text, lovableKey);
+  }
+
+  // 2) Fall back to AI parsing
   try {
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -255,9 +307,11 @@ async function parseWithAI(text: string, lovableKey: string) {
 - title_en: English title (concise, max 100 chars)
 - title_ko: Korean title (concise, max 100 chars). If the original is Korean, translate to English for title_en. If original is English, translate to Korean for title_ko.
 - category: one of "market_update", "product_analysis", "economic_outlook". Default to "market_update".
-- summary_en: Brief English summary (1-3 sentences, max 500 chars)
-- summary_ko: Brief Korean summary (1-3 sentences, max 500 chars)
+- summary_en: Brief English summary (1-3 sentences, max 500 chars). This should be a concise overview separate from the title.
+- summary_ko: Brief Korean summary (1-3 sentences, max 500 chars). This should be a concise overview separate from the title.
 - external_url: Extract any URL found in the text, or null
+
+IMPORTANT: title and summary MUST be different. Title is a short headline. Summary is a brief description of the content.
 
 Respond ONLY with valid JSON, no markdown.`,
           },
@@ -276,7 +330,6 @@ Respond ONLY with valid JSON, no markdown.`,
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
 
-    // Try to parse JSON from the response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
@@ -289,16 +342,78 @@ Respond ONLY with valid JSON, no markdown.`,
   }
 }
 
+// Translate structured fields if needed (e.g., Korean title → English title)
+async function translateStructured(parsed: any, originalText: string, lovableKey: string) {
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${lovableKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: `You translate research report fields between Korean and English. Given structured data, provide translations.
+Return JSON with: title_en, title_ko, summary_en, summary_ko, category (one of: market_update, product_analysis, economic_outlook).
+Keep original values, add translations for the other language.
+Respond ONLY with valid JSON, no markdown.`,
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              title: parsed.title_en,
+              summary: parsed.summary_en,
+              category: parsed.category,
+            }),
+          },
+        ],
+        temperature: 0.2,
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) {
+      await response.text();
+      return parsed;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const translated = JSON.parse(jsonMatch[0]);
+      return {
+        title_en: translated.title_en || parsed.title_en,
+        title_ko: translated.title_ko || parsed.title_ko,
+        category: translated.category || parsed.category,
+        summary_en: translated.summary_en || parsed.summary_en,
+        summary_ko: translated.summary_ko || parsed.summary_ko,
+        external_url: parsed.external_url,
+      };
+    }
+    return parsed;
+  } catch {
+    return parsed;
+  }
+}
+
 function fallbackParse(text: string) {
-  // Extract URL if present
   const urlMatch = text.match(/https?:\/\/[^\s]+/);
+  
+  // Try to split first line as title, rest as summary
+  const lines = text.trim().split('\n');
+  const title = lines[0]?.slice(0, 100) || text.slice(0, 100);
+  const summaryText = lines.length > 1 ? lines.slice(1).join('\n').trim().slice(0, 500) : null;
 
   return {
-    title_en: text.slice(0, 100),
-    title_ko: text.slice(0, 100),
+    title_en: title,
+    title_ko: title,
     category: 'market_update',
-    summary_en: text.slice(0, 500) || null,
-    summary_ko: null,
+    summary_en: summaryText,
+    summary_ko: summaryText,
     external_url: urlMatch ? urlMatch[0] : null,
   };
 }
