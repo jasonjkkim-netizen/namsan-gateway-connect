@@ -5,7 +5,7 @@ type ContentType = 'viewpoint' | 'blog' | 'stock_pick' | 'video' | 'research';
 type ActionType = 'added' | 'updated' | 'deleted';
 
 // Content types that broadcast to ALL approved users (downline)
-const BROADCAST_TYPES: ContentType[] = ['viewpoint', 'blog', 'stock_pick'];
+const BROADCAST_TYPES: ContentType[] = ['viewpoint', 'blog', 'stock_pick', 'research'];
 
 const contentLabels: Record<ContentType, { ko: string; en: string }> = {
   viewpoint: { ko: '남산 뷰포인트', en: 'Namsan Viewpoint' },
