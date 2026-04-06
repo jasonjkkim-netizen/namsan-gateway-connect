@@ -430,7 +430,11 @@ export function AdminAlerts() {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => setSendDialogOpen(true)}>
+            <Button size="sm" onClick={() => setSendAllDialogOpen(true)} variant="default">
+              <Users className="h-4 w-4 mr-1" />
+              {language === 'ko' ? '전체 발송' : 'Send to All'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setSendDialogOpen(true)}>
               <Send className="h-4 w-4 mr-1" />
               {language === 'ko' ? '수동 발송' : 'Manual Send'}
             </Button>
