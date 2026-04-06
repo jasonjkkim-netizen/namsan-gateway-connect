@@ -19,7 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { RefreshCw, Send, Bell, BellOff, Search, Eye, BookOpen, Star, PlayCircle, Briefcase, DollarSign, Mail, MessageSquare, Phone } from 'lucide-react';
+import { RefreshCw, Send, Bell, BellOff, Search, Eye, BookOpen, Star, PlayCircle, Briefcase, DollarSign, Mail, MessageSquare, Phone, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface AlertSetting {
