@@ -20,21 +20,29 @@ serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify admin
+    // Verify admin or service role
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("No auth header");
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) throw new Error("Unauthorized");
+    
+    // Allow service_role calls (from other edge functions like telegram-poll)
+    const isServiceRole = token === supabaseServiceKey;
+    
+    let userId: string | null = null;
+    if (!isServiceRole) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) throw new Error("Unauthorized");
 
-    const { data: adminRole } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!adminRole) throw new Error("Admin access required");
+      const { data: adminRole } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (!adminRole) throw new Error("Admin access required");
+      userId = user.id;
+    }
 
     const { subject, htmlContent, newsletterId, targetEmail } = await req.json();
 
@@ -107,7 +115,7 @@ serve(async (req: Request) => {
         .from("newsletters")
         .update({
           sent_at: new Date().toISOString(),
-          sent_by: user.id,
+          sent_by: userId,
           recipient_count: sentCount,
           status: "sent",
         })
