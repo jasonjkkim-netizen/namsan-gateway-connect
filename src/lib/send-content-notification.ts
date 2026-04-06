@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-type ContentType = 'viewpoint' | 'blog' | 'stock_pick' | 'video';
+type ContentType = 'viewpoint' | 'blog' | 'stock_pick' | 'video' | 'research';
 type ActionType = 'added' | 'updated' | 'deleted';
 
 // Content types that broadcast to ALL approved users (downline)
