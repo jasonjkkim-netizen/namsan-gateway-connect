@@ -620,6 +620,52 @@ export function AdminAlerts() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Send to All Dialog */}
+      <Dialog open={sendAllDialogOpen} onOpenChange={setSendAllDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'ko' ? '전체 회원 이메일 발송' : 'Send Email to All Members'}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {language === 'ko'
+              ? `승인된 전체 회원 ${clients.length}명에게 이메일이 발송됩니다.`
+              : `Email will be sent to all ${clients.length} approved members.`}
+          </p>
+          <div className="space-y-4">
+            <div>
+              <Label>{language === 'ko' ? '제목' : 'Subject'}</Label>
+              <Input
+                value={sendAllForm.subject}
+                onChange={e => setSendAllForm(f => ({ ...f, subject: e.target.value }))}
+                placeholder={language === 'ko' ? '이메일 제목' : 'Email subject'}
+              />
+            </div>
+            <div>
+              <Label>{language === 'ko' ? '메시지' : 'Message'}</Label>
+              <Textarea
+                value={sendAllForm.message}
+                onChange={e => setSendAllForm(f => ({ ...f, message: e.target.value }))}
+                placeholder={language === 'ko' ? '이메일 내용을 입력하세요' : 'Enter email content'}
+                rows={5}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendAllDialogOpen(false)}>
+              {language === 'ko' ? '취소' : 'Cancel'}
+            </Button>
+            <Button onClick={handleSendToAll} disabled={sendingAll}>
+              {sendingAll ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : <Users className="h-4 w-4 mr-1" />}
+              {sendingAll
+                ? (language === 'ko' ? '발송 중...' : 'Sending...')
+                : (language === 'ko' ? `${clients.length}명에게 발송` : `Send to ${clients.length}`)}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
