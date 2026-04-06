@@ -19,7 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { RefreshCw, Send, Bell, BellOff, Search, Eye, BookOpen, Star, PlayCircle, Briefcase, DollarSign, Mail, MessageSquare, Phone, FileText } from 'lucide-react';
+import { RefreshCw, Send, Bell, BellOff, Search, Eye, BookOpen, Star, PlayCircle, Briefcase, DollarSign, Mail, MessageSquare, Phone, FileText, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface AlertSetting {
@@ -89,6 +89,11 @@ export function AdminAlerts() {
   });
   const [sending, setSending] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
+
+  // Send to all dialog
+  const [sendAllDialogOpen, setSendAllDialogOpen] = useState(false);
+  const [sendAllForm, setSendAllForm] = useState({ subject: '', message: '' });
+  const [sendingAll, setSendingAll] = useState(false);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -221,6 +226,68 @@ export function AdminAlerts() {
       toast.error(language === 'ko' ? `발송 실패: ${err.message}` : `Send failed: ${err.message}`);
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleSendToAll() {
+    if (!sendAllForm.subject) {
+      toast.error(language === 'ko' ? '제목을 입력해주세요' : 'Please enter a subject');
+      return;
+    }
+    setSendingAll(true);
+    try {
+      const htmlContent = `
+        <div style="margin-bottom: 16px;">
+          <span style="display: inline-block; background: #e2e8f0; color: #1a365d; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+            공지사항 / Announcement
+          </span>
+        </div>
+        <h2 style="color: #1a365d; margin: 0 0 16px; font-size: 18px;">${sendAllForm.subject}</h2>
+        ${sendAllForm.message ? `<p style="color: #2d3748; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${sendAllForm.message}</p>` : ''}
+        <div style="margin-top: 24px;">
+          <a href="https://namsan-gateway-connect.lovable.app" style="display: inline-block; background: #1a365d; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px;">
+            포털 방문 / Visit Portal
+          </a>
+        </div>
+      `;
+
+      const { data, error } = await supabase.functions.invoke('send-newsletter', {
+        body: {
+          subject: `[Namsan Partners] ${sendAllForm.subject}`,
+          htmlContent,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Log for all approved members
+      const logRows = clients.map(c => ({
+        category: 'announcement',
+        channel: 'email',
+        recipient_user_id: c.user_id,
+        recipient_name: c.full_name,
+        recipient_email: c.email,
+        subject: sendAllForm.subject,
+        sent_by: user?.id,
+        is_manual: true,
+      }));
+      if (logRows.length > 0) {
+        await supabase.from('alert_log').insert(logRows);
+      }
+
+      toast.success(
+        language === 'ko'
+          ? `전체 회원 ${data?.sentCount || clients.length}명에게 이메일을 발송했습니다`
+          : `Email sent to ${data?.sentCount || clients.length} members`
+      );
+      setSendAllDialogOpen(false);
+      setSendAllForm({ subject: '', message: '' });
+      fetchAll();
+    } catch (err: any) {
+      toast.error(language === 'ko' ? `발송 실패: ${err.message}` : `Send failed: ${err.message}`);
+    } finally {
+      setSendingAll(false);
     }
   }
 
@@ -363,7 +430,11 @@ export function AdminAlerts() {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={() => setSendDialogOpen(true)}>
+            <Button size="sm" onClick={() => setSendAllDialogOpen(true)} variant="default">
+              <Users className="h-4 w-4 mr-1" />
+              {language === 'ko' ? '전체 발송' : 'Send to All'}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setSendDialogOpen(true)}>
               <Send className="h-4 w-4 mr-1" />
               {language === 'ko' ? '수동 발송' : 'Manual Send'}
             </Button>
@@ -545,6 +616,52 @@ export function AdminAlerts() {
             <Button onClick={handleManualSend} disabled={sending}>
               {sending ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
               {language === 'ko' ? '발송' : 'Send'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send to All Dialog */}
+      <Dialog open={sendAllDialogOpen} onOpenChange={setSendAllDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'ko' ? '전체 회원 이메일 발송' : 'Send Email to All Members'}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {language === 'ko'
+              ? `승인된 전체 회원 ${clients.length}명에게 이메일이 발송됩니다.`
+              : `Email will be sent to all ${clients.length} approved members.`}
+          </p>
+          <div className="space-y-4">
+            <div>
+              <Label>{language === 'ko' ? '제목' : 'Subject'}</Label>
+              <Input
+                value={sendAllForm.subject}
+                onChange={e => setSendAllForm(f => ({ ...f, subject: e.target.value }))}
+                placeholder={language === 'ko' ? '이메일 제목' : 'Email subject'}
+              />
+            </div>
+            <div>
+              <Label>{language === 'ko' ? '메시지' : 'Message'}</Label>
+              <Textarea
+                value={sendAllForm.message}
+                onChange={e => setSendAllForm(f => ({ ...f, message: e.target.value }))}
+                placeholder={language === 'ko' ? '이메일 내용을 입력하세요' : 'Enter email content'}
+                rows={5}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendAllDialogOpen(false)}>
+              {language === 'ko' ? '취소' : 'Cancel'}
+            </Button>
+            <Button onClick={handleSendToAll} disabled={sendingAll}>
+              {sendingAll ? <RefreshCw className="h-4 w-4 mr-1 animate-spin" /> : <Users className="h-4 w-4 mr-1" />}
+              {sendingAll
+                ? (language === 'ko' ? '발송 중...' : 'Sending...')
+                : (language === 'ko' ? `${clients.length}명에게 발송` : `Send to ${clients.length}`)}
             </Button>
           </DialogFooter>
         </DialogContent>
