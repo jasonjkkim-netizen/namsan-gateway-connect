@@ -115,7 +115,7 @@ serve(async (req: Request) => {
         .from("newsletters")
         .update({
           sent_at: new Date().toISOString(),
-          sent_by: user.id,
+          sent_by: userId,
           recipient_count: sentCount,
           status: "sent",
         })
