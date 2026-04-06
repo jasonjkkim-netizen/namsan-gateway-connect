@@ -1,17 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-type ContentType = 'viewpoint' | 'blog' | 'stock_pick' | 'video';
+type ContentType = 'viewpoint' | 'blog' | 'stock_pick' | 'video' | 'research';
 type ActionType = 'added' | 'updated' | 'deleted';
 
 // Content types that broadcast to ALL approved users (downline)
-const BROADCAST_TYPES: ContentType[] = ['viewpoint', 'blog', 'stock_pick'];
+const BROADCAST_TYPES: ContentType[] = ['viewpoint', 'blog', 'stock_pick', 'research'];
 
 const contentLabels: Record<ContentType, { ko: string; en: string }> = {
   viewpoint: { ko: '남산 뷰포인트', en: 'Namsan Viewpoint' },
   blog: { ko: '블로그', en: 'Blog' },
   stock_pick: { ko: '관심 종목', en: 'Stock Pick' },
   video: { ko: '비디오', en: 'Video' },
+  research: { ko: '텔레그램 리서치', en: 'Telegram Research' },
 };
 
 const actionLabels: Record<ActionType, { ko: string; en: string }> = {

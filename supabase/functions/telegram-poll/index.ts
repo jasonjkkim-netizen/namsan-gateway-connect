@@ -224,6 +224,9 @@ async function processAsResearch(
     if (notifErr) console.error('Failed to send admin notifications:', notifErr);
   }
 
+  // Send email/kakao alerts if 'research' category is enabled
+  await sendResearchAlert(supabase, payload);
+
   console.log('Created research report:', report.id, 'from Telegram update:', msg.update_id);
 }
 
@@ -480,5 +483,116 @@ async function downloadAndUploadPdf(
   } catch (err) {
     console.error('PDF download/upload error:', err);
     return null;
+  }
+}
+
+async function sendResearchAlert(supabase: any, payload: any) {
+  try {
+    // Check if 'research' alert category is enabled (email channel)
+    const { data: emailSetting } = await supabase
+      .from('alert_settings')
+      .select('is_enabled')
+      .eq('category', 'research')
+      .eq('channel', 'email')
+      .maybeSingle();
+
+    const emailEnabled = emailSetting?.is_enabled !== false; // default true
+
+    if (emailEnabled) {
+      const subject = `[남산파트너스] 텔레그램 리서치 - 새로운 콘텐츠가 추가되었습니다`;
+      const htmlContent = `
+        <div style="margin-bottom: 16px;">
+          <span style="display: inline-block; background: #e2e8f0; color: #1a365d; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+            텔레그램 리서치 / Telegram Research
+          </span>
+        </div>
+        <h2 style="color: #1a365d; margin: 0 0 8px; font-size: 18px;">${payload.title_ko}</h2>
+        ${payload.title_en && payload.title_en !== payload.title_ko ? `<p style="color: #718096; margin: 0 0 16px; font-size: 14px;">${payload.title_en}</p>` : ''}
+        <p style="color: #2d3748; margin: 0 0 8px; font-size: 14px;">새로운 콘텐츠가 추가되었습니다 / New content has been added</p>
+        ${payload.summary_ko ? `<p style="color: #4a5568; margin: 16px 0 0; font-size: 13px; line-height: 1.6; border-left: 3px solid #1a365d; padding-left: 12px;">${payload.summary_ko.slice(0, 300)}</p>` : ''}
+        <div style="margin-top: 24px;">
+          <a href="https://namsan-gateway-connect.lovable.app/research" style="display: inline-block; background: #1a365d; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px;">
+            자세히 보기 / Read More
+          </a>
+        </div>
+      `;
+
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+      await fetch(`${supabaseUrl}/functions/v1/send-newsletter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ subject, htmlContent }),
+      });
+
+      console.log('Research email alert sent');
+    }
+
+    // Check if kakao channel is enabled
+    const { data: kakaoSetting } = await supabase
+      .from('alert_settings')
+      .select('is_enabled')
+      .eq('category', 'research')
+      .eq('channel', 'kakao')
+      .maybeSingle();
+
+    if (kakaoSetting?.is_enabled === true) {
+      const kakaoMessage = `[남산파트너스] 텔레그램 리서치\n새로운 콘텐츠가 추가되었습니다\n\n${payload.title_ko}${payload.summary_ko ? '\n' + payload.summary_ko.slice(0, 200) : ''}`;
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+      await fetch(`${supabaseUrl}/functions/v1/send-kakao`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          message: kakaoMessage,
+          templateObject: {
+            object_type: 'text',
+            text: kakaoMessage,
+            link: {
+              web_url: 'https://namsan-gateway-connect.lovable.app/research',
+              mobile_web_url: 'https://namsan-gateway-connect.lovable.app/research',
+            },
+            button_title: '포털 방문',
+          },
+        }),
+      });
+
+      console.log('Research kakao alert sent');
+    }
+
+    // Check if SMS channel is enabled
+    const { data: smsSetting } = await supabase
+      .from('alert_settings')
+      .select('is_enabled')
+      .eq('category', 'research')
+      .eq('channel', 'sms')
+      .maybeSingle();
+
+    if (smsSetting?.is_enabled === true) {
+      const smsMessage = `[남산파트너스] 새 리서치: ${payload.title_ko.slice(0, 40)}`;
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+      await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ message: smsMessage }),
+      });
+
+      console.log('Research SMS alert sent');
+    }
+  } catch (err) {
+    console.error('Failed to send research alerts:', err);
   }
 }

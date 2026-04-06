@@ -19,7 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { RefreshCw, Send, Bell, BellOff, Search, Eye, BookOpen, Star, PlayCircle, Briefcase, DollarSign, Mail, MessageSquare, Phone } from 'lucide-react';
+import { RefreshCw, Send, Bell, BellOff, Search, Eye, BookOpen, Star, PlayCircle, Briefcase, DollarSign, Mail, MessageSquare, Phone, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface AlertSetting {
@@ -58,6 +58,7 @@ const CATEGORY_LABELS: Record<string, { ko: string; en: string; icon: typeof Bel
   stock_pick: { ko: '관심 종목', en: 'Stock Pick', icon: Star },
   video: { ko: '비디오', en: 'Video', icon: PlayCircle },
   investment: { ko: '투자', en: 'Investment', icon: Briefcase },
+  research: { ko: '텔레그램 리서치', en: 'Telegram Research', icon: FileText },
 };
 
 const CHANNEL_LABELS: Record<string, { ko: string; en: string; icon: typeof Mail; color: string }> = {
