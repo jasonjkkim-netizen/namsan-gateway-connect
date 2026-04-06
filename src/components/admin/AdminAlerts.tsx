@@ -229,6 +229,68 @@ export function AdminAlerts() {
     }
   }
 
+  async function handleSendToAll() {
+    if (!sendAllForm.subject) {
+      toast.error(language === 'ko' ? '제목을 입력해주세요' : 'Please enter a subject');
+      return;
+    }
+    setSendingAll(true);
+    try {
+      const htmlContent = `
+        <div style="margin-bottom: 16px;">
+          <span style="display: inline-block; background: #e2e8f0; color: #1a365d; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+            공지사항 / Announcement
+          </span>
+        </div>
+        <h2 style="color: #1a365d; margin: 0 0 16px; font-size: 18px;">${sendAllForm.subject}</h2>
+        ${sendAllForm.message ? `<p style="color: #2d3748; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">${sendAllForm.message}</p>` : ''}
+        <div style="margin-top: 24px;">
+          <a href="https://namsan-gateway-connect.lovable.app" style="display: inline-block; background: #1a365d; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px;">
+            포털 방문 / Visit Portal
+          </a>
+        </div>
+      `;
+
+      const { data, error } = await supabase.functions.invoke('send-newsletter', {
+        body: {
+          subject: `[Namsan Partners] ${sendAllForm.subject}`,
+          htmlContent,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Log for all approved members
+      const logRows = clients.map(c => ({
+        category: 'announcement',
+        channel: 'email',
+        recipient_user_id: c.user_id,
+        recipient_name: c.full_name,
+        recipient_email: c.email,
+        subject: sendAllForm.subject,
+        sent_by: user?.id,
+        is_manual: true,
+      }));
+      if (logRows.length > 0) {
+        await supabase.from('alert_log').insert(logRows);
+      }
+
+      toast.success(
+        language === 'ko'
+          ? `전체 회원 ${data?.sentCount || clients.length}명에게 이메일을 발송했습니다`
+          : `Email sent to ${data?.sentCount || clients.length} members`
+      );
+      setSendAllDialogOpen(false);
+      setSendAllForm({ subject: '', message: '' });
+      fetchAll();
+    } catch (err: any) {
+      toast.error(language === 'ko' ? `발송 실패: ${err.message}` : `Send failed: ${err.message}`);
+    } finally {
+      setSendingAll(false);
+    }
+  }
+
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
       if (filterCategory !== 'all' && log.category !== filterCategory) return false;
