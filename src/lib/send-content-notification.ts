@@ -12,7 +12,7 @@ const contentLabels: Record<ContentType, { ko: string; en: string }> = {
   blog: { ko: '블로그', en: 'Blog' },
   stock_pick: { ko: '관심 종목', en: 'Stock Pick' },
   video: { ko: '비디오', en: 'Video' },
-  research: { ko: '텔레그램 리서치', en: 'Telegram Research' },
+  research: { ko: '리서치', en: 'Research' },
 };
 
 const actionLabels: Record<ActionType, { ko: string; en: string }> = {
