@@ -90,6 +90,11 @@ export function AdminAlerts() {
   const [sending, setSending] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
 
+  // Send to all dialog
+  const [sendAllDialogOpen, setSendAllDialogOpen] = useState(false);
+  const [sendAllForm, setSendAllForm] = useState({ subject: '', message: '' });
+  const [sendingAll, setSendingAll] = useState(false);
+
   useEffect(() => { fetchAll(); }, []);
 
   async function fetchAll() {
