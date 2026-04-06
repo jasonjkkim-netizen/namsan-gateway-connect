@@ -224,6 +224,9 @@ async function processAsResearch(
     if (notifErr) console.error('Failed to send admin notifications:', notifErr);
   }
 
+  // Send email/kakao alerts if 'research' category is enabled
+  await sendResearchAlert(supabase, payload);
+
   console.log('Created research report:', report.id, 'from Telegram update:', msg.update_id);
 }
 
