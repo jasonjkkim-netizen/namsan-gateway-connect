@@ -202,6 +202,10 @@ export default function Admin() {
             <AdminBoard />
           </TabsContent>
 
+          <TabsContent value="notion">
+            <AdminNotionSync />
+          </TabsContent>
+
         </Tabs>
       </main>
     </div>
