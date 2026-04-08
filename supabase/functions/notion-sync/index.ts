@@ -218,15 +218,31 @@ Deno.serve(async (req: Request) => {
         }
 
         if (direction === "notion_to_db" || direction === "both") {
+          const VALID_TYPES = ["bond", "equity", "fund", "real_estate", "alternative"];
+          const VALID_STATUSES = ["draft", "pending", "open", "closed", "coming_soon", "archived"];
+          const STATUS_MAP: Record<string, string> = { upcoming: "coming_soon" };
+
           const notionPages = await queryNotionDb(NOTION_DB.products);
           for (const page of notionPages) {
             const p = page.properties;
+            const nameKo = getText(p["Product Name (KO)"]);
+            if (!nameKo) continue; // Skip empty rows
+
             const supabaseId = getText(p["Supabase ID"]);
+            const rawType = getText(p["Type"]).toLowerCase();
+            const rawStatus = getText(p["Status"]).toLowerCase();
+            const mappedStatus = STATUS_MAP[rawStatus] || rawStatus;
+
+            if (!VALID_TYPES.includes(rawType)) {
+              result.errors.push(`Skipped "${nameKo}": invalid type "${rawType}"`);
+              continue;
+            }
+
             const productData = {
-              name_ko: getText(p["Product Name (KO)"]),
-              name_en: getText(p["Product Name (EN)"]) || getText(p["Product Name (KO)"]),
-              type: getText(p["Type"]) || "other",
-              status: getText(p["Status"]) || "open",
+              name_ko: nameKo,
+              name_en: getText(p["Product Name (EN)"]) || nameKo,
+              type: rawType,
+              status: VALID_STATUSES.includes(mappedStatus) ? mappedStatus : "open",
               currency: getText(p["Currency"]) || "KRW",
               default_currency: getText(p["Default Currency"]) || "USD",
               target_return: getNumber(p["Target Return (%)"]),
