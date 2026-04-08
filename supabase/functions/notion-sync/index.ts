@@ -10,11 +10,11 @@ const NOTION_VERSION = "2022-06-28";
 
 // Notion Database IDs (data source IDs from the created databases)
 const NOTION_DB = {
-  products: "c4d49bd11991434dbef535c11d6d2a0c",
-  members: "d905e2fe03904bebac6ff8b9071dff0e",
-  commissionRates: "6dbd8b3359a24dde9610c19dc77c2001",
-  investments: "930b6b89bd894297b792a2999cadff08",
-  distributions: "daa96c7d3c9b4ef0b1883fc8da4c3d11",
+  products: "24eb76602e9283c4aa9e8107005c164b",
+  members: "4abbf3b7f7744ce8bbc33f09ada96674",
+  commissionRates: "7d1048cf97a3417bb725860fe0a2a66c",
+  investments: "efad2fe4ddb145f19d7f412fd44fb71e",
+  distributions: "3aeb0f55ad2b41af8e35e5b84f4fa0f5",
 };
 
 interface SyncResult {
