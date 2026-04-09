@@ -78,6 +78,8 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const direction = body.direction || "db_to_notion";
     const tables = body.tables || ["products", "members", "commissionRates", "investments", "distributions"];
+    // Optional per-table item ID filters: { products: ["id1"], investments: ["id2"], ... }
+    const filters: Record<string, string[]> = body.filters || {};
     const syncStartTime = Date.now();
 
     const notionHeaders = {
