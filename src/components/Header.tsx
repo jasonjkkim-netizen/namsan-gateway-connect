@@ -11,34 +11,13 @@ import { ConsultationButton } from './ConsultationButton';
 import logo from '@/assets/namsan-logo.png';
 
 export function Header() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, isAdmin, signOut } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isAdmin, setIsAdmin] = useState(false);
   const salesRole = (profile as any)?.sales_role;
   const hasSalesRole = !!salesRole && salesRole !== 'client';
   const isAdminPage = location.pathname === '/admin';
-
-  useEffect(() => {
-    async function checkAdminRole() {
-      if (!user) {
-        setIsAdmin(false);
-        return;
-      }
-
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      setIsAdmin(!!data);
-    }
-
-    checkAdminRole();
-  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
