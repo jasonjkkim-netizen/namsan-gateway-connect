@@ -69,12 +69,13 @@ export function ProductShowcaseSection({ language }: ProductShowcaseSectionProps
     queryFn: async () => {
       const { data, error } = await supabase
         .from('investment_products')
-        .select('*')
+        .select('id, name_ko, name_en, type, status, currency, default_currency, target_return, target_return_percent, fixed_return_percent, minimum_investment, min_investment_amount, fundraising_amount, maturity_date, issue_date, image_url, description_ko, description_en')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as Product[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 
   const getStatusLabel = (status: string | null) => {

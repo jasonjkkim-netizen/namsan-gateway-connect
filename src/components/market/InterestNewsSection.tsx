@@ -44,29 +44,38 @@ export function InterestNewsSection({ language }: Props) {
   const { data: updates, isLoading } = useQuery({
     queryKey: ['recent-updates-aggregated'],
     queryFn: async () => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      const cutoff = sevenDaysAgo.toISOString();
+
       const [newsRes, productsRes, researchRes, blogRes] = await Promise.all([
         supabase
           .from('interest_news')
           .select('id, title_ko, title_en, content_ko, content_en, url, created_at')
           .eq('is_active', true)
+          .gte('created_at', cutoff)
           .order('created_at', { ascending: false })
           .limit(10),
         supabase
           .from('investment_products')
           .select('id, name_ko, name_en, description_ko, description_en, created_at')
           .eq('is_active', true)
+          .gte('created_at', cutoff)
           .order('created_at', { ascending: false })
           .limit(5),
         supabase
           .from('research_reports')
           .select('id, title_ko, title_en, summary_ko, summary_en, created_at')
           .eq('is_active', true)
+          .gte('created_at', cutoff)
           .order('created_at', { ascending: false })
           .limit(5),
         supabase
           .from('blog_posts')
           .select('id, title_ko, title_en, summary_ko, summary_en, created_at')
           .eq('is_active', true)
+          .gte('created_at', cutoff)
           .order('created_at', { ascending: false })
           .limit(5),
       ]);
@@ -102,14 +111,9 @@ export function InterestNewsSection({ language }: Props) {
       }));
 
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      
-      // Filter to last 7 days
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      sevenDaysAgo.setHours(0, 0, 0, 0);
-      const recentItems = items.filter(item => new Date(item.created_at) >= sevenDaysAgo);
-      return recentItems;
+      return items;
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes - aggregated data changes infrequently
   });
 
   const [expanded, setExpanded] = useState(false);
