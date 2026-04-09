@@ -76,8 +76,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const direction = body.direction || "db_to_notion"; // db_to_notion | notion_to_db | both
+    const direction = body.direction || "db_to_notion";
     const tables = body.tables || ["products", "members", "commissionRates", "investments", "distributions"];
+    const syncStartTime = Date.now();
 
     const notionHeaders = {
       "Authorization": `Bearer ${NOTION_API_KEY}`,
