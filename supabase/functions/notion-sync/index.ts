@@ -373,7 +373,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "commissionRates", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: rates } = await supabase.from("commission_rates").select("*, investment_products(name_ko)");
+          let ratesQuery = supabase.from("commission_rates").select("*, investment_products(name_ko)");
+          if (filters.commissionRates?.length) ratesQuery = ratesQuery.in("id", filters.commissionRates);
+          const { data: rates } = await ratesQuery;
           const notionPages = await queryNotionDb(NOTION_DB.commissionRates);
           const notionBySupabaseId = new Map(
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
