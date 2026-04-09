@@ -48,6 +48,7 @@ Deno.serve(async (req: Request) => {
     const expectedSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     let isAuthorized = false;
+    let triggeredByUserId: string | null = null;
     if (cronSecret === expectedSecret || internalSecret === expectedSecret) {
       isAuthorized = true;
     } else if (authHeader) {
@@ -57,6 +58,7 @@ Deno.serve(async (req: Request) => {
       } else {
         const { data: { user } } = await supabase.auth.getUser(token);
         if (user) {
+          triggeredByUserId = user.id;
           const { data: roles } = await supabase
             .from("user_roles")
             .select("role")
