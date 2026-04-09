@@ -31,35 +31,17 @@ import { Users, Briefcase, Package, FileText, PlayCircle, UserCheck, TrendingUp,
 
 export default function Admin() {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function checkAdmin() {
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-
-      if (data) {
-        setIsAdmin(true);
-      } else {
-        navigate('/dashboard');
-      }
-      setLoading(false);
+    if (loading) return;
+    if (!user) {
+      navigate('/login');
+    } else if (!isAdmin) {
+      navigate('/dashboard');
     }
-
-    checkAdmin();
-  }, [user, navigate]);
+  }, [user, isAdmin, loading, navigate]);
 
   if (loading) {
     return (
