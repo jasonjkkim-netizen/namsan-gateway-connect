@@ -295,7 +295,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "members", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: profiles } = await supabase.from("profiles").select("*").eq("is_deleted", false);
+          let profQuery = supabase.from("profiles").select("*").eq("is_deleted", false);
+          if (filters.members?.length) profQuery = profQuery.in("user_id", filters.members);
+          const { data: profiles } = await profQuery;
           const notionPages = await queryNotionDb(NOTION_DB.members);
           const notionByUserId = new Map(
             notionPages.map(p => [getText(p.properties["Supabase User ID"]), p.id])
