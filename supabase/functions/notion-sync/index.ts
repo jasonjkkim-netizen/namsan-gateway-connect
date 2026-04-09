@@ -176,7 +176,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "products", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: products } = await supabase.from("investment_products").select("*");
+          let prodQuery = supabase.from("investment_products").select("*");
+          if (filters.products?.length) prodQuery = prodQuery.in("id", filters.products);
+          const { data: products } = await prodQuery;
           const notionPages = await queryNotionDb(NOTION_DB.products);
           const notionBySupabaseId = new Map(
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
