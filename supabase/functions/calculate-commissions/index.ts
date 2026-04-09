@@ -101,19 +101,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Get the investor's profile
+    // 2. Get the investor's profile (may not exist for quick-registered clients)
     const { data: investorProfile } = await supabase
       .from("profiles")
       .select("user_id, parent_id, sales_role, full_name")
       .eq("user_id", investment.user_id)
-      .single();
+      .maybeSingle();
 
-    if (!investorProfile) {
-      return new Response(JSON.stringify({ error: "Investor profile not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const investorName = investorProfile?.full_name || "Unknown Investor";
 
     // 3. Get ancestors (upline)
     const { data: ancestors, error: ancestorErr } = await supabase
