@@ -299,47 +299,96 @@ export default function AdminNotionSync() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {syncHistory.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="text-xs whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          {format(new Date(log.created_at), 'MM/dd HH:mm:ss')}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {directionLabel(log.direction)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {log.tables.map(t => {
-                          const info = SYNC_TABLES.find(s => s.key === t);
-                          return language === 'ko' ? info?.labelKo || t : info?.labelEn || t;
-                        }).join(', ')}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className={log.total_created > 0 ? 'font-medium text-green-600' : 'text-muted-foreground'}>
-                          {log.total_created}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className={log.total_updated > 0 ? 'font-medium text-blue-600' : 'text-muted-foreground'}>
-                          {log.total_updated}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {log.error_count > 0 ? (
-                          <Badge variant="destructive" className="text-xs">{log.error_count}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">0</span>
+                  {syncHistory.map((log) => {
+                    const isExpanded = expandedLogId === log.id;
+                    const logResults = (log.results || []) as SyncResult[];
+                    return (
+                      <>
+                        <TableRow
+                          key={log.id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
+                        >
+                          <TableCell className="text-xs whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              {isExpanded ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                              <Clock className="h-3 w-3 text-muted-foreground" />
+                              {format(new Date(log.created_at), 'MM/dd HH:mm:ss')}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {directionLabel(log.direction)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {log.tables.map(t => {
+                              const info = SYNC_TABLES.find(s => s.key === t);
+                              return language === 'ko' ? info?.labelKo || t : info?.labelEn || t;
+                            }).join(', ')}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className={log.total_created > 0 ? 'font-medium text-green-600' : 'text-muted-foreground'}>
+                              {log.total_created}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className={log.total_updated > 0 ? 'font-medium text-blue-600' : 'text-muted-foreground'}>
+                              {log.total_updated}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {log.error_count > 0 ? (
+                              <Badge variant="destructive" className="text-xs">{log.error_count}</Badge>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right text-xs text-muted-foreground">
+                            {log.duration_ms != null ? `${(log.duration_ms / 1000).toFixed(1)}s` : '-'}
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded && (
+                          <TableRow key={`${log.id}-detail`}>
+                            <TableCell colSpan={7} className="bg-muted/30 p-4">
+                              <div className="space-y-3">
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                  {language === 'ko' ? '테이블별 상세 결과' : 'Per-Table Results'}
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                  {logResults.map((r, i) => {
+                                    const tableInfo = SYNC_TABLES.find(t => t.key === r.table);
+                                    return (
+                                      <div key={i} className="flex items-center gap-2 p-2 border rounded-md bg-background text-sm">
+                                        <span className="font-medium min-w-[80px]">
+                                          {language === 'ko' ? tableInfo?.labelKo || r.table : tableInfo?.labelEn || r.table}
+                                        </span>
+                                        <Badge variant="secondary" className="text-xs">+{r.created}</Badge>
+                                        <Badge variant="outline" className="text-xs">↻{r.updated}</Badge>
+                                        {r.errors.length > 0 && (
+                                          <Badge variant="destructive" className="text-xs">✕{r.errors.length}</Badge>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                {logResults.some(r => r.errors.length > 0) && (
+                                  <div className="p-3 bg-destructive/10 rounded-md text-xs">
+                                    <p className="font-medium text-destructive mb-1">
+                                      {language === 'ko' ? '오류 상세:' : 'Error Details:'}
+                                    </p>
+                                    {logResults.flatMap(r => r.errors).map((err, j) => (
+                                      <p key={j} className="text-destructive/80">• {err}</p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
-                        {log.duration_ms != null ? `${(log.duration_ms / 1000).toFixed(1)}s` : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
