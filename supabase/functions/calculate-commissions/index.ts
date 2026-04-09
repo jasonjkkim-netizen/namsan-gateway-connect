@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             type: "investment_created",
             investment_id,
-            investor_name: investorProfile.full_name,
+            investor_name: investorName,
             product_name_en: investment.product_name_en,
             product_name_ko: investment.product_name_ko,
             amount: investmentAmount,
