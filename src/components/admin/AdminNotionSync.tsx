@@ -48,6 +48,7 @@ export default function AdminNotionSync() {
   const [results, setResults] = useState<SyncResult[] | null>(null);
   const [syncHistory, setSyncHistory] = useState<SyncLogEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSyncHistory();
