@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -40,6 +40,12 @@ interface SyncLogEntry {
   created_at: string;
 }
 
+interface SyncItem {
+  id: string;
+  label: string;
+  groupLabel?: string;
+}
+
 export default function AdminNotionSync() {
   const { language } = useLanguage();
   const [syncing, setSyncing] = useState(false);
@@ -49,6 +55,12 @@ export default function AdminNotionSync() {
   const [syncHistory, setSyncHistory] = useState<SyncLogEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+
+  // Item-level selection state
+  const [expandedTable, setExpandedTable] = useState<string | null>(null);
+  const [tableItems, setTableItems] = useState<Record<string, SyncItem[]>>({});
+  const [selectedItems, setSelectedItems] = useState<Record<string, string[]>>({});
+  const [loadingItems, setLoadingItems] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSyncHistory();
@@ -61,17 +73,103 @@ export default function AdminNotionSync() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(20);
-    
     if (!error && data) {
       setSyncHistory(data as unknown as SyncLogEntry[]);
     }
     setLoadingHistory(false);
   };
 
+  const fetchTableItems = useCallback(async (tableKey: string) => {
+    if (tableItems[tableKey]) return;
+    setLoadingItems(tableKey);
+    let items: SyncItem[] = [];
+
+    try {
+      if (tableKey === 'products') {
+        const { data } = await supabase.from('investment_products').select('id, name_ko, name_en').order('name_ko');
+        items = (data || []).map(p => ({ id: p.id, label: language === 'ko' ? p.name_ko : p.name_en }));
+      } else if (tableKey === 'members') {
+        const { data } = await supabase.from('profiles').select('user_id, full_name, email, sales_role').eq('is_deleted', false).order('full_name');
+        items = (data || []).map(p => ({ id: p.user_id, label: `${p.full_name} (${p.email})`, groupLabel: p.sales_role || 'client' }));
+      } else if (tableKey === 'commissionRates') {
+        const { data } = await supabase.from('commission_rates').select('id, sales_role, sales_level, upfront_rate, performance_rate, investment_products(name_ko)');
+        items = (data || []).map((r: any) => ({
+          id: r.id,
+          label: `${r.investment_products?.name_ko || '?'} - ${r.sales_role} L${r.sales_level}`,
+          groupLabel: r.investment_products?.name_ko || 'Unknown',
+        }));
+      } else if (tableKey === 'investments') {
+        const { data } = await supabase.from('client_investments').select('id, product_name_ko, product_name_en, investment_amount, invested_currency, user_id');
+        const userIds = [...new Set((data || []).map(i => i.user_id))];
+        const { data: profiles } = await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds);
+        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+        items = (data || []).map(i => ({
+          id: i.id,
+          label: `${nameMap.get(i.user_id) || '?'} - ${language === 'ko' ? i.product_name_ko : i.product_name_en} (${i.invested_currency} ${Number(i.investment_amount).toLocaleString()})`,
+          groupLabel: language === 'ko' ? i.product_name_ko : i.product_name_en,
+        }));
+      } else if (tableKey === 'distributions') {
+        const { data } = await supabase.from('commission_distributions').select('id, to_user_id, layer, upfront_amount, performance_amount, currency, investment_id');
+        const userIds = [...new Set((data || []).map(d => d.to_user_id))];
+        const { data: profiles } = await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds);
+        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+        const invIds = [...new Set((data || []).filter(d => d.investment_id).map(d => d.investment_id))];
+        const { data: invs } = await supabase.from('client_investments').select('id, product_name_ko').in('id', invIds);
+        const invMap = new Map((invs || []).map(i => [i.id, i.product_name_ko]));
+        items = (data || []).map(d => ({
+          id: d.id,
+          label: `${nameMap.get(d.to_user_id) || '?'} L${d.layer} (${d.currency} ${Number(d.upfront_amount || 0).toLocaleString()})`,
+          groupLabel: invMap.get(d.investment_id) || 'Unknown',
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to fetch items for', tableKey, e);
+    }
+
+    setTableItems(prev => ({ ...prev, [tableKey]: items }));
+    // Default: all selected
+    setSelectedItems(prev => ({ ...prev, [tableKey]: items.map(i => i.id) }));
+    setLoadingItems(null);
+  }, [language, tableItems]);
+
   const toggleTable = (key: string) => {
-    setSelectedTables(prev =>
-      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-    );
+    setSelectedTables(prev => {
+      const next = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
+      // Clear item selection when table is deselected
+      if (!next.includes(key)) {
+        setSelectedItems(p => { const n = { ...p }; delete n[key]; return n; });
+        setTableItems(p => { const n = { ...p }; delete n[key]; return n; });
+        if (expandedTable === key) setExpandedTable(null);
+      }
+      return next;
+    });
+  };
+
+  const toggleExpandTable = (key: string) => {
+    if (expandedTable === key) {
+      setExpandedTable(null);
+    } else {
+      setExpandedTable(key);
+      fetchTableItems(key);
+    }
+  };
+
+  const toggleItem = (tableKey: string, itemId: string) => {
+    setSelectedItems(prev => {
+      const current = prev[tableKey] || [];
+      const next = current.includes(itemId) ? current.filter(id => id !== itemId) : [...current, itemId];
+      return { ...prev, [tableKey]: next };
+    });
+  };
+
+  const toggleAllItems = (tableKey: string) => {
+    const allItems = tableItems[tableKey] || [];
+    const currentSelected = selectedItems[tableKey] || [];
+    const allSelected = currentSelected.length === allItems.length;
+    setSelectedItems(prev => ({
+      ...prev,
+      [tableKey]: allSelected ? [] : allItems.map(i => i.id),
+    }));
   };
 
   const handleSync = async () => {
@@ -84,16 +182,23 @@ export default function AdminNotionSync() {
     setResults(null);
 
     try {
+      // Build filters from item-level selections
+      const filters: Record<string, string[]> = {};
+      for (const tableKey of selectedTables) {
+        const items = tableItems[tableKey];
+        const selected = selectedItems[tableKey];
+        // Only send filters if items were loaded AND not all are selected
+        if (items && selected && selected.length < items.length) {
+          filters[tableKey] = selected;
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('notion-sync', {
-        body: { direction, tables: selectedTables },
+        body: { direction, tables: selectedTables, filters },
       });
 
       if (error) throw error;
-
-      if (data?.error) {
-        toast.error(data.error);
-        return;
-      }
+      if (data?.error) { toast.error(data.error); return; }
 
       setResults(data.results);
       const totalCreated = data.results.reduce((s: number, r: SyncResult) => s + r.created, 0);
@@ -113,8 +218,6 @@ export default function AdminNotionSync() {
             : `Sync complete! Created: ${totalCreated}, Updated: ${totalUpdated}`
         );
       }
-
-      // Refresh history after sync
       fetchSyncHistory();
     } catch (err: any) {
       console.error('Notion sync error:', err);
@@ -131,6 +234,17 @@ export default function AdminNotionSync() {
       case 'both': return language === 'ko' ? '양방향' : 'Both';
       default: return dir;
     }
+  };
+
+  // Group items by groupLabel
+  const groupItems = (items: SyncItem[]) => {
+    const groups = new Map<string, SyncItem[]>();
+    for (const item of items) {
+      const key = item.groupLabel || '';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(item);
+    }
+    return groups;
   };
 
   return (
@@ -188,22 +302,96 @@ export default function AdminNotionSync() {
             </Select>
           </div>
 
-          {/* Table Selection */}
+          {/* Table Selection with Item-level drill-down */}
           <div className="space-y-2">
             <Label>{language === 'ko' ? '동기화 대상' : 'Tables to Sync'}</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {SYNC_TABLES.map(table => (
-                <label
-                  key={table.key}
-                  className="flex items-center gap-2 p-2 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
-                >
-                  <Checkbox
-                    checked={selectedTables.includes(table.key)}
-                    onCheckedChange={() => toggleTable(table.key)}
-                  />
-                  <span className="text-sm">{language === 'ko' ? table.labelKo : table.labelEn}</span>
-                </label>
-              ))}
+            <div className="space-y-2">
+              {SYNC_TABLES.map(table => {
+                const isSelected = selectedTables.includes(table.key);
+                const isExpanded = expandedTable === table.key && isSelected;
+                const items = tableItems[table.key];
+                const selected = selectedItems[table.key];
+                const hasFilter = items && selected && selected.length < items.length;
+
+                return (
+                  <div key={table.key} className="border rounded-md overflow-hidden">
+                    <div className="flex items-center gap-2 p-2 hover:bg-muted/50 transition-colors">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleTable(table.key)}
+                      />
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 flex-1 text-left text-sm"
+                        onClick={() => isSelected && toggleExpandTable(table.key)}
+                        disabled={!isSelected}
+                      >
+                        {isExpanded ? <ChevronDown className="h-3 w-3 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
+                        {language === 'ko' ? table.labelKo : table.labelEn}
+                      </button>
+                      {hasFilter && (
+                        <Badge variant="secondary" className="text-xs">
+                          {selected.length}/{items.length}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Item-level selection panel */}
+                    {isExpanded && (
+                      <div className="border-t bg-muted/20 p-3 max-h-64 overflow-y-auto">
+                        {loadingItems === table.key ? (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          </div>
+                        ) : items && items.length > 0 ? (
+                          <div className="space-y-2">
+                            {/* Select all toggle */}
+                            <label className="flex items-center gap-2 pb-2 border-b cursor-pointer text-xs font-medium text-muted-foreground">
+                              <Checkbox
+                                checked={selected?.length === items.length}
+                                onCheckedChange={() => toggleAllItems(table.key)}
+                              />
+                              {language === 'ko' ? '전체 선택' : 'Select All'} ({items.length})
+                            </label>
+
+                            {/* Grouped items */}
+                            {items[0]?.groupLabel ? (
+                              [...groupItems(items).entries()].map(([group, groupItems_]) => (
+                                <div key={group} className="space-y-1">
+                                  <p className="text-xs font-medium text-muted-foreground mt-2">{group}</p>
+                                  {groupItems_.map(item => (
+                                    <label key={item.id} className="flex items-center gap-2 pl-2 cursor-pointer text-xs">
+                                      <Checkbox
+                                        checked={selected?.includes(item.id)}
+                                        onCheckedChange={() => toggleItem(table.key, item.id)}
+                                      />
+                                      <span className="truncate">{item.label}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              ))
+                            ) : (
+                              items.map(item => (
+                                <label key={item.id} className="flex items-center gap-2 cursor-pointer text-xs">
+                                  <Checkbox
+                                    checked={selected?.includes(item.id)}
+                                    onCheckedChange={() => toggleItem(table.key, item.id)}
+                                  />
+                                  <span className="truncate">{item.label}</span>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground text-center py-2">
+                            {language === 'ko' ? '항목이 없습니다.' : 'No items found.'}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -303,7 +491,7 @@ export default function AdminNotionSync() {
                     const isExpanded = expandedLogId === log.id;
                     const logResults = (log.results || []) as SyncResult[];
                     return (
-                      <>
+                      <>{/* Fragment wrapper for paired rows */}
                         <TableRow
                           key={log.id}
                           className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -317,9 +505,7 @@ export default function AdminNotionSync() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {directionLabel(log.direction)}
-                            </Badge>
+                            <Badge variant="outline" className="text-xs">{directionLabel(log.direction)}</Badge>
                           </TableCell>
                           <TableCell className="text-xs">
                             {log.tables.map(t => {
@@ -328,14 +514,10 @@ export default function AdminNotionSync() {
                             }).join(', ')}
                           </TableCell>
                           <TableCell className="text-center">
-                            <span className={log.total_created > 0 ? 'font-medium text-green-600' : 'text-muted-foreground'}>
-                              {log.total_created}
-                            </span>
+                            <span className={log.total_created > 0 ? 'font-medium text-green-600' : 'text-muted-foreground'}>{log.total_created}</span>
                           </TableCell>
                           <TableCell className="text-center">
-                            <span className={log.total_updated > 0 ? 'font-medium text-blue-600' : 'text-muted-foreground'}>
-                              {log.total_updated}
-                            </span>
+                            <span className={log.total_updated > 0 ? 'font-medium text-blue-600' : 'text-muted-foreground'}>{log.total_updated}</span>
                           </TableCell>
                           <TableCell className="text-center">
                             {log.error_count > 0 ? (

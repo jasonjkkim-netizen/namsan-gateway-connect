@@ -78,6 +78,8 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const direction = body.direction || "db_to_notion";
     const tables = body.tables || ["products", "members", "commissionRates", "investments", "distributions"];
+    // Optional per-table item ID filters: { products: ["id1"], investments: ["id2"], ... }
+    const filters: Record<string, string[]> = body.filters || {};
     const syncStartTime = Date.now();
 
     const notionHeaders = {
@@ -174,7 +176,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "products", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: products } = await supabase.from("investment_products").select("*");
+          let prodQuery = supabase.from("investment_products").select("*");
+          if (filters.products?.length) prodQuery = prodQuery.in("id", filters.products);
+          const { data: products } = await prodQuery;
           const notionPages = await queryNotionDb(NOTION_DB.products);
           const notionBySupabaseId = new Map(
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
@@ -291,7 +295,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "members", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: profiles } = await supabase.from("profiles").select("*").eq("is_deleted", false);
+          let profQuery = supabase.from("profiles").select("*").eq("is_deleted", false);
+          if (filters.members?.length) profQuery = profQuery.in("user_id", filters.members);
+          const { data: profiles } = await profQuery;
           const notionPages = await queryNotionDb(NOTION_DB.members);
           const notionByUserId = new Map(
             notionPages.map(p => [getText(p.properties["Supabase User ID"]), p.id])
@@ -367,7 +373,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "commissionRates", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: rates } = await supabase.from("commission_rates").select("*, investment_products(name_ko)");
+          let ratesQuery = supabase.from("commission_rates").select("*, investment_products(name_ko)");
+          if (filters.commissionRates?.length) ratesQuery = ratesQuery.in("id", filters.commissionRates);
+          const { data: rates } = await ratesQuery;
           const notionPages = await queryNotionDb(NOTION_DB.commissionRates);
           const notionBySupabaseId = new Map(
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
@@ -415,7 +423,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "investments", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: investments } = await supabase.from("client_investments").select("*");
+          let invQuery = supabase.from("client_investments").select("*");
+          if (filters.investments?.length) invQuery = invQuery.in("id", filters.investments);
+          const { data: investments } = await invQuery;
           const { data: profiles } = await supabase.from("profiles").select("user_id, full_name");
           const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
 
@@ -470,7 +480,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "distributions", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: dists } = await supabase.from("commission_distributions").select("*");
+          let distQuery = supabase.from("commission_distributions").select("*");
+          if (filters.distributions?.length) distQuery = distQuery.in("id", filters.distributions);
+          const { data: dists } = await distQuery;
           const { data: profiles } = await supabase.from("profiles").select("user_id, full_name");
           const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
 
