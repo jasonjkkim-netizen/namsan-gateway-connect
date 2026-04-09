@@ -300,29 +300,21 @@ Deno.serve(async (req: Request) => {
           const { data: profiles } = await profQuery;
           const notionPages = await queryNotionDb(NOTION_DB.members);
           const notionByUserId = new Map(
-            notionPages.map(p => [getText(p.properties["Supabase User ID"]), p.id])
+            notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
-
-          // Build parent name map
-          const parentMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
 
           for (const prof of profiles || []) {
             const props: any = {
               "Name": titleProp(prof.full_name),
+              "Name (KO)": richText(prof.full_name_ko || ""),
               "Email": emailProp(prof.email),
               "Phone": phoneProp(prof.phone),
               "Sales Role": selectProp(prof.sales_role),
               "Sales Level": numberProp(prof.sales_level),
               "Is Approved": checkboxProp(prof.is_approved === true),
               "Is Admin": checkboxProp(prof.is_admin === true),
-              "Address": richText(prof.address || ""),
-              "Preferred Currency": selectProp(prof.preferred_currency || "USD"),
-              "Parent Name": richText(prof.parent_id ? (parentMap.get(prof.parent_id) || "") : ""),
-              "Supabase User ID": richText(prof.user_id),
+              "Supabase ID": richText(prof.user_id),
             };
-            if (prof.birthday) {
-              props["Birthday"] = dateProp(prof.birthday);
-            }
 
             const existingPageId = notionByUserId.get(prof.user_id);
             if (existingPageId) {
@@ -345,17 +337,14 @@ Deno.serve(async (req: Request) => {
           const notionPages = await queryNotionDb(NOTION_DB.members);
           for (const page of notionPages) {
             const p = page.properties;
-            const userId = getText(p["Supabase User ID"]);
+            const userId = getText(p["Supabase ID"]);
             if (!userId) continue; // Skip pages without a linked Supabase user
 
             const profileData: any = {
               full_name: getText(p["Name"]),
+              full_name_ko: getText(p["Name (KO)"]) || null,
               phone: getText(p["Phone"]) || null,
-              address: getText(p["Address"]) || null,
-              preferred_currency: getText(p["Preferred Currency"]) || "USD",
             };
-            const birthday = getText(p["Birthday"]);
-            if (birthday) profileData.birthday = birthday;
 
             const { error } = await supabase.from("profiles").update(profileData).eq("user_id", userId);
             if (error) result.errors.push(`Update member ${userId}: ${error.message}`);
@@ -390,9 +379,8 @@ Deno.serve(async (req: Request) => {
               "Sales Level": numberProp(rate.sales_level),
               "Upfront Rate (%)": numberProp(rate.upfront_rate),
               "Performance Rate (%)": numberProp(rate.performance_rate),
-              "Min Rate": numberProp(rate.min_rate),
-              "Max Rate": numberProp(rate.max_rate),
-              "Is Override": checkboxProp(rate.is_override === true),
+              "Min Rate (%)": numberProp(rate.min_rate),
+              "Max Rate (%)": numberProp(rate.max_rate),
               "Supabase ID": richText(rate.id),
             };
 
@@ -437,21 +425,15 @@ Deno.serve(async (req: Request) => {
           for (const inv of investments || []) {
             const clientName = nameMap.get(inv.user_id) || "Unknown";
             const props: any = {
-              "Investment Label": titleProp(`${clientName} - ${inv.product_name_ko}`),
-              "Client Name": richText(clientName),
-              "Product Name (KO)": richText(inv.product_name_ko),
-              "Product Name (EN)": richText(inv.product_name_en),
+              "Client Name": titleProp(clientName),
+              "Product Name": richText(inv.product_name_ko),
               "Investment Amount": numberProp(inv.investment_amount),
               "Current Value": numberProp(inv.current_value),
               "Currency": selectProp(inv.invested_currency || "USD"),
               "Status": selectProp(inv.status || "active"),
-              "Expected Return (%)": numberProp(inv.expected_return),
-              "Realized Return (%)": numberProp(inv.realized_return_percent),
-              "Realized Return Amount": numberProp(inv.realized_return_amount),
               "Supabase ID": richText(inv.id),
             };
             if (inv.start_date) props["Start Date"] = dateProp(inv.start_date);
-            if (inv.maturity_date) props["Maturity Date"] = dateProp(inv.maturity_date);
 
             const existingPageId = notionBySupabaseId.get(inv.id);
             if (existingPageId) {
@@ -491,11 +473,18 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
+          // Get investment info for the Investment field
+          const investmentIds = [...new Set((dists || []).map(d => d.investment_id))];
+          const { data: invData } = await supabase.from("client_investments").select("id, product_name_ko").in("id", investmentIds);
+          const invNameMap = new Map((invData || []).map(i => [i.id, i.product_name_ko]));
+
           for (const dist of dists || []) {
             const recipient = nameMap.get(dist.to_user_id) || "Unknown";
+            const investmentLabel = invNameMap.get(dist.investment_id) || "";
             const props: any = {
               "Label": titleProp(`${recipient} - L${dist.layer}`),
-              "Recipient": richText(recipient),
+              "To Member": richText(recipient),
+              "Investment": richText(investmentLabel),
               "Layer": numberProp(dist.layer),
               "Upfront Amount": numberProp(dist.upfront_amount),
               "Performance Amount": numberProp(dist.performance_amount),
