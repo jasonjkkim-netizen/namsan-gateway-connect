@@ -423,7 +423,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "investments", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: investments } = await supabase.from("client_investments").select("*");
+          let invQuery = supabase.from("client_investments").select("*");
+          if (filters.investments?.length) invQuery = invQuery.in("id", filters.investments);
+          const { data: investments } = await invQuery;
           const { data: profiles } = await supabase.from("profiles").select("user_id, full_name");
           const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
 
