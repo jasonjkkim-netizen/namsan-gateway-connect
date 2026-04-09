@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -35,8 +35,15 @@ export function ProductPopup() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [open, setOpen] = useState(false);
 
+  const checkedRef = useRef(false);
+
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      checkedRef.current = false;
+      return;
+    }
+    if (checkedRef.current) return;
+    checkedRef.current = true;
 
     async function checkAndShowPopups() {
       const { data: allPopups } = await supabase

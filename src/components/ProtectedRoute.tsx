@@ -1,8 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,33 +8,11 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireApproval = true }: ProtectedRouteProps) {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, isAdmin, loading } = useAuth();
   const { t } = useLanguage();
   const location = useLocation();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [adminChecked, setAdminChecked] = useState(false);
 
-  // Check admin status from user_roles table (secure, not from profile)
-  useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      setAdminChecked(true);
-      return;
-    }
-
-    supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .maybeSingle()
-      .then(({ data }) => {
-        setIsAdmin(!!data);
-        setAdminChecked(true);
-      });
-  }, [user]);
-
-  if (loading || !adminChecked) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">

@@ -24,6 +24,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  isAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null; data: { user: User | null } | null }>;
@@ -39,14 +40,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchingRef = useRef<string | null>(null);
 
   const handleSignOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);
+    setIsAdmin(false);
+  }, []);
+
+  // Fetch profile and admin role in one batch — deduplicated by userId
+  const fetchProfileAndRole = useCallback(async (userId: string) => {
+    // Skip if already fetching for the same user
+    if (fetchingRef.current === userId) return;
+    fetchingRef.current = userId;
+
+    const [profileRes, roleRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle(),
+      supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle(),
+    ]);
+
+    setProfile(profileRes.data as Profile | null);
+    setIsAdmin(!!roleRes.data);
+    fetchingRef.current = null;
   }, []);
 
   // Reset inactivity timer
@@ -55,7 +84,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeoutRef.current);
     }
     
-    // Only set timeout if user is logged in
     if (user) {
       timeoutRef.current = setTimeout(() => {
         console.log('Session timeout due to inactivity');
@@ -80,12 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resetInactivityTimer();
     };
 
-    // Add activity listeners
     activityEvents.forEach(event => {
       document.addEventListener(event, handleActivity, { passive: true });
     });
 
-    // Start the initial timer
     resetInactivityTimer();
 
     return () => {
@@ -99,24 +125,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, resetInactivityTimer]);
 
   useEffect(() => {
+    let initialDone = false;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Fetch profile
-        setTimeout(async () => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          setProfile(profileData as Profile | null);
-        }, 0);
+        // Skip if initial getSession already handled this
+        if (!initialDone) return;
+        setTimeout(() => fetchProfileAndRole(session.user.id), 0);
       } else {
         setProfile(null);
+        setIsAdmin(false);
       }
       
       setLoading(false);
@@ -126,24 +148,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      initialDone = true;
       
       if (session?.user) {
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle()
-          .then(({ data: profileData }) => {
-            setProfile(profileData as Profile | null);
-            setLoading(false);
-          });
+        fetchProfileAndRole(session.user.id).then(() => {
+          setLoading(false);
+        });
       } else {
         setLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchProfileAndRole]);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -172,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [handleSignOut]);
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, isAdmin, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

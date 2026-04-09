@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,8 +31,15 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
 
+  const fetchedRef = useRef(false);
+
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      fetchedRef.current = false;
+      return;
+    }
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
     fetchNotifications();
 
     // Subscribe to realtime notifications
