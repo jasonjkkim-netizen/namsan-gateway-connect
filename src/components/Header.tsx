@@ -7,8 +7,6 @@ import { LogOut, Settings, BarChart3, ArrowLeft } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import { ConsultationButton } from './ConsultationButton';
 import logo from '@/assets/namsan-logo.png';
-import { ConsultationButton } from './ConsultationButton';
-import logo from '@/assets/namsan-logo.png';
 
 export function Header() {
   const { user, profile, isAdmin, signOut } = useAuth();
