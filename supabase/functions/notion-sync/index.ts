@@ -480,7 +480,9 @@ Deno.serve(async (req: Request) => {
       const result: SyncResult = { table: "distributions", created: 0, updated: 0, errors: [] };
       try {
         if (direction === "db_to_notion" || direction === "both") {
-          const { data: dists } = await supabase.from("commission_distributions").select("*");
+          let distQuery = supabase.from("commission_distributions").select("*");
+          if (filters.distributions?.length) distQuery = distQuery.in("id", filters.distributions);
+          const { data: dists } = await distQuery;
           const { data: profiles } = await supabase.from("profiles").select("user_id, full_name");
           const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
 
