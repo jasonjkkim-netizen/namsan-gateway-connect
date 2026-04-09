@@ -48,6 +48,7 @@ Deno.serve(async (req: Request) => {
     const expectedSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     let isAuthorized = false;
+    let triggeredByUserId: string | null = null;
     if (cronSecret === expectedSecret || internalSecret === expectedSecret) {
       isAuthorized = true;
     } else if (authHeader) {
@@ -57,6 +58,7 @@ Deno.serve(async (req: Request) => {
       } else {
         const { data: { user } } = await supabase.auth.getUser(token);
         if (user) {
+          triggeredByUserId = user.id;
           const { data: roles } = await supabase
             .from("user_roles")
             .select("role")
@@ -74,8 +76,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const direction = body.direction || "db_to_notion"; // db_to_notion | notion_to_db | both
+    const direction = body.direction || "db_to_notion";
     const tables = body.tables || ["products", "members", "commissionRates", "investments", "distributions"];
+    const syncStartTime = Date.now();
 
     const notionHeaders = {
       "Authorization": `Bearer ${NOTION_API_KEY}`,
@@ -511,6 +514,23 @@ Deno.serve(async (req: Request) => {
       }
       results.push(result);
     }
+
+    // Log sync results to DB
+    const totalCreated = results.reduce((s, r) => s + r.created, 0);
+    const totalUpdated = results.reduce((s, r) => s + r.updated, 0);
+    const errorCount = results.reduce((s, r) => s + r.errors.length, 0);
+    const durationMs = Date.now() - syncStartTime;
+
+    await supabase.from("notion_sync_log").insert({
+      direction,
+      tables,
+      results: JSON.parse(JSON.stringify(results)),
+      total_created: totalCreated,
+      total_updated: totalUpdated,
+      error_count: errorCount,
+      duration_ms: durationMs,
+      triggered_by: triggeredByUserId,
+    });
 
     return new Response(JSON.stringify({ success: true, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

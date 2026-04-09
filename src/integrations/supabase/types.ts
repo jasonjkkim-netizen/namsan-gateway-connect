@@ -948,6 +948,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notion_sync_log: {
+        Row: {
+          created_at: string
+          direction: string
+          duration_ms: number | null
+          error_count: number
+          id: string
+          results: Json
+          tables: string[]
+          total_created: number
+          total_updated: number
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          duration_ms?: number | null
+          error_count?: number
+          id?: string
+          results?: Json
+          tables?: string[]
+          total_created?: number
+          total_updated?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          duration_ms?: number | null
+          error_count?: number
+          id?: string
+          results?: Json
+          tables?: string[]
+          total_created?: number
+          total_updated?: number
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       popup_ads: {
         Row: {
           button_link: string | null
