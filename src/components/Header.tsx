@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -6,7 +5,8 @@ import { LanguageToggle } from './LanguageToggle';
 import { Button } from '@/components/ui/button';
 import { LogOut, Settings, BarChart3, ArrowLeft } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
-import { supabase } from '@/integrations/supabase/client';
+import { ConsultationButton } from './ConsultationButton';
+import logo from '@/assets/namsan-logo.png';
 import { ConsultationButton } from './ConsultationButton';
 import logo from '@/assets/namsan-logo.png';
 
