@@ -547,7 +547,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const r of reports || []) {
+          await processBatch(reports || [], 5, async (r: any) => {
             const props: any = {
               "Title (KO)": titleProp(r.title_ko),
               "Title (EN)": richText(r.title_en || ""),
@@ -576,7 +576,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
@@ -639,7 +639,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const post of posts || []) {
+          await processBatch(posts || [], 5, async (post: any) => {
             const props: any = {
               "Title (KO)": titleProp(post.title_ko),
               "Title (EN)": richText(post.title_en || ""),
@@ -668,7 +668,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
@@ -730,7 +730,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const vid of videos || []) {
+          await processBatch(videos || [], 5, async (vid: any) => {
             const props: any = {
               "Title (KO)": titleProp(vid.title_ko),
               "Title (EN)": richText(vid.title_en || ""),
@@ -757,7 +757,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
