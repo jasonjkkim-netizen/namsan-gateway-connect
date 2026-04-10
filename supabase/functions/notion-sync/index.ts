@@ -204,7 +204,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const prod of products || []) {
+          await processBatch(products || [], 5, async (prod: any) => {
             const props: any = {
               "Product Name (KO)": titleProp(prod.name_ko),
               "Product Name (EN)": richText(prod.name_en || ""),
@@ -241,7 +241,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
