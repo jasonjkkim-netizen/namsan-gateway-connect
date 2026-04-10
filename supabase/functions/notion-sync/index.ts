@@ -821,7 +821,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const vp of viewpoints || []) {
+          await processBatch(viewpoints || [], 5, async (vp: any) => {
             const props: any = {
               "Title (KO)": titleProp(vp.title_ko),
               "Title (EN)": richText(vp.title_en || ""),
@@ -847,7 +847,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
