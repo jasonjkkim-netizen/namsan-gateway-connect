@@ -183,6 +183,13 @@ Deno.serve(async (req: Request) => {
     function urlProp(val: string | null) {
       return { url: val || null };
     }
+    // Helper: process items in batches to avoid timeout
+    async function processBatch<T>(items: T[], batchSize: number, fn: (item: T) => Promise<void>) {
+      for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        await Promise.all(batch.map(fn));
+      }
+    }
 
     // ========== SYNC PRODUCTS ==========
     if (tables.includes("products")) {
@@ -814,7 +821,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const vp of viewpoints || []) {
+          await processBatch(viewpoints || [], 5, async (vp: any) => {
             const props: any = {
               "Title (KO)": titleProp(vp.title_ko),
               "Title (EN)": richText(vp.title_en || ""),
@@ -840,7 +847,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
