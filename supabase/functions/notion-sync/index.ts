@@ -322,7 +322,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const prof of profiles || []) {
+          await processBatch(profiles || [], 5, async (prof: any) => {
             const props: any = {
               "Name": titleProp(prof.full_name),
               "Name (KO)": richText(prof.full_name_ko || ""),
@@ -349,7 +349,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
