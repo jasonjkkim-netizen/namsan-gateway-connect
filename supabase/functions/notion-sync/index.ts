@@ -389,7 +389,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const rate of rates || []) {
+          await processBatch(rates || [], 5, async (rate: any) => {
             const prodName = (rate as any).investment_products?.name_ko || "";
             const props: any = {
               "Label": titleProp(`${prodName} - ${rate.sales_role} - L${rate.sales_level}`),
@@ -417,7 +417,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
       } catch (e) {
         result.errors.push(e.message);
