@@ -496,7 +496,7 @@ Deno.serve(async (req: Request) => {
           const { data: invData } = await supabase.from("client_investments").select("id, product_name_ko").in("id", investmentIds);
           const invNameMap = new Map((invData || []).map(i => [i.id, i.product_name_ko]));
 
-          for (const dist of dists || []) {
+          await processBatch(dists || [], 5, async (dist: any) => {
             const recipient = nameMap.get(dist.to_user_id) || "Unknown";
             const investmentLabel = invNameMap.get(dist.investment_id) || "";
             const props: any = {
@@ -526,7 +526,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
       } catch (e) {
         result.errors.push(e.message);
