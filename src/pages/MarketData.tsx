@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw, Newspaper, Star, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, PlayCircle, TrendingUp, TrendingDown, ExternalLink, BookOpen, RefreshCw, Newspaper, Star, MessageSquare, Eye } from 'lucide-react';
 import { MarketOverviewSection } from '@/components/market/MarketOverviewSection';
 import { RiskReturnMatrix } from '@/components/market/RiskReturnMatrix';
 import { WeeklyStockPicksTable } from '@/components/market/WeeklyStockPicksTable';
@@ -54,6 +54,7 @@ export default function MarketData() {
 
   const sections = [
     { path: '/market-data', label: t('marketData'), icon: TrendingUp, active: true },
+    { path: '#namsan-viewpoint', label: language === 'ko' ? '남산 뷰 포인트' : 'Namsan View Point', icon: Eye, isAnchor: true },
     { path: '/flagship', label: language === 'ko' ? '남산 포트폴리오' : 'Namsan Portfolio', icon: Star },
     { path: '/news', label: language === 'ko' ? '뉴스' : 'News', icon: Newspaper },
     { path: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
@@ -123,8 +124,15 @@ export default function MarketData() {
               <Button
                 key={section.path}
                 variant={section.active ? "default" : "outline"}
-                onClick={() => !section.active && navigate(section.path)}
-                className={`flex items-center gap-2 ${section.active ? 'pointer-events-none' : ''}`}
+                onClick={() => {
+                  if (section.active) return;
+                  if ((section as any).isAnchor) {
+                    document.getElementById('namsan-viewpoint')?.scrollIntoView({ behavior: 'smooth' });
+                  } else {
+                    navigate(section.path);
+                  }
+                }}
+                className="flex items-center gap-2"
               >
                 <section.icon className="h-4 w-4" />
                 {section.label}
@@ -143,7 +151,9 @@ export default function MarketData() {
         <InterestNewsSection language={language} />
 
         {/* Namsan View Point */}
-        <NamsanViewpointSection language={language} />
+        <div id="namsan-viewpoint">
+          <NamsanViewpointSection language={language} />
+        </div>
 
         {/* Weekly Stock Picks Table */}
         <WeeklyStockPicksTable language={language} />
