@@ -18,6 +18,10 @@ const SYNC_TABLES = [
   { key: 'commissionRates', labelKo: '커미션 요율', labelEn: 'Commission Rates' },
   { key: 'investments', labelKo: '투자 내역', labelEn: 'Investments' },
   { key: 'distributions', labelKo: '커미션 분배', labelEn: 'Distributions' },
+  { key: 'research', labelKo: '리서치', labelEn: 'Research' },
+  { key: 'blog', labelKo: '블로그', labelEn: 'Blog' },
+  { key: 'videos', labelKo: '영상', labelEn: 'Videos' },
+  { key: 'viewpoints', labelKo: '뷰포인트', labelEn: 'Viewpoints' },
 ];
 
 interface SyncResult {
@@ -121,6 +125,18 @@ export default function AdminNotionSync() {
           label: `${nameMap.get(d.to_user_id) || '?'} L${d.layer} (${d.currency} ${Number(d.upfront_amount || 0).toLocaleString()})`,
           groupLabel: invMap.get(d.investment_id) || 'Unknown',
         }));
+      } else if (tableKey === 'research') {
+        const { data } = await supabase.from('research_reports').select('id, title_ko, title_en, category').order('publication_date', { ascending: false });
+        items = (data || []).map(r => ({ id: r.id, label: language === 'ko' ? r.title_ko : r.title_en, groupLabel: r.category }));
+      } else if (tableKey === 'blog') {
+        const { data } = await supabase.from('blog_posts').select('id, title_ko, title_en, author').order('published_at', { ascending: false });
+        items = (data || []).map(b => ({ id: b.id, label: language === 'ko' ? b.title_ko : b.title_en, groupLabel: b.author || 'Namsan Partners' }));
+      } else if (tableKey === 'videos') {
+        const { data } = await supabase.from('videos').select('id, title_ko, title_en, category').order('created_at', { ascending: false });
+        items = (data || []).map(v => ({ id: v.id, label: language === 'ko' ? v.title_ko : v.title_en, groupLabel: v.category }));
+      } else if (tableKey === 'viewpoints') {
+        const { data } = await supabase.from('namsan_viewpoints').select('id, title_ko, title_en').order('display_order');
+        items = (data || []).map(v => ({ id: v.id, label: language === 'ko' ? v.title_ko : v.title_en }));
       }
     } catch (e) {
       console.error('Failed to fetch items for', tableKey, e);
