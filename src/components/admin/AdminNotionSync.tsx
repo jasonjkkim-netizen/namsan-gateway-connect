@@ -18,6 +18,10 @@ const SYNC_TABLES = [
   { key: 'commissionRates', labelKo: '커미션 요율', labelEn: 'Commission Rates' },
   { key: 'investments', labelKo: '투자 내역', labelEn: 'Investments' },
   { key: 'distributions', labelKo: '커미션 분배', labelEn: 'Distributions' },
+  { key: 'research', labelKo: '리서치', labelEn: 'Research' },
+  { key: 'blog', labelKo: '블로그', labelEn: 'Blog' },
+  { key: 'videos', labelKo: '영상', labelEn: 'Videos' },
+  { key: 'viewpoints', labelKo: '뷰포인트', labelEn: 'Viewpoints' },
 ];
 
 interface SyncResult {
