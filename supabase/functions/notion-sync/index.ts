@@ -204,7 +204,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const prod of products || []) {
+          await processBatch(products || [], 5, async (prod: any) => {
             const props: any = {
               "Product Name (KO)": titleProp(prod.name_ko),
               "Product Name (EN)": richText(prod.name_en || ""),
@@ -241,7 +241,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
@@ -322,7 +322,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const prof of profiles || []) {
+          await processBatch(profiles || [], 5, async (prof: any) => {
             const props: any = {
               "Name": titleProp(prof.full_name),
               "Name (KO)": richText(prof.full_name_ko || ""),
@@ -349,7 +349,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
@@ -389,7 +389,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const rate of rates || []) {
+          await processBatch(rates || [], 5, async (rate: any) => {
             const prodName = (rate as any).investment_products?.name_ko || "";
             const props: any = {
               "Label": titleProp(`${prodName} - ${rate.sales_role} - L${rate.sales_level}`),
@@ -417,7 +417,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
       } catch (e) {
         result.errors.push(e.message);
@@ -441,7 +441,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const inv of investments || []) {
+          await processBatch(investments || [], 5, async (inv: any) => {
             const clientName = nameMap.get(inv.user_id) || "Unknown";
             const props: any = {
               "Client Name": titleProp(clientName),
@@ -468,7 +468,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
       } catch (e) {
         result.errors.push(e.message);
@@ -496,7 +496,7 @@ Deno.serve(async (req: Request) => {
           const { data: invData } = await supabase.from("client_investments").select("id, product_name_ko").in("id", investmentIds);
           const invNameMap = new Map((invData || []).map(i => [i.id, i.product_name_ko]));
 
-          for (const dist of dists || []) {
+          await processBatch(dists || [], 5, async (dist: any) => {
             const recipient = nameMap.get(dist.to_user_id) || "Unknown";
             const investmentLabel = invNameMap.get(dist.investment_id) || "";
             const props: any = {
@@ -526,7 +526,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
       } catch (e) {
         result.errors.push(e.message);
@@ -547,7 +547,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const r of reports || []) {
+          await processBatch(reports || [], 5, async (r: any) => {
             const props: any = {
               "Title (KO)": titleProp(r.title_ko),
               "Title (EN)": richText(r.title_en || ""),
@@ -576,7 +576,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
@@ -639,7 +639,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const post of posts || []) {
+          await processBatch(posts || [], 5, async (post: any) => {
             const props: any = {
               "Title (KO)": titleProp(post.title_ko),
               "Title (EN)": richText(post.title_en || ""),
@@ -668,7 +668,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
@@ -730,7 +730,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const vid of videos || []) {
+          await processBatch(videos || [], 5, async (vid: any) => {
             const props: any = {
               "Title (KO)": titleProp(vid.title_ko),
               "Title (EN)": richText(vid.title_en || ""),
@@ -757,7 +757,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
 
         if (direction === "notion_to_db" || direction === "both") {
