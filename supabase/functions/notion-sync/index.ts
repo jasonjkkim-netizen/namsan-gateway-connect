@@ -441,7 +441,7 @@ Deno.serve(async (req: Request) => {
             notionPages.map(p => [getText(p.properties["Supabase ID"]), p.id])
           );
 
-          for (const inv of investments || []) {
+          await processBatch(investments || [], 5, async (inv: any) => {
             const clientName = nameMap.get(inv.user_id) || "Unknown";
             const props: any = {
               "Client Name": titleProp(clientName),
@@ -468,7 +468,7 @@ Deno.serve(async (req: Request) => {
               });
               result.created++;
             }
-          }
+          });
         }
       } catch (e) {
         result.errors.push(e.message);
