@@ -183,6 +183,13 @@ Deno.serve(async (req: Request) => {
     function urlProp(val: string | null) {
       return { url: val || null };
     }
+    // Helper: process items in batches to avoid timeout
+    async function processBatch<T>(items: T[], batchSize: number, fn: (item: T) => Promise<void>) {
+      for (let i = 0; i < items.length; i += batchSize) {
+        const batch = items.slice(i, i + batchSize);
+        await Promise.all(batch.map(fn));
+      }
+    }
 
     // ========== SYNC PRODUCTS ==========
     if (tables.includes("products")) {
