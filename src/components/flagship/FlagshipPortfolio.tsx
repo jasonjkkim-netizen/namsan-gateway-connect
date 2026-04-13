@@ -378,7 +378,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       </div>
 
       {/* Charts side by side below table */}
-      <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} isCustom={!activePresetId} />
+      <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} isCustom={!activePresetId} onPieClick={activePresetId && PRESET_PRODUCT_MAP[activePresetId] ? () => navigate(PRESET_PRODUCT_MAP[activePresetId!]) : undefined} />
 
       {/* AI Analysis & CIO Commentary */}
       <PortfolioAnalysis items={items} groups={groups} onAnalysisChange={setAiAnalysis} />
