@@ -72,7 +72,7 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
           </span>
         )}
         <h3 className="text-sm font-semibold mb-3">{ko ? '자산 배분' : 'Asset Allocation'}</h3>
-        <div className="h-48">
+        <div className="h-48 relative">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart style={onPieClick ? { cursor: 'pointer' } : undefined} onClick={onPieClick}>
               <Pie
@@ -93,6 +93,13 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
               <Tooltip content={<CustomTooltip />} />
             </PieChart>
           </ResponsiveContainer>
+          {onPieClick && (
+            <div className="absolute inset-0 flex items-end justify-center pb-1 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <span className="bg-foreground/80 text-background text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm">
+                {ko ? '클릭하여 상품 보기' : 'Click to view product'}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap justify-center gap-3 mt-2">
           {pieData.map((d, i) => (
