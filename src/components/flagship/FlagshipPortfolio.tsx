@@ -29,6 +29,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const { language } = useLanguage();
   const { items, loading } = usePortfolioData();
   const ko = language === 'ko';
+  const [activePresetId, setActivePresetId] = useState<'low' | 'mid' | 'high'>('mid');
 
   // Calculate initial weights from data
   const initialWeights = useMemo(() => {
