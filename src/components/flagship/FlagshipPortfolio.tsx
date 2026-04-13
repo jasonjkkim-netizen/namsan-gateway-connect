@@ -29,7 +29,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const { language } = useLanguage();
   const { items, loading } = usePortfolioData();
   const ko = language === 'ko';
-  const [activePresetId, setActivePresetId] = useState<'low' | 'mid' | 'high'>('mid');
+  const [activePresetId, setActivePresetId] = useState<'low' | 'mid' | 'high' | null>('mid');
 
   // Sync simulator weights when preset changes
   const handlePresetChange = (id: 'low' | 'mid' | 'high') => {
