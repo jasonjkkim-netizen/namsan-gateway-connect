@@ -148,8 +148,24 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
           {ko ? 'Namsan Flagship 투자 현황' : 'Namsan Flagship Investment Status'}
         </h2>
         
-        {/* Date Picker */}
-        <div className="flex items-center justify-center gap-2 mt-4">
+        {/* Preset Toggle + Date Picker */}
+        <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+          <div className="flex rounded-md border border-border overflow-hidden">
+            {PRESETS.map(p => (
+              <button
+                key={p.id}
+                onClick={() => setActivePresetId(p.id)}
+                className={cn(
+                  "px-3 py-1.5 text-xs font-medium transition-colors",
+                  activePresetId === p.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {ko ? p.nameKo : p.nameEn}
+              </button>
+            ))}
+          </div>
           <span className="text-sm text-muted-foreground">
             {ko ? '기준일:' : 'Base Date:'}
           </span>
@@ -307,7 +323,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       </div>
 
       {/* Charts side by side below table */}
-      <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide baseDate={baseDate} />
+      <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} />
 
       {/* AI Analysis & CIO Commentary */}
       <PortfolioAnalysis items={items} groups={groups} onAnalysisChange={setAiAnalysis} />
