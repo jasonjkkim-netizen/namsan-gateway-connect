@@ -73,13 +73,16 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
 
   if (items.length === 0) return null;
 
-  // Charts-only mode for MarketData page
+  // Charts-only mode for MarketData page — use Balanced preset weights
+  const balancedPreset = PRESETS.find(p => p.id === 'mid')!;
+  const balancedWeights = balancedPreset.groupWeights;
+
   if (chartsOnly) {
     return (
       <div className="animate-fade-in">
         <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
           <h2 className="font-serif font-medium text-sm">
-            {ko ? 'Namsan Flagship 포트폴리오' : 'Namsan Flagship Portfolio'}
+            {ko ? 'Namsan Flagship 포트폴리오 (균형형)' : 'Namsan Flagship Portfolio (Balanced)'}
           </h2>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{ko ? '기준일:' : 'Base:'}</span>
@@ -103,7 +106,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             </Popover>
           </div>
         </div>
-        <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide baseDate={baseDate} />
+        <FlagshipCharts items={items} groups={groups} groupWeights={balancedWeights} sideBySide baseDate={baseDate} />
       </div>
     );
   }
