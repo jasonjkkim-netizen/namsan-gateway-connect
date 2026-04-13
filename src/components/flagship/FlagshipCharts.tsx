@@ -73,7 +73,7 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
         <h3 className="text-sm font-semibold mb-3">{ko ? '자산 배분' : 'Asset Allocation'}</h3>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart style={onPieClick ? { cursor: 'pointer' } : undefined} onClick={onPieClick}>
               <Pie
                 data={pieData}
                 cx="50%"
@@ -86,7 +86,7 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
                 labelLine={false}
               >
                 {pieData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} strokeWidth={0} />
+                  <Cell key={i} fill={entry.color} strokeWidth={0} style={onPieClick ? { cursor: 'pointer' } : undefined} />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
