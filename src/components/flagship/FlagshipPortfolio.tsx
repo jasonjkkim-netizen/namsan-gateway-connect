@@ -96,8 +96,8 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
 
   if (items.length === 0) return null;
 
-  const activePreset = PRESETS.find(p => p.id === activePresetId)!;
-  const activeWeights = activePreset.groupWeights;
+  const activePreset = PRESETS.find(p => p.id === activePresetId) || PRESETS.find(p => p.id === 'mid')!;
+  const activeWeights = activePresetId ? activePreset.groupWeights : groupWeights;
 
   if (chartsOnly) {
     const presetLabel = ko ? activePreset.nameKo : activePreset.nameEn;
