@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ko as koLocale } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -18,8 +18,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { TrendingUp, TrendingDown, Minus, FileText, CalendarIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, FileText, CalendarIcon, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Preset ID → product page mapping
+const PRESET_PRODUCT_MAP: Record<string, string> = {
+  low: '/products/eaf3a6bc-c79b-4a97-a101-e31714ac5790',   // 안전형
+  mid: '/products/197907f2-57d8-4037-ab69-7758a116d379',   // 균형형
+  high: '/products/92e686ff-9e13-4575-ab62-7f18cc8a9fc3',  // 성장형/공격형
+};
 
 interface FlagshipPortfolioProps {
   chartsOnly?: boolean;
