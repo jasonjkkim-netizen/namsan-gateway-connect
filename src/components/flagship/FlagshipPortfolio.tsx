@@ -158,7 +158,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             </Popover>
           </div>
         </div>
-        <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} />
+        <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} isCustom={!activePresetId} />
         {activePresetId && PRESET_PRODUCT_MAP[activePresetId] && (
           <div className="mt-3 flex justify-end">
             <Button
@@ -378,7 +378,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       </div>
 
       {/* Charts side by side below table */}
-      <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} />
+      <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} isCustom={!activePresetId} />
 
       {/* AI Analysis & CIO Commentary */}
       <PortfolioAnalysis items={items} groups={groups} onAnalysisChange={setAiAnalysis} />
