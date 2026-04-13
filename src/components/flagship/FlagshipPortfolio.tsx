@@ -78,13 +78,30 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const activeWeights = activePreset.groupWeights;
 
   if (chartsOnly) {
+    const presetLabel = ko ? activePreset.nameKo : activePreset.nameEn;
     return (
       <div className="animate-fade-in">
         <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
           <h2 className="font-serif font-medium text-sm">
-            {ko ? 'Namsan Flagship 포트폴리오 (균형형)' : 'Namsan Flagship Portfolio (Balanced)'}
+            {ko ? `Namsan Flagship 포트폴리오 (${presetLabel})` : `Namsan Flagship Portfolio (${presetLabel})`}
           </h2>
           <div className="flex items-center gap-2">
+            <div className="flex rounded-md border border-border overflow-hidden">
+              {PRESETS.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => setActivePresetId(p.id)}
+                  className={cn(
+                    "px-2.5 py-1 text-xs font-medium transition-colors",
+                    activePresetId === p.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {ko ? p.nameKo : p.nameEn}
+                </button>
+              ))}
+            </div>
             <span className="text-xs text-muted-foreground">{ko ? '기준일:' : 'Base:'}</span>
             <Popover>
               <PopoverTrigger asChild>
@@ -106,7 +123,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             </Popover>
           </div>
         </div>
-        <FlagshipCharts items={items} groups={groups} groupWeights={balancedWeights} sideBySide baseDate={baseDate} />
+        <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} />
       </div>
     );
   }
