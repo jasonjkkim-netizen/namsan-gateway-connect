@@ -193,6 +193,11 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
               </button>
             ))}
           </div>
+          {!activePresetId && (
+            <Badge variant="outline" className="text-xs border-dashed border-accent text-accent animate-fade-in">
+              {ko ? '커스텀' : 'Custom'}
+            </Badge>
+          )}
           <span className="text-sm text-muted-foreground">
             {ko ? '기준일:' : 'Base Date:'}
           </span>
