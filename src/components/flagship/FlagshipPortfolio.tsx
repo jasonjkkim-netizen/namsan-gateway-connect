@@ -99,7 +99,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
               {PRESETS.map(p => (
                 <button
                   key={p.id}
-                  onClick={() => setActivePresetId(p.id)}
+                  onClick={() => handlePresetChange(p.id)}
                   className={cn(
                     "px-2.5 py-1 text-xs font-medium transition-colors",
                     activePresetId === p.id
@@ -163,7 +163,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             {PRESETS.map(p => (
               <button
                 key={p.id}
-                onClick={() => setActivePresetId(p.id)}
+                onClick={() => handlePresetChange(p.id)}
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium transition-colors",
                   activePresetId === p.id
