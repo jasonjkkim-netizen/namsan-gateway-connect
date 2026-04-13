@@ -31,6 +31,15 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const ko = language === 'ko';
   const [activePresetId, setActivePresetId] = useState<'low' | 'mid' | 'high'>('mid');
 
+  // Sync simulator weights when preset changes
+  const handlePresetChange = (id: 'low' | 'mid' | 'high') => {
+    setActivePresetId(id);
+    const preset = PRESETS.find(p => p.id === id);
+    if (preset) {
+      setGroupWeights(preset.groupWeights);
+    }
+  };
+
   // Calculate initial weights from data
   const initialWeights = useMemo(() => {
     if (items.length === 0) return { shares: 50, bonds: 40, others: 10, cash: 0 };
@@ -90,7 +99,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
               {PRESETS.map(p => (
                 <button
                   key={p.id}
-                  onClick={() => setActivePresetId(p.id)}
+                  onClick={() => handlePresetChange(p.id)}
                   className={cn(
                     "px-2.5 py-1 text-xs font-medium transition-colors",
                     activePresetId === p.id
@@ -154,7 +163,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             {PRESETS.map(p => (
               <button
                 key={p.id}
-                onClick={() => setActivePresetId(p.id)}
+                onClick={() => handlePresetChange(p.id)}
                 className={cn(
                   "px-3 py-1.5 text-xs font-medium transition-colors",
                   activePresetId === p.id
