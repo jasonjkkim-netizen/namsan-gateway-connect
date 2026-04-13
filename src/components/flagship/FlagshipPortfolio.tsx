@@ -29,6 +29,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const { language } = useLanguage();
   const { items, loading } = usePortfolioData();
   const ko = language === 'ko';
+  const [activePresetId, setActivePresetId] = useState<'low' | 'mid' | 'high'>('mid');
 
   // Calculate initial weights from data
   const initialWeights = useMemo(() => {
@@ -73,18 +74,34 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
 
   if (items.length === 0) return null;
 
-  // Charts-only mode for MarketData page — use Balanced preset weights
-  const balancedPreset = PRESETS.find(p => p.id === 'mid')!;
-  const balancedWeights = balancedPreset.groupWeights;
+  const activePreset = PRESETS.find(p => p.id === activePresetId)!;
+  const activeWeights = activePreset.groupWeights;
 
   if (chartsOnly) {
+    const presetLabel = ko ? activePreset.nameKo : activePreset.nameEn;
     return (
       <div className="animate-fade-in">
         <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
           <h2 className="font-serif font-medium text-sm">
-            {ko ? 'Namsan Flagship 포트폴리오 (균형형)' : 'Namsan Flagship Portfolio (Balanced)'}
+            {ko ? `Namsan Flagship 포트폴리오 (${presetLabel})` : `Namsan Flagship Portfolio (${presetLabel})`}
           </h2>
           <div className="flex items-center gap-2">
+            <div className="flex rounded-md border border-border overflow-hidden">
+              {PRESETS.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => setActivePresetId(p.id)}
+                  className={cn(
+                    "px-2.5 py-1 text-xs font-medium transition-colors",
+                    activePresetId === p.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {ko ? p.nameKo : p.nameEn}
+                </button>
+              ))}
+            </div>
             <span className="text-xs text-muted-foreground">{ko ? '기준일:' : 'Base:'}</span>
             <Popover>
               <PopoverTrigger asChild>
@@ -106,7 +123,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             </Popover>
           </div>
         </div>
-        <FlagshipCharts items={items} groups={groups} groupWeights={balancedWeights} sideBySide baseDate={baseDate} />
+        <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} />
       </div>
     );
   }
