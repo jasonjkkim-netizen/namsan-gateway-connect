@@ -35,6 +35,7 @@ interface FlagshipPortfolioProps {
 export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps) {
   const { language } = useLanguage();
   const { items, loading } = usePortfolioData();
+  const navigate = useNavigate();
   const ko = language === 'ko';
   const [activePresetId, setActivePresetId] = useState<'low' | 'mid' | 'high' | null>('mid');
 
