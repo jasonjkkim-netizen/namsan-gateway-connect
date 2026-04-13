@@ -17,9 +17,10 @@ interface Props {
   groupWeights: Record<GroupId, number>;
   sideBySide?: boolean;
   baseDate?: Date;
+  isCustom?: boolean;
 }
 
-export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false, baseDate }: Props) {
+export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false, baseDate, isCustom = false }: Props) {
   const { language } = useLanguage();
   const ko = language === 'ko';
 
