@@ -159,6 +159,21 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
           </div>
         </div>
         <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} />
+        {activePresetId && PRESET_PRODUCT_MAP[activePresetId] && (
+          <div className="mt-3 flex justify-end">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={() => navigate(PRESET_PRODUCT_MAP[activePresetId!])}
+            >
+              <ExternalLink className="h-3 w-3" />
+              {ko
+                ? `${activePreset.nameKo} 상품 보기`
+                : `View ${activePreset.nameEn} Product`}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
