@@ -158,7 +158,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
             </Popover>
           </div>
         </div>
-        <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} isCustom={!activePresetId} />
+        <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} isCustom={!activePresetId} onPieClick={activePresetId && PRESET_PRODUCT_MAP[activePresetId] ? () => navigate(PRESET_PRODUCT_MAP[activePresetId!]) : undefined} />
         {activePresetId && PRESET_PRODUCT_MAP[activePresetId] && (
           <div className="mt-3 flex justify-end">
             <Button
