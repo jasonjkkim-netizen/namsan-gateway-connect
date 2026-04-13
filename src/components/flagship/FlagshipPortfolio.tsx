@@ -74,9 +74,8 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
 
   if (items.length === 0) return null;
 
-  // Charts-only mode for MarketData page — use Balanced preset weights
-  const balancedPreset = PRESETS.find(p => p.id === 'mid')!;
-  const balancedWeights = balancedPreset.groupWeights;
+  const activePreset = PRESETS.find(p => p.id === activePresetId)!;
+  const activeWeights = activePreset.groupWeights;
 
   if (chartsOnly) {
     return (
