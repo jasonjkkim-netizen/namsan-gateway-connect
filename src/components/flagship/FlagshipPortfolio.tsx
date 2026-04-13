@@ -100,7 +100,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const activeWeights = activePresetId ? activePreset.groupWeights : groupWeights;
 
   if (chartsOnly) {
-    const presetLabel = ko ? activePreset.nameKo : activePreset.nameEn;
+    const presetLabel = activePresetId ? (ko ? activePreset.nameKo : activePreset.nameEn) : (ko ? '커스텀' : 'Custom');
     return (
       <div className="animate-fade-in">
         <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
