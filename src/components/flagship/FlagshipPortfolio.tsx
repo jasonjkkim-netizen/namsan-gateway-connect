@@ -323,7 +323,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
       </div>
 
       {/* Charts side by side below table */}
-      <FlagshipCharts items={items} groups={groups} groupWeights={groupWeights} sideBySide baseDate={baseDate} />
+      <FlagshipCharts items={items} groups={groups} groupWeights={activeWeights} sideBySide baseDate={baseDate} />
 
       {/* AI Analysis & CIO Commentary */}
       <PortfolioAnalysis items={items} groups={groups} onAnalysisChange={setAiAnalysis} />
