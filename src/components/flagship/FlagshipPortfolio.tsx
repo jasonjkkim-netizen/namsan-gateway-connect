@@ -124,6 +124,11 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
                 </button>
               ))}
             </div>
+            {!activePresetId && (
+              <Badge variant="outline" className="text-[10px] border-dashed border-accent text-accent animate-fade-in">
+                {ko ? '커스텀' : 'Custom'}
+              </Badge>
+            )}
             <span className="text-xs text-muted-foreground">{ko ? '기준일:' : 'Base:'}</span>
             <Popover>
               <PopoverTrigger asChild>
