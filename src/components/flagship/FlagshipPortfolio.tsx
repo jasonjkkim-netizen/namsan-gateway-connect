@@ -40,6 +40,19 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
     }
   };
 
+  // Wrap setGroupWeights to detect manual (non-preset) changes
+  const handleManualWeightChange = (w: Record<GroupId, number>) => {
+    setGroupWeights(w);
+    // Check if the new weights match any preset
+    const matchingPreset = PRESETS.find(p => {
+      const pw = p.groupWeights;
+      return (Object.keys(pw) as GroupId[]).every(
+        k => Math.abs((pw[k] || 0) - (w[k] || 0)) < 0.5
+      );
+    });
+    setActivePresetId(matchingPreset ? matchingPreset.id : null);
+  };
+
   // Calculate initial weights from data
   const initialWeights = useMemo(() => {
     if (items.length === 0) return { shares: 50, bonds: 40, others: 10, cash: 0 };
