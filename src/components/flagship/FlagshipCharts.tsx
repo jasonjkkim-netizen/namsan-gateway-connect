@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { GroupId, GroupData, PortfolioItem, GROUP_META } from './portfolioTypes';
 import { buildReturnSeries } from './portfolioUtils';
+import { cn } from '@/lib/utils';
 
 const GROUP_COLORS: Record<string, string> = {
   shares: 'hsl(var(--accent))',
