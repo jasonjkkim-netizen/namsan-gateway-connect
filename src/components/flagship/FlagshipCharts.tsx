@@ -103,7 +103,17 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
       </div>
 
       {/* Line Chart */}
-      <div className="bg-background rounded-lg border border-border p-4">
+      <div className={cn(
+        "rounded-lg border border-border p-4 relative overflow-hidden transition-colors",
+        isCustom
+          ? "bg-gradient-to-br from-primary/5 via-background to-accent/5 border-dashed border-accent/30"
+          : "bg-background"
+      )}>
+        {isCustom && (
+          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[3rem] font-bold text-muted-foreground/[0.06] pointer-events-none select-none tracking-widest uppercase rotate-[-12deg]">
+            CUSTOM
+          </span>
+        )}
         <div className="mb-3">
           <h3 className="text-sm font-semibold">{ko ? '포트폴리오 수익률 추이' : 'Portfolio Performance'}</h3>
           <p className="text-[10px] text-muted-foreground italic">{ko ? '(수수료·세금 차감전)' : '(Before Fees & Tax)'}</p>
