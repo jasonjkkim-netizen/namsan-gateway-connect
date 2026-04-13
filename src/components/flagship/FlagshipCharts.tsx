@@ -60,10 +60,11 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
     <div className={containerClass}>
       {/* Pie Chart */}
       <div className={cn(
-        "rounded-lg border border-border p-4 relative overflow-hidden transition-colors",
+        "rounded-lg border border-border p-4 relative overflow-hidden transition-all duration-200",
         isCustom
           ? "bg-gradient-to-br from-accent/5 via-background to-primary/5 border-dashed border-accent/30"
-          : "bg-background"
+          : "bg-background",
+        onPieClick && "hover:shadow-lg hover:border-accent/50 hover:scale-[1.01] group"
       )}>
         {isCustom && (
           <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[3rem] font-bold text-muted-foreground/[0.06] pointer-events-none select-none tracking-widest uppercase rotate-[-12deg]">
