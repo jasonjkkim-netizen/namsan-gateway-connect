@@ -29,7 +29,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
   const { language } = useLanguage();
   const { items, loading } = usePortfolioData();
   const ko = language === 'ko';
-  const [activePresetId, setActivePresetId] = useState<'low' | 'mid' | 'high'>('mid');
+  const [activePresetId, setActivePresetId] = useState<'low' | 'mid' | 'high' | null>('mid');
 
   // Sync simulator weights when preset changes
   const handlePresetChange = (id: 'low' | 'mid' | 'high') => {
@@ -38,6 +38,19 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
     if (preset) {
       setGroupWeights(preset.groupWeights);
     }
+  };
+
+  // Wrap setGroupWeights to detect manual (non-preset) changes
+  const handleManualWeightChange = (w: Record<GroupId, number>) => {
+    setGroupWeights(w);
+    // Check if the new weights match any preset
+    const matchingPreset = PRESETS.find(p => {
+      const pw = p.groupWeights;
+      return (Object.keys(pw) as GroupId[]).every(
+        k => Math.abs((pw[k] || 0) - (w[k] || 0)) < 0.5
+      );
+    });
+    setActivePresetId(matchingPreset ? matchingPreset.id : null);
   };
 
   // Calculate initial weights from data
@@ -83,8 +96,8 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
 
   if (items.length === 0) return null;
 
-  const activePreset = PRESETS.find(p => p.id === activePresetId)!;
-  const activeWeights = activePreset.groupWeights;
+  const activePreset = PRESETS.find(p => p.id === activePresetId) || PRESETS.find(p => p.id === 'mid')!;
+  const activeWeights = activePresetId ? activePreset.groupWeights : groupWeights;
 
   if (chartsOnly) {
     const presetLabel = ko ? activePreset.nameKo : activePreset.nameEn;
@@ -343,7 +356,7 @@ export function FlagshipPortfolio({ chartsOnly = false }: FlagshipPortfolioProps
         items={items}
         groups={groups}
         groupWeights={groupWeights}
-        setGroupWeights={setGroupWeights}
+        setGroupWeights={handleManualWeightChange}
         baseDate={baseDate}
       />
 
