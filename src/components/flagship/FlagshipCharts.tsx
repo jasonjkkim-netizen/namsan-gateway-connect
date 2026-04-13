@@ -57,7 +57,17 @@ export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false
   return (
     <div className={containerClass}>
       {/* Pie Chart */}
-      <div className="bg-background rounded-lg border border-border p-4">
+      <div className={cn(
+        "rounded-lg border border-border p-4 relative overflow-hidden transition-colors",
+        isCustom
+          ? "bg-gradient-to-br from-accent/5 via-background to-primary/5 border-dashed border-accent/30"
+          : "bg-background"
+      )}>
+        {isCustom && (
+          <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[3rem] font-bold text-muted-foreground/[0.06] pointer-events-none select-none tracking-widest uppercase rotate-[-12deg]">
+            CUSTOM
+          </span>
+        )}
         <h3 className="text-sm font-semibold mb-3">{ko ? '자산 배분' : 'Asset Allocation'}</h3>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
