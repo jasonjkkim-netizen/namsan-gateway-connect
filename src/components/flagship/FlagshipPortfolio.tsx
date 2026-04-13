@@ -4,7 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { ko as koLocale } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePortfolioData } from './usePortfolioData';
-import { GroupId, GROUP_META, BASE_DATE } from './portfolioTypes';
+import { GroupId, GROUP_META, BASE_DATE, PRESETS } from './portfolioTypes';
 import { buildGroups, calcItemReturn, formatPct } from './portfolioUtils';
 import { FlagshipCharts } from './FlagshipCharts';
 import { FlagshipSimulator } from './FlagshipSimulator';
