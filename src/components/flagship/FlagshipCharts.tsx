@@ -19,9 +19,10 @@ interface Props {
   sideBySide?: boolean;
   baseDate?: Date;
   isCustom?: boolean;
+  onPieClick?: () => void;
 }
 
-export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false, baseDate, isCustom = false }: Props) {
+export function FlagshipCharts({ items, groups, groupWeights, sideBySide = false, baseDate, isCustom = false, onPieClick }: Props) {
   const { language } = useLanguage();
   const ko = language === 'ko';
 
