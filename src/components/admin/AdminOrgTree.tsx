@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight, Trash2, TrendingUp, Coins } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { MemberLink } from '@/components/MemberLink';
@@ -20,6 +20,28 @@ function countDescendants(node: TreeNode): number {
   let count = node.children.length;
   for (const child of node.children) count += countDescendants(child);
   return count;
+}
+
+// Aggregate investment count and total amount across the node + entire subtree
+function aggregateSubtreeInvestments(
+  node: TreeNode,
+  invMap: Map<string, { count: number; totalUSD: number }>
+): { count: number; totalUSD: number } {
+  const own = invMap.get(node.user_id) || { count: 0, totalUSD: 0 };
+  let count = own.count;
+  let totalUSD = own.totalUSD;
+  for (const child of node.children) {
+    const sub = aggregateSubtreeInvestments(child, invMap);
+    count += sub.count;
+    totalUSD += sub.totalUSD;
+  }
+  return { count, totalUSD };
+}
+
+function formatCompactUSD(amount: number): string {
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`;
+  return `$${Math.round(amount)}`;
 }
 
 interface TreeNode {
@@ -105,6 +127,7 @@ interface TreeNodeComponentProps {
   draggedNode: TreeNode | null;
   dropTargetId: string | null;
   tree: TreeNode[];
+  invMap: Map<string, { count: number; totalUSD: number }>;
   onDragStart: (node: TreeNode) => void;
   onDragEnd: () => void;
   onDropTarget: (targetId: string | null) => void;
@@ -113,7 +136,7 @@ interface TreeNodeComponentProps {
 }
 
 function TreeNodeComponent({
-  node, language, depth = 0, draggedNode, dropTargetId, tree,
+  node, language, depth = 0, draggedNode, dropTargetId, tree, invMap,
   onDragStart, onDragEnd, onDropTarget, onDrop, onDelete,
 }: TreeNodeComponentProps) {
   const [expanded, setExpanded] = useState(true);
@@ -243,6 +266,34 @@ function TreeNodeComponent({
               {countDescendants(node)}
             </Badge>
           )}
+          {/* Investment badges (count + total USD-normalized for subtree) */}
+          {(() => {
+            const agg = aggregateSubtreeInvestments(node, invMap);
+            if (agg.count === 0) return null;
+            const labelTitle = language === 'ko'
+              ? `투자 ${agg.count}건 · 합계 ${formatCompactUSD(agg.totalUSD)} (본인 + 하부 전체, KRW는 USD로 환산)`
+              : `${agg.count} investments · Total ${formatCompactUSD(agg.totalUSD)} (self + downline, KRW normalized to USD)`;
+            return (
+              <>
+                <Badge
+                  variant="secondary"
+                  className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 gap-0.5"
+                  title={labelTitle}
+                >
+                  <TrendingUp className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  {agg.count}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 gap-0.5 hidden sm:inline-flex"
+                  title={labelTitle}
+                >
+                  <Coins className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  {formatCompactUSD(agg.totalUSD)}
+                </Badge>
+              </>
+            );
+          })()}
           {node.sales_status && (
             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${STATUS_DOT[node.sales_status] || 'bg-muted-foreground'}`} title={node.sales_status} />
           )}
@@ -297,6 +348,7 @@ function TreeNodeComponent({
               draggedNode={draggedNode}
               dropTargetId={dropTargetId}
               tree={tree}
+              invMap={invMap}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
               onDropTarget={onDropTarget}
@@ -333,6 +385,9 @@ export function AdminOrgTree() {
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; node: TreeNode | null }>({ open: false, node: null });
   const [deleting, setDeleting] = useState(false);
   const [promoteChildren, setPromoteChildren] = useState(false);
+
+  // Per-user investment aggregates (count + total normalized to USD for subtree comparability)
+  const [invMap, setInvMap] = useState<Map<string, { count: number; totalUSD: number }>>(new Map());
 
   const buildTree = useCallback((profiles: any[]): TreeNode[] => {
     const nodeMap = new Map<string, TreeNode>();
@@ -374,16 +429,34 @@ export function AdminOrgTree() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('profiles')
-      .select('user_id, full_name, full_name_ko, email, sales_role, sales_level, sales_status, parent_id')
-      .eq('is_approved', true)
-      .or('is_rejected.is.null,is_rejected.eq.false')
-      .or('is_deleted.is.null,is_deleted.eq.false')
-      .order('sales_level', { ascending: true });
+    const [{ data }, { data: invData }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('user_id, full_name, full_name_ko, email, sales_role, sales_level, sales_status, parent_id')
+        .eq('is_approved', true)
+        .or('is_rejected.is.null,is_rejected.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
+        .order('sales_level', { ascending: true }),
+      supabase
+        .from('client_investments')
+        .select('user_id, investment_amount, invested_currency')
+        .neq('status', 'cancelled'),
+    ]);
 
     const profiles = data || [];
     setTree(buildTree(profiles));
+
+    // Build per-user investment aggregates (normalize KRW → USD using ~1300 rate for comparability)
+    const KRW_TO_USD = 1 / 1300;
+    const map = new Map<string, { count: number; totalUSD: number }>();
+    (invData || []).forEach((inv: any) => {
+      const uid = inv.user_id as string;
+      const amount = Number(inv.investment_amount) || 0;
+      const usd = (inv.invested_currency || 'USD') === 'KRW' ? amount * KRW_TO_USD : amount;
+      const existing = map.get(uid) || { count: 0, totalUSD: 0 };
+      map.set(uid, { count: existing.count + 1, totalUSD: existing.totalUSD + usd });
+    });
+    setInvMap(map);
 
     const roleCounts: Record<string, number> = {};
     profiles.forEach((p) => { roleCounts[p.sales_role || 'unknown'] = (roleCounts[p.sales_role || 'unknown'] || 0) + 1; });
@@ -621,6 +694,7 @@ export function AdminOrgTree() {
                 draggedNode={draggedNode}
                 dropTargetId={dropTargetId}
                 tree={tree}
+                invMap={invMap}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDropTarget={handleDropTarget}
