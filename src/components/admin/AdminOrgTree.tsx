@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight, Trash2, TrendingUp, Coins } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { MemberLink } from '@/components/MemberLink';
@@ -20,6 +20,28 @@ function countDescendants(node: TreeNode): number {
   let count = node.children.length;
   for (const child of node.children) count += countDescendants(child);
   return count;
+}
+
+// Aggregate investment count and total amount across the node + entire subtree
+function aggregateSubtreeInvestments(
+  node: TreeNode,
+  invMap: Map<string, { count: number; totalUSD: number }>
+): { count: number; totalUSD: number } {
+  const own = invMap.get(node.user_id) || { count: 0, totalUSD: 0 };
+  let count = own.count;
+  let totalUSD = own.totalUSD;
+  for (const child of node.children) {
+    const sub = aggregateSubtreeInvestments(child, invMap);
+    count += sub.count;
+    totalUSD += sub.totalUSD;
+  }
+  return { count, totalUSD };
+}
+
+function formatCompactUSD(amount: number): string {
+  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(1)}K`;
+  return `$${Math.round(amount)}`;
 }
 
 interface TreeNode {
