@@ -59,6 +59,7 @@ interface InvestmentRow {
   start_date: string;
   maturity_date: string | null;
   invested_currency: string | null;
+  realized_return_amount: number | null;
 }
 
 interface CommissionRow {
