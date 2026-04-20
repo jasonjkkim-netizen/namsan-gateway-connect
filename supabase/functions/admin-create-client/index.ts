@@ -6,6 +6,15 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const VALID_ROLES = [
+  "webmaster",
+  "district_manager",
+  "deputy_district_manager",
+  "principal_agent",
+  "agent",
+  "client",
+];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -65,6 +74,8 @@ Deno.serve(async (req) => {
       birthday,
       preferred_language,
       parent_id,
+      sales_role,
+      grant_admin,
     } = body ?? {};
 
     // Validate required fields
@@ -87,6 +98,8 @@ Deno.serve(async (req) => {
       });
     }
 
+    const finalRole = sales_role && VALID_ROLES.includes(sales_role) ? sales_role : "client";
+
     const cleanName = full_name.trim().replace(/[\x00-\x1F\x7F]/g, "");
     const cleanNameKo = full_name_ko ? String(full_name_ko).trim().slice(0, 100).replace(/[\x00-\x1F\x7F]/g, "") : null;
 
@@ -107,39 +120,60 @@ Deno.serve(async (req) => {
     }
 
     // Wait for profile trigger then update with full info
+    // Note: sales_level is auto-computed by validate_hierarchy_depth trigger from parent
     let profileUpdated = false;
+    let lastError: any = null;
     for (let attempt = 0; attempt < 8; attempt++) {
+      const updatePayload: Record<string, any> = {
+        full_name: cleanName,
+        full_name_ko: cleanNameKo,
+        phone: phone || null,
+        address: address || null,
+        birthday: birthday || null,
+        preferred_language: preferred_language || "en",
+        sales_role: finalRole,
+        parent_id: parent_id || null,
+        sales_status: "approved",
+        is_approved: true,
+        approved_at: new Date().toISOString(),
+        approved_by: callerId,
+      };
+
+      // If no parent given, set sales_level explicitly to 0 for webmaster, else 1
+      if (!parent_id) {
+        updatePayload.sales_level = finalRole === "webmaster" ? 0 : 1;
+      }
+
       const { error: updateError } = await adminClient
         .from("profiles")
-        .update({
-          full_name: cleanName,
-          full_name_ko: cleanNameKo,
-          phone: phone || null,
-          address: address || null,
-          birthday: birthday || null,
-          preferred_language: preferred_language || "en",
-          sales_role: "client",
-          parent_id: parent_id || null,
-          sales_status: "approved",
-          is_approved: true,
-          approved_at: new Date().toISOString(),
-          approved_by: callerId,
-        })
+        .update(updatePayload)
         .eq("user_id", newUser.user.id);
 
       if (!updateError) {
         profileUpdated = true;
         break;
       }
+      lastError = updateError;
       console.error(`Profile update attempt ${attempt + 1} failed:`, updateError);
       await new Promise((r) => setTimeout(r, 500));
     }
 
     if (!profileUpdated) {
-      return new Response(JSON.stringify({ error: "Failed to update profile after creation" }), {
+      return new Response(JSON.stringify({ error: lastError?.message || "Failed to update profile after creation" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Optionally grant admin role
+    if (grant_admin === true) {
+      const { error: adminGrantError } = await adminClient
+        .from("user_roles")
+        .insert({ user_id: newUser.user.id, role: "admin" });
+      if (adminGrantError) {
+        console.error("Grant admin error:", adminGrantError);
+        // non-fatal
+      }
     }
 
     return new Response(

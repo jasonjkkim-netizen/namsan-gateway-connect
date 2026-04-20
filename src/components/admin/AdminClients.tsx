@@ -95,6 +95,8 @@ export function AdminClients() {
     birthday: '',
     preferred_language: 'ko',
     parent_id: '__none__',
+    sales_role: 'client',
+    grant_admin: false,
   });
 
   const [formData, setFormData] = useState({
@@ -371,6 +373,8 @@ export function AdminClients() {
           birthday: createForm.birthday || null,
           preferred_language: createForm.preferred_language,
           parent_id: createForm.parent_id === '__none__' ? null : createForm.parent_id,
+          sales_role: createForm.sales_role,
+          grant_admin: createForm.grant_admin,
         },
       });
       if (error || (data && (data as any).error)) {
@@ -383,6 +387,7 @@ export function AdminClients() {
           email: '', password: '', full_name: '', full_name_ko: '',
           phone: '', address: '', birthday: '',
           preferred_language: 'ko', parent_id: '__none__',
+          sales_role: 'client', grant_admin: false,
         });
         fetchData();
       }
@@ -791,27 +796,60 @@ export function AdminClients() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>{language === 'ko' ? '담당자' : 'Manager'}</Label>
-              <Select
-                value={createForm.parent_id}
-                onValueChange={(v) => setCreateForm({ ...createForm, parent_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={language === 'ko' ? '선택' : 'Select'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">{language === 'ko' ? '없음' : 'None'}</SelectItem>
-                  {salesMembers.map(m => (
-                    <SelectItem key={m.user_id} value={m.user_id}>
-                      {language === 'ko' && m.full_name_ko ? m.full_name_ko : m.full_name}
-                      <span className="text-muted-foreground text-[10px] ml-1">
-                        ({roleLabel(m.sales_role)})
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '영업 역할' : 'Sales Role'}</Label>
+                <Select
+                  value={createForm.sales_role}
+                  onValueChange={(v) => setCreateForm({ ...createForm, sales_role: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
+                    <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
+                    <SelectItem value="principal_agent">{language === 'ko' ? '수석에이전트' : 'Principal Agent'}</SelectItem>
+                    <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리인' : 'Deputy DM'}</SelectItem>
+                    <SelectItem value="district_manager">{language === 'ko' ? '총괄관리인' : 'District Manager'}</SelectItem>
+                    <SelectItem value="webmaster">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '담당자 (상위)' : 'Manager (Parent)'}</Label>
+                <Select
+                  value={createForm.parent_id}
+                  onValueChange={(v) => setCreateForm({ ...createForm, parent_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={language === 'ko' ? '선택' : 'Select'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{language === 'ko' ? '없음 (최상위)' : 'None (Top Level)'}</SelectItem>
+                    {salesMembers.map(m => (
+                      <SelectItem key={m.user_id} value={m.user_id}>
+                        {language === 'ko' && m.full_name_ko ? m.full_name_ko : m.full_name}
+                        <span className="text-muted-foreground text-[10px] ml-1">
+                          ({roleLabel(m.sales_role)})
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-border p-3">
+              <div>
+                <Label className="text-sm">{language === 'ko' ? '관리자 권한 부여' : 'Grant Admin Role'}</Label>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {language === 'ko' ? '활성화 시 관리자 패널 접근 권한이 부여됩니다' : 'Grants full admin panel access'}
+                </p>
+              </div>
+              <Switch
+                checked={createForm.grant_admin}
+                onCheckedChange={(checked) => setCreateForm({ ...createForm, grant_admin: checked })}
+              />
             </div>
             <div className="flex justify-end gap-2 pt-3">
               <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={creating}>
