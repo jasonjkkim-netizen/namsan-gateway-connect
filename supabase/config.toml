@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.send-sms]
 verify_jwt = false
+
+[functions.admin-create-client]
+verify_jwt = false
