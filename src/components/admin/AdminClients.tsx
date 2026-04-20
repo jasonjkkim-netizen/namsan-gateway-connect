@@ -273,6 +273,8 @@ export function AdminClients() {
       return;
     }
 
+    const cleanNotes = (formData.admin_notes || '').slice(0, 5000) || null;
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -282,6 +284,7 @@ export function AdminClients() {
         address: validationResult.data.address ?? null,
         birthday: formData.birthday || null,
         preferred_language: validationResult.data.preferred_language!,
+        admin_notes: cleanNotes,
       })
       .eq('id', editingProfile.id);
 
