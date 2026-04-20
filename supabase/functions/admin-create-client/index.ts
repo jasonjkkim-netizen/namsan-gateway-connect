@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
         preferred_language: preferred_language || "en",
         sales_role: finalRole,
         parent_id: parent_id || null,
-        sales_status: "approved",
+        sales_status: "active",
         is_approved: true,
         approved_at: new Date().toISOString(),
         approved_by: callerId,
