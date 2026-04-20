@@ -694,6 +694,7 @@ export function AdminOrgTree() {
                 draggedNode={draggedNode}
                 dropTargetId={dropTargetId}
                 tree={tree}
+                invMap={invMap}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDropTarget={handleDropTarget}
