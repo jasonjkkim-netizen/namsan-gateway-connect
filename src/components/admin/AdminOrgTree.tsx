@@ -401,6 +401,39 @@ export function AdminOrgTree() {
     setDropTargetId(null);
   };
 
+  const handleDelete = (node: TreeNode) => {
+    setConfirmDelete({ open: true, node });
+  };
+
+  const executeDelete = async () => {
+    const node = confirmDelete.node;
+    if (!node) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: user?.id ?? null,
+          sales_status: 'suspended',
+        })
+        .eq('user_id', node.user_id);
+
+      if (error) {
+        toast.error(language === 'ko' ? `삭제 실패: ${error.message}` : `Delete failed: ${error.message}`);
+      } else {
+        toast.success(language === 'ko' ? '멤버가 삭제되었습니다.' : 'Member deleted.');
+        fetchData();
+      }
+    } catch (err: any) {
+      toast.error(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error during deletion.');
+    } finally {
+      setDeleting(false);
+      setConfirmDelete({ open: false, node: null });
+    }
+  };
+
   const executeReassignment = async () => {
     const { source, target } = confirmMove;
     if (!source || !target) return;
