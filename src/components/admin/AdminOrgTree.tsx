@@ -223,15 +223,32 @@ function TreeNodeComponent({
         </div>
 
         {/* Name & Info */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0">
           <MemberLink userId={node.user_id} className="font-medium text-[10px] sm:text-sm truncate">
             {displayName}
           </MemberLink>
           <Badge variant="outline" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 hidden sm:inline-flex">
             {language === 'ko' ? roleLabel?.ko : roleLabel?.en}
           </Badge>
+          {/* Subtree count for managers (DM/Deputy DM/Principal Agent) */}
+          {hasChildren && (role === 'district_manager' || role === 'deputy_district_manager' || role === 'principal_agent') && (
+            <Badge
+              variant="secondary"
+              className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 gap-0.5"
+              title={language === 'ko' ? '하부 멤버 수 (전체)' : 'Total downline members'}
+            >
+              <Users className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+              {countDescendants(node)}
+            </Badge>
+          )}
           {node.sales_status && (
             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${STATUS_DOT[node.sales_status] || 'bg-muted-foreground'}`} title={node.sales_status} />
+          )}
+          {/* Email — placed inline next to name with reduced gap */}
+          {!isDropTarget && (
+            <span className="text-[9px] sm:text-xs text-muted-foreground hidden md:inline truncate ml-1">
+              {node.email}
+            </span>
           )}
         </div>
 
@@ -243,19 +260,23 @@ function TreeNodeComponent({
           </span>
         )}
 
-        {/* Email */}
-        {!isDropTarget && (
-          <span className="text-[9px] sm:text-xs text-muted-foreground hidden md:inline truncate max-w-[200px]">
-            {node.email}
-          </span>
-        )}
-
-        {/* Children count */}
+        {/* Direct children count */}
         {hasChildren && (
-          <Badge variant="secondary" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0">
+          <Badge variant="outline" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0">
             {node.children.length}
           </Badge>
         )}
+
+        {/* Delete button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => { e.stopPropagation(); onDelete(node); }}
+          title={language === 'ko' ? '삭제' : 'Delete'}
+        >
+          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+        </Button>
       </div>
 
       {/* Children */}
@@ -278,6 +299,7 @@ function TreeNodeComponent({
               onDragEnd={onDragEnd}
               onDropTarget={onDropTarget}
               onDrop={onDrop}
+              onDelete={onDelete}
             />
           ))}
         </div>
