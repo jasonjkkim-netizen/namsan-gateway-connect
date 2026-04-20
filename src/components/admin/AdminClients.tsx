@@ -459,14 +459,20 @@ export function AdminClients() {
 
     return list.map((profile) => (
       <TableRow key={profile.id}>
-        <TableCell className="font-medium max-w-[120px] sm:max-w-none truncate">{profile.email}</TableCell>
+        <TableCell className="font-medium max-w-[120px] sm:max-w-none truncate">
+          <MemberLink userId={profile.user_id} className="text-xs sm:text-sm">
+            {profile.email}
+          </MemberLink>
+        </TableCell>
         <TableCell>
           <div>
             <MemberLink userId={profile.user_id} className="text-xs sm:text-sm">
-              {profile.full_name}
+              {profile.full_name || profile.full_name_ko || profile.email}
             </MemberLink>
-            {profile.full_name_ko && (
-              <div className="text-xs text-muted-foreground">{profile.full_name_ko}</div>
+            {profile.full_name && profile.full_name_ko && (
+              <MemberLink userId={profile.user_id} className="text-xs text-muted-foreground block">
+                {profile.full_name_ko}
+              </MemberLink>
             )}
           </div>
         </TableCell>
