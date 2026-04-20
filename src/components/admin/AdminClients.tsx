@@ -40,7 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp, UserPlus } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -83,6 +83,19 @@ export function AdminClients() {
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Profile | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    full_name_ko: '',
+    phone: '',
+    address: '',
+    birthday: '',
+    preferred_language: 'ko',
+    parent_id: '__none__',
+  });
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -336,6 +349,50 @@ export function AdminClients() {
     }
   };
 
+  const handleCreate = async () => {
+    if (!createForm.email || !createForm.password || !createForm.full_name) {
+      toast.error(language === 'ko' ? '이메일, 비밀번호, 이름은 필수입니다' : 'Email, password and name are required');
+      return;
+    }
+    if (createForm.password.length < 6) {
+      toast.error(language === 'ko' ? '비밀번호는 6자 이상이어야 합니다' : 'Password must be at least 6 characters');
+      return;
+    }
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-client', {
+        body: {
+          email: createForm.email.trim(),
+          password: createForm.password,
+          full_name: createForm.full_name.trim(),
+          full_name_ko: createForm.full_name_ko.trim() || null,
+          phone: createForm.phone.trim() || null,
+          address: createForm.address.trim() || null,
+          birthday: createForm.birthday || null,
+          preferred_language: createForm.preferred_language,
+          parent_id: createForm.parent_id === '__none__' ? null : createForm.parent_id,
+        },
+      });
+      if (error || (data && (data as any).error)) {
+        const msg = (data as any)?.error || error?.message || 'Unknown error';
+        toast.error((language === 'ko' ? '고객 추가 실패: ' : 'Failed to add client: ') + msg);
+      } else {
+        toast.success(language === 'ko' ? '고객이 추가되었습니다' : 'Client added');
+        setCreateDialogOpen(false);
+        setCreateForm({
+          email: '', password: '', full_name: '', full_name_ko: '',
+          phone: '', address: '', birthday: '',
+          preferred_language: 'ko', parent_id: '__none__',
+        });
+        fetchData();
+      }
+    } catch (err: any) {
+      toast.error((language === 'ko' ? '고객 추가 실패: ' : 'Failed to add client: ') + (err.message || ''));
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const activeProfiles = profiles.filter(p => !p.is_deleted);
   const deletedProfiles = profiles.filter(p => p.is_deleted);
 
@@ -525,6 +582,10 @@ export function AdminClients() {
                 className="pl-9 text-sm h-8"
               />
             </div>
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1">
+              <UserPlus className="h-4 w-4" />
+              {language === 'ko' ? '고객 추가' : 'Add Client'}
+            </Button>
           </div>
         </div>
 
@@ -645,6 +706,126 @@ export function AdminClients() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Client Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {language === 'ko' ? '신규 고객 추가' : 'Add New Client'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-3 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '이메일 *' : 'Email *'}</Label>
+                <Input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                  placeholder="client@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '비밀번호 *' : 'Password *'}</Label>
+                <Input
+                  type="text"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                  placeholder={language === 'ko' ? '6자 이상' : 'Min 6 chars'}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '이름 (영문) *' : 'Name (English) *'}</Label>
+                <Input
+                  value={createForm.full_name}
+                  onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '이름 (한글)' : 'Name (Korean)'}</Label>
+                <Input
+                  value={createForm.full_name_ko}
+                  onChange={(e) => setCreateForm({ ...createForm, full_name_ko: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '연락처' : 'Phone'}</Label>
+              <Input
+                value={createForm.phone}
+                onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '주소' : 'Address'}</Label>
+              <Input
+                value={createForm.address}
+                onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '생년월일' : 'Birthday'}</Label>
+                <Input
+                  type="date"
+                  value={createForm.birthday}
+                  onChange={(e) => setCreateForm({ ...createForm, birthday: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{language === 'ko' ? '선호 언어' : 'Preferred Language'}</Label>
+                <Select
+                  value={createForm.preferred_language}
+                  onValueChange={(v) => setCreateForm({ ...createForm, preferred_language: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ko">한국어</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{language === 'ko' ? '담당자' : 'Manager'}</Label>
+              <Select
+                value={createForm.parent_id}
+                onValueChange={(v) => setCreateForm({ ...createForm, parent_id: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={language === 'ko' ? '선택' : 'Select'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{language === 'ko' ? '없음' : 'None'}</SelectItem>
+                  {salesMembers.map(m => (
+                    <SelectItem key={m.user_id} value={m.user_id}>
+                      {language === 'ko' && m.full_name_ko ? m.full_name_ko : m.full_name}
+                      <span className="text-muted-foreground text-[10px] ml-1">
+                        ({roleLabel(m.sales_role)})
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-3">
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={creating}>
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </Button>
+              <Button onClick={handleCreate} className="btn-gold" disabled={creating}>
+                {creating
+                  ? (language === 'ko' ? '추가 중...' : 'Adding...')
+                  : (language === 'ko' ? '추가' : 'Add')}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
