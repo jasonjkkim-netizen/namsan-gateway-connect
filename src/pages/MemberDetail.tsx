@@ -21,6 +21,7 @@ import {
 import { MemberLink } from '@/components/MemberLink';
 import { InlineInvestmentForm } from '@/components/sales/InlineInvestmentForm';
 import { EditableCommissionRow } from '@/components/sales/EditableCommissionRow';
+import { EditableInvestmentRow } from '@/components/sales/EditableInvestmentRow';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
   webmaster: { en: 'Webmaster', ko: '웹마스터' },
@@ -58,6 +59,7 @@ interface InvestmentRow {
   start_date: string;
   maturity_date: string | null;
   invested_currency: string | null;
+  realized_return_amount: number | null;
 }
 
 interface CommissionRow {
@@ -162,7 +164,7 @@ export default function MemberDetail() {
       const [invRes, commRes, ancRes, subRes] = await Promise.all([
         supabase
           .from('client_investments')
-          .select('id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency')
+          .select('id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency, realized_return_amount')
           .eq('user_id', userId)
           .order('start_date', { ascending: false }),
         supabase
@@ -446,39 +448,27 @@ export default function MemberDetail() {
                           <TableHead className="text-right">{language === 'ko' ? '투자금액' : 'Amount'}</TableHead>
                           <TableHead className="text-right">{language === 'ko' ? '현재가치' : 'Current'}</TableHead>
                           <TableHead className="text-right hidden sm:table-cell">{language === 'ko' ? '수익률' : 'Return'}</TableHead>
-                          <TableHead className="hidden md:table-cell">{language === 'ko' ? '시작일' : 'Start'}</TableHead>
+                          <TableHead className="hidden md:table-cell">{language === 'ko' ? '만기일' : 'Maturity'}</TableHead>
                           <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                          <TableHead className="text-right w-16">{language === 'ko' ? '편집' : 'Edit'}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {investments.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                            <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                               {language === 'ko' ? '투자 내역이 없습니다' : 'No investments'}
                             </TableCell>
                           </TableRow>
                         ) : (
-                          investments.map((inv) => {
-                            const ret = inv.investment_amount > 0
-                              ? ((inv.current_value - inv.investment_amount) / inv.investment_amount) * 100
-                              : 0;
-                            return (
-                              <TableRow key={inv.id}>
-                                <TableCell className="font-medium">
-                                  {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
-                                </TableCell>
-                                <TableCell className="text-right">{formatCurrency(inv.investment_amount)}</TableCell>
-                                <TableCell className="text-right">{formatCurrency(inv.current_value)}</TableCell>
-                                <TableCell className={`text-right hidden sm:table-cell ${ret >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                                  {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell">{formatDate(inv.start_date)}</TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className="text-[10px]">{inv.status || '—'}</Badge>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })
+                          investments.map((inv) => (
+                            <EditableInvestmentRow
+                              key={inv.id}
+                              inv={inv}
+                              canEdit={canRegisterInvestment}
+                              onChanged={loadAll}
+                            />
+                          ))
                         )}
                       </TableBody>
                     </Table>
