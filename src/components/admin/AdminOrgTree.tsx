@@ -248,7 +248,7 @@ function TreeNodeComponent({
         </div>
 
         {/* Name & Info */}
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 mr-auto">
           <MemberLink userId={node.user_id} className="font-medium text-[10px] sm:text-sm truncate">
             {displayName}
           </MemberLink>
