@@ -332,6 +332,7 @@ export function AdminOrgTree() {
   // Delete confirmation
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; node: TreeNode | null }>({ open: false, node: null });
   const [deleting, setDeleting] = useState(false);
+  const [promoteChildren, setPromoteChildren] = useState(false);
 
   const buildTree = useCallback((profiles: any[]): TreeNode[] => {
     const nodeMap = new Map<string, TreeNode>();
