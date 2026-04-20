@@ -40,7 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp, UserPlus } from 'lucide-react';
 
 interface Profile {
   id: string;
