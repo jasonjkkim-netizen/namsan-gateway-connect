@@ -251,6 +251,12 @@ export default function MemberDetail() {
     .filter((c) => c.to_user_id === userId)
     .reduce((s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), 0);
 
+  // Permission: admin OR a sales-role ancestor (viewer is in upline of this member,
+  // i.e., this member is in viewer's subtree AND viewer != member).
+  const canRegisterInvestment = !!(
+    profile && user && (isAdmin || (user.id !== userId && !accessDenied))
+  );
+
   if (accessDenied) {
     return (
       <div className="min-h-screen bg-background">
