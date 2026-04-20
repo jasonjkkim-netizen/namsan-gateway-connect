@@ -888,6 +888,9 @@ export function AdminClients() {
                 maxLength={5000}
               />
             </div>
+            <div className="flex justify-end gap-2 pt-3">
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={creating}>
+                {language === 'ko' ? '취소' : 'Cancel'}
               </Button>
               <Button onClick={handleCreate} className="btn-gold" disabled={creating}>
                 {creating
