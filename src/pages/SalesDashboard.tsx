@@ -849,7 +849,7 @@ export default function SalesDashboard() {
                                 <TableRow key={m.user_id} className="h-7 sm:h-8">
                                   <TableCell
                                     className="text-[10px] sm:text-xs py-1 px-2 cursor-pointer hover:text-primary truncate max-w-[160px] sm:max-w-none"
-                                    onClick={() => setSelectedMemberId(m.user_id)}
+                                    onClick={() => navigate(`/members/${m.user_id}`)}
                                   >
                                     {m.full_name}
                                   </TableCell>

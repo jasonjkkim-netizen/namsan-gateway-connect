@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp, UserPlus } from 'lucide-react';
+import { MemberLink } from '@/components/MemberLink';
 
 interface Profile {
   id: string;
@@ -461,7 +462,9 @@ export function AdminClients() {
         <TableCell className="font-medium max-w-[120px] sm:max-w-none truncate">{profile.email}</TableCell>
         <TableCell>
           <div>
-            <div className="text-xs sm:text-sm">{profile.full_name}</div>
+            <MemberLink userId={profile.user_id} className="text-xs sm:text-sm">
+              {profile.full_name}
+            </MemberLink>
             {profile.full_name_ko && (
               <div className="text-xs text-muted-foreground">{profile.full_name_ko}</div>
             )}

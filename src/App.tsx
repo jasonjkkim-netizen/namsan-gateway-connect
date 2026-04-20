@@ -28,6 +28,7 @@ import SalesDashboard from "./pages/SalesDashboard";
 import Flagship from "./pages/Flagship";
 import Board from "./pages/Board";
 import PendingApproval from "./pages/PendingApproval";
+import MemberDetail from "./pages/MemberDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -117,6 +118,11 @@ const App = () => (
                 <Route path="/admin" element={
                   <ProtectedRoute>
                     <Admin />
+                  </ProtectedRoute>
+                } />
+                <Route path="/members/:userId" element={
+                  <ProtectedRoute>
+                    <MemberDetail />
                   </ProtectedRoute>
                 } />
                 <Route path="*" element={<NotFound />} />

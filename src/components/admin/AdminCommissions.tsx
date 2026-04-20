@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight } from 'lucide-react';
+import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
@@ -964,14 +965,18 @@ export function AdminCommissions() {
                       <TableCell>
                         <Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => toggleSelect(d.id)} />
                       </TableCell>
-                      <TableCell className="font-medium">{getName(d.to_user_id)}</TableCell>
+                      <TableCell className="font-medium">
+                        <MemberLink userId={d.to_user_id}>{getName(d.to_user_id)}</MemberLink>
+                      </TableCell>
                       <TableCell>
                         {getRole(d.to_user_id) ? (
                           <Badge variant="outline" className="text-xs">{getRole(d.to_user_id)}</Badge>
                         ) : '—'}
                       </TableCell>
                       <TableCell>{d.layer}</TableCell>
-                      <TableCell>{d.from_user_id ? getName(d.from_user_id) : '—'}</TableCell>
+                      <TableCell>
+                        {d.from_user_id ? <MemberLink userId={d.from_user_id}>{getName(d.from_user_id)}</MemberLink> : '—'}
+                      </TableCell>
                       <TableCell>
                         {d.upfront_amount ? (
                           <span className="text-success font-medium">{formatCommAmount(Number(d.upfront_amount), d.currency)}</span>

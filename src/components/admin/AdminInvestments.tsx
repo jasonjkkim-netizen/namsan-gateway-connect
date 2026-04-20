@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Plus, Edit, Search, Upload, Trash2, Calculator } from 'lucide-react';
+import { MemberLink } from '@/components/MemberLink';
 
 interface Investment {
   id: string;
@@ -361,7 +362,7 @@ export function AdminInvestments() {
                 return (
                   <TableRow key={inv.id}>
                     <TableCell className="font-medium max-w-[180px] truncate">
-                      {getClientName(inv.user_id)}
+                      <MemberLink userId={inv.user_id}>{getClientName(inv.user_id)}</MemberLink>
                     </TableCell>
                     <TableCell>
                       {role ? (
