@@ -741,9 +741,14 @@ export function AdminClients() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-3 max-h-[70vh] overflow-y-auto pr-2">
+            <p className="text-[11px] text-muted-foreground bg-muted/40 rounded p-2">
+              {language === 'ko'
+                ? '관리자 직접 입력 시 모든 항목은 선택 사항입니다. 비워둔 이메일/비밀번호/이름은 자동으로 임시 값이 생성됩니다.'
+                : 'All fields are optional for admin direct entry. Missing email/password/name will be auto-generated as placeholders.'}
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '이메일 *' : 'Email *'}</Label>
+                <Label>{language === 'ko' ? '이메일' : 'Email'}</Label>
                 <Input
                   type="email"
                   value={createForm.email}
@@ -752,18 +757,18 @@ export function AdminClients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '비밀번호 *' : 'Password *'}</Label>
+                <Label>{language === 'ko' ? '비밀번호' : 'Password'}</Label>
                 <Input
                   type="text"
                   value={createForm.password}
                   onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                  placeholder={language === 'ko' ? '6자 이상' : 'Min 6 chars'}
+                  placeholder={language === 'ko' ? '6자 이상 (선택)' : 'Min 6 chars (optional)'}
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '이름 (영문) *' : 'Name (English) *'}</Label>
+                <Label>{language === 'ko' ? '이름 (영문)' : 'Name (English)'}</Label>
                 <Input
                   value={createForm.full_name}
                   onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
