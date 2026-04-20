@@ -405,6 +405,7 @@ export function AdminOrgTree() {
   };
 
   const handleDelete = (node: TreeNode) => {
+    setPromoteChildren(false);
     setConfirmDelete({ open: true, node });
   };
 
@@ -413,6 +414,43 @@ export function AdminOrgTree() {
     if (!node) return;
     setDeleting(true);
     try {
+      // If requested and node has children, promote them to its parent (grandparent) first.
+      // If node has no parent (root), promotion is not possible — children stay in place.
+      if (promoteChildren && node.children.length > 0 && node.parent_id) {
+        const childIds = node.children.map((c) => c.user_id);
+        const { error: promoteErr } = await supabase
+          .from('profiles')
+          .update({ parent_id: node.parent_id })
+          .in('user_id', childIds);
+
+        if (promoteErr) {
+          toast.error(language === 'ko'
+            ? `하위 멤버 승격 실패: ${promoteErr.message}`
+            : `Failed to promote downline: ${promoteErr.message}`);
+          setDeleting(false);
+          return;
+        }
+
+        // Recalculate commissions for each promoted child's investments
+        for (const childId of childIds) {
+          const { data: invs } = await supabase
+            .from('client_investments')
+            .select('id')
+            .eq('user_id', childId);
+          if (invs) {
+            for (const inv of invs) {
+              try {
+                await supabase.functions.invoke('calculate-commissions', {
+                  body: { investment_id: inv.id },
+                });
+              } catch (e) {
+                console.error('Commission recalc failed for', inv.id, e);
+              }
+            }
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -426,7 +464,13 @@ export function AdminOrgTree() {
       if (error) {
         toast.error(language === 'ko' ? `삭제 실패: ${error.message}` : `Delete failed: ${error.message}`);
       } else {
-        toast.success(language === 'ko' ? '멤버가 삭제되었습니다.' : 'Member deleted.');
+        toast.success(
+          promoteChildren && node.children.length > 0 && node.parent_id
+            ? (language === 'ko'
+                ? `멤버가 삭제되고 하위 ${node.children.length}명이 상위 스폰서로 승격되었습니다.`
+                : `Member deleted and ${node.children.length} downline member(s) promoted to parent sponsor.`)
+            : (language === 'ko' ? '멤버가 삭제되었습니다.' : 'Member deleted.')
+        );
         fetchData();
       }
     } catch (err: any) {
