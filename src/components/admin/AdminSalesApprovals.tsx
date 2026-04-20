@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Check, X, Search, Clock, UserCheck, UserX, RotateCcw, Building2, UserCog, Users, User } from 'lucide-react';
+import { MemberLink } from '@/components/MemberLink';
 
 interface SalesProfile {
   id: string;
@@ -463,7 +464,9 @@ export function AdminSalesApprovals() {
                 <TableRow key={profile.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{profile.full_name}</div>
+                      <MemberLink userId={profile.user_id} className="font-medium">
+                        {profile.full_name}
+                      </MemberLink>
                       {profile.full_name_ko && (
                         <div className="text-sm text-muted-foreground">{profile.full_name_ko}</div>
                       )}
