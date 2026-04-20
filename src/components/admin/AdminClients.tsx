@@ -359,11 +359,10 @@ export function AdminClients() {
   };
 
   const handleCreate = async () => {
-    if (!createForm.email || !createForm.password || !createForm.full_name) {
-      toast.error(language === 'ko' ? '이메일, 비밀번호, 이름은 필수입니다' : 'Email, password and name are required');
-      return;
-    }
-    if (createForm.password.length < 6) {
+    // Admin direct entry: no required fields. Backend will auto-generate
+    // placeholders for missing email/password/name. Only enforce password
+    // length if the admin explicitly typed one.
+    if (createForm.password && createForm.password.length > 0 && createForm.password.length < 6) {
       toast.error(language === 'ko' ? '비밀번호는 6자 이상이어야 합니다' : 'Password must be at least 6 characters');
       return;
     }
@@ -371,9 +370,9 @@ export function AdminClients() {
     try {
       const { data, error } = await supabase.functions.invoke('admin-create-client', {
         body: {
-          email: createForm.email.trim(),
-          password: createForm.password,
-          full_name: createForm.full_name.trim(),
+          email: createForm.email.trim() || null,
+          password: createForm.password || null,
+          full_name: createForm.full_name.trim() || null,
           full_name_ko: createForm.full_name_ko.trim() || null,
           phone: createForm.phone.trim() || null,
           address: createForm.address.trim() || null,
@@ -382,6 +381,7 @@ export function AdminClients() {
           parent_id: createForm.parent_id === '__none__' ? null : createForm.parent_id,
           sales_role: createForm.sales_role,
           grant_admin: createForm.grant_admin,
+          admin_notes: createForm.admin_notes.trim() || null,
         },
       });
       if (error || (data && (data as any).error)) {
@@ -394,7 +394,7 @@ export function AdminClients() {
           email: '', password: '', full_name: '', full_name_ko: '',
           phone: '', address: '', birthday: '',
           preferred_language: 'ko', parent_id: '__none__',
-          sales_role: 'client', grant_admin: false,
+          sales_role: 'client', grant_admin: false, admin_notes: '',
         });
         fetchData();
       }
