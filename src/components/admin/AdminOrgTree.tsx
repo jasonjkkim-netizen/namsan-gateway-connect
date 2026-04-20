@@ -315,7 +315,7 @@ function TreeNodeComponent({
 
         {/* Direct children count */}
         {hasChildren && (
-          <Badge variant="outline" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0">
+          <Badge variant="outline" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 -ml-0.5 sm:-ml-[3px]">
             {node.children.length}
           </Badge>
         )}
