@@ -266,6 +266,34 @@ function TreeNodeComponent({
               {countDescendants(node)}
             </Badge>
           )}
+          {/* Investment badges (count + total USD-normalized for subtree) */}
+          {(() => {
+            const agg = aggregateSubtreeInvestments(node, invMap);
+            if (agg.count === 0) return null;
+            const labelTitle = language === 'ko'
+              ? `투자 ${agg.count}건 · 합계 ${formatCompactUSD(agg.totalUSD)} (본인 + 하부 전체, KRW는 USD로 환산)`
+              : `${agg.count} investments · Total ${formatCompactUSD(agg.totalUSD)} (self + downline, KRW normalized to USD)`;
+            return (
+              <>
+                <Badge
+                  variant="secondary"
+                  className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 gap-0.5"
+                  title={labelTitle}
+                >
+                  <TrendingUp className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  {agg.count}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 gap-0.5 hidden sm:inline-flex"
+                  title={labelTitle}
+                >
+                  <Coins className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  {formatCompactUSD(agg.totalUSD)}
+                </Badge>
+              </>
+            );
+          })()}
           {node.sales_status && (
             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${STATUS_DOT[node.sales_status] || 'bg-muted-foreground'}`} title={node.sales_status} />
           )}
