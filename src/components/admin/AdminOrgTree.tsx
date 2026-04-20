@@ -578,6 +578,7 @@ export function AdminOrgTree() {
                 onDragEnd={handleDragEnd}
                 onDropTarget={handleDropTarget}
                 onDrop={handleDrop}
+                onDelete={handleDelete}
               />
             ))}
           </div>
