@@ -400,16 +400,34 @@ export function AdminOrgTree() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('profiles')
-      .select('user_id, full_name, full_name_ko, email, sales_role, sales_level, sales_status, parent_id')
-      .eq('is_approved', true)
-      .or('is_rejected.is.null,is_rejected.eq.false')
-      .or('is_deleted.is.null,is_deleted.eq.false')
-      .order('sales_level', { ascending: true });
+    const [{ data }, { data: invData }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('user_id, full_name, full_name_ko, email, sales_role, sales_level, sales_status, parent_id')
+        .eq('is_approved', true)
+        .or('is_rejected.is.null,is_rejected.eq.false')
+        .or('is_deleted.is.null,is_deleted.eq.false')
+        .order('sales_level', { ascending: true }),
+      supabase
+        .from('client_investments')
+        .select('user_id, investment_amount, invested_currency')
+        .neq('status', 'cancelled'),
+    ]);
 
     const profiles = data || [];
     setTree(buildTree(profiles));
+
+    // Build per-user investment aggregates (normalize KRW → USD using ~1300 rate for comparability)
+    const KRW_TO_USD = 1 / 1300;
+    const map = new Map<string, { count: number; totalUSD: number }>();
+    (invData || []).forEach((inv: any) => {
+      const uid = inv.user_id as string;
+      const amount = Number(inv.investment_amount) || 0;
+      const usd = (inv.invested_currency || 'USD') === 'KRW' ? amount * KRW_TO_USD : amount;
+      const existing = map.get(uid) || { count: 0, totalUSD: 0 };
+      map.set(uid, { count: existing.count + 1, totalUSD: existing.totalUSD + usd });
+    });
+    setInvMap(map);
 
     const roleCounts: Record<string, number> = {};
     profiles.forEach((p) => { roleCounts[p.sales_role || 'unknown'] = (roleCounts[p.sales_role || 'unknown'] || 0) + 1; });
