@@ -349,7 +349,49 @@ export function AdminClients() {
     }
   };
 
-  const activeProfiles = profiles.filter(p => !p.is_deleted);
+  const handleCreate = async () => {
+    if (!createForm.email || !createForm.password || !createForm.full_name) {
+      toast.error(language === 'ko' ? '이메일, 비밀번호, 이름은 필수입니다' : 'Email, password and name are required');
+      return;
+    }
+    if (createForm.password.length < 6) {
+      toast.error(language === 'ko' ? '비밀번호는 6자 이상이어야 합니다' : 'Password must be at least 6 characters');
+      return;
+    }
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-client', {
+        body: {
+          email: createForm.email.trim(),
+          password: createForm.password,
+          full_name: createForm.full_name.trim(),
+          full_name_ko: createForm.full_name_ko.trim() || null,
+          phone: createForm.phone.trim() || null,
+          address: createForm.address.trim() || null,
+          birthday: createForm.birthday || null,
+          preferred_language: createForm.preferred_language,
+          parent_id: createForm.parent_id === '__none__' ? null : createForm.parent_id,
+        },
+      });
+      if (error || (data && (data as any).error)) {
+        const msg = (data as any)?.error || error?.message || 'Unknown error';
+        toast.error((language === 'ko' ? '고객 추가 실패: ' : 'Failed to add client: ') + msg);
+      } else {
+        toast.success(language === 'ko' ? '고객이 추가되었습니다' : 'Client added');
+        setCreateDialogOpen(false);
+        setCreateForm({
+          email: '', password: '', full_name: '', full_name_ko: '',
+          phone: '', address: '', birthday: '',
+          preferred_language: 'ko', parent_id: '__none__',
+        });
+        fetchData();
+      }
+    } catch (err: any) {
+      toast.error((language === 'ko' ? '고객 추가 실패: ' : 'Failed to add client: ') + (err.message || ''));
+    } finally {
+      setCreating(false);
+    }
+  };
   const deletedProfiles = profiles.filter(p => p.is_deleted);
 
   const filteredProfiles = activeProfiles.filter(
