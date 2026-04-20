@@ -19,6 +19,8 @@ import {
   Users, Briefcase, Coins, Save, ChevronUp, ChevronDown,
 } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
+import { InlineInvestmentForm } from '@/components/sales/InlineInvestmentForm';
+import { EditableCommissionRow } from '@/components/sales/EditableCommissionRow';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
   webmaster: { en: 'Webmaster', ko: '웹마스터' },
@@ -249,6 +251,12 @@ export default function MemberDetail() {
     .filter((c) => c.to_user_id === userId)
     .reduce((s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), 0);
 
+  // Permission: admin OR a sales-role ancestor (viewer is in upline of this member,
+  // i.e., this member is in viewer's subtree AND viewer != member).
+  const canRegisterInvestment = !!(
+    profile && user && (isAdmin || (user.id !== userId && !accessDenied))
+  );
+
   if (accessDenied) {
     return (
       <div className="min-h-screen bg-background">
@@ -413,14 +421,22 @@ export default function MemberDetail() {
               {/* Investments Tab */}
               <TabsContent value="investments" className="space-y-4">
                 <Card className="p-4 sm:p-6">
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <Stat label={language === 'ko' ? '총 투자' : 'Total Invested'} value={formatCurrency(totalInvested)} />
-                    <Stat label={language === 'ko' ? '현재 가치' : 'Current Value'} value={formatCurrency(totalCurrent)} />
-                    <Stat
-                      label={language === 'ko' ? '평가 손익' : 'Unrealized P/L'}
-                      value={formatCurrency(totalCurrent - totalInvested)}
-                      positive={totalCurrent - totalInvested >= 0}
-                    />
+                  <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                    <div className="flex flex-wrap gap-3">
+                      <Stat label={language === 'ko' ? '총 투자' : 'Total Invested'} value={formatCurrency(totalInvested)} />
+                      <Stat label={language === 'ko' ? '현재 가치' : 'Current Value'} value={formatCurrency(totalCurrent)} />
+                      <Stat
+                        label={language === 'ko' ? '평가 손익' : 'Unrealized P/L'}
+                        value={formatCurrency(totalCurrent - totalInvested)}
+                        positive={totalCurrent - totalInvested >= 0}
+                      />
+                    </div>
+                    {canRegisterInvestment && (
+                      <InlineInvestmentForm
+                        clientUserId={profile.user_id}
+                        onCreated={loadAll}
+                      />
+                    )}
                   </div>
                   <div className="overflow-x-auto">
                     <Table className="text-xs">
@@ -571,33 +587,16 @@ export default function MemberDetail() {
                               ? downlineNames[counterpartId] || counterpartId.slice(0, 8) + '…'
                               : '—';
                             return (
-                              <TableRow key={c.id}>
-                                <TableCell>
-                                  <Badge variant={isEarned ? 'default' : 'outline'} className="text-[10px]">
-                                    {isEarned
-                                      ? (language === 'ko' ? '수령' : 'Earned')
-                                      : (language === 'ko' ? '발생' : 'Source')}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <MemberLink userId={counterpartId} className="text-xs">
-                                    {counterpartName}
-                                  </MemberLink>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {c.upfront_amount ? formatCurrency(Number(c.upfront_amount)) : '—'}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {c.performance_amount ? formatCurrency(Number(c.performance_amount)) : '—'}
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell">{c.layer}</TableCell>
-                                <TableCell>
-                                  <Badge variant="outline" className="text-[10px] capitalize">{c.status}</Badge>
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell whitespace-nowrap">
-                                  {formatDate(c.created_at)}
-                                </TableCell>
-                              </TableRow>
+                              <EditableCommissionRow
+                                key={c.id}
+                                row={c}
+                                viewerUserId={user?.id || ''}
+                                isAdmin={!!isAdmin}
+                                counterpartName={counterpartName}
+                                counterpartId={counterpartId}
+                                isEarned={isEarned}
+                                onChanged={loadAll}
+                              />
                             );
                           })
                         )}
