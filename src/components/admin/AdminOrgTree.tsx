@@ -10,8 +10,15 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight, Trash2 } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
+
+// Count all descendants in the subtree
+function countDescendants(node: TreeNode): number {
+  let count = node.children.length;
+  for (const child of node.children) count += countDescendants(child);
+  return count;
+}
 
 interface TreeNode {
   user_id: string;
