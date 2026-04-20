@@ -107,11 +107,12 @@ interface TreeNodeComponentProps {
   onDragEnd: () => void;
   onDropTarget: (targetId: string | null) => void;
   onDrop: (targetNode: TreeNode) => void;
+  onDelete: (node: TreeNode) => void;
 }
 
 function TreeNodeComponent({
   node, language, depth = 0, draggedNode, dropTargetId, tree,
-  onDragStart, onDragEnd, onDropTarget, onDrop,
+  onDragStart, onDragEnd, onDropTarget, onDrop, onDelete,
 }: TreeNodeComponentProps) {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
