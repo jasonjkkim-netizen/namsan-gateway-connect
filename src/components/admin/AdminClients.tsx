@@ -252,6 +252,7 @@ export function AdminClients() {
       address: profile.address || '',
       birthday: profile.birthday || '',
       preferred_language: profile.preferred_language || 'en',
+      admin_notes: profile.admin_notes || '',
     });
     setDialogOpen(true);
   };
