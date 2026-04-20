@@ -98,6 +98,7 @@ export function AdminClients() {
     parent_id: '__none__',
     sales_role: 'client',
     grant_admin: false,
+    admin_notes: '',
   });
 
   const [formData, setFormData] = useState({
@@ -107,6 +108,7 @@ export function AdminClients() {
     address: '',
     birthday: '',
     preferred_language: 'en',
+    admin_notes: '',
   });
 
   useEffect(() => {
