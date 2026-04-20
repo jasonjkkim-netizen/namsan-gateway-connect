@@ -699,12 +699,41 @@ export function AdminOrgTree() {
                   ? `${getDisplayName(confirmDelete.node)} 멤버를 삭제하시겠습니까? (소프트 삭제 — 추후 복구 가능)`
                   : `Delete ${getDisplayName(confirmDelete.node)}? (Soft delete — can be restored later.)`}
               </p>
-              {confirmDelete.node && countDescendants(confirmDelete.node) > 0 && (
-                <p className="text-xs text-destructive">
-                  {language === 'ko'
-                    ? `⚠️ 이 멤버 하위에 ${countDescendants(confirmDelete.node)}명의 멤버가 있습니다. 하위 멤버는 그대로 유지됩니다.`
-                    : `⚠️ This member has ${countDescendants(confirmDelete.node)} downline member(s). Downline will remain in place.`}
-                </p>
+              {confirmDelete.node && confirmDelete.node.children.length > 0 && (
+                <>
+                  <p className="text-xs text-destructive">
+                    {language === 'ko'
+                      ? `⚠️ 이 멤버는 직속 하위 ${confirmDelete.node.children.length}명 (총 ${countDescendants(confirmDelete.node)}명) 을 가지고 있습니다.`
+                      : `⚠️ This member has ${confirmDelete.node.children.length} direct downline (${countDescendants(confirmDelete.node)} total).`}
+                  </p>
+                  {confirmDelete.node.parent_id ? (
+                    <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3">
+                      <Checkbox
+                        id="promote-children"
+                        checked={promoteChildren}
+                        onCheckedChange={(v) => setPromoteChildren(v === true)}
+                        disabled={deleting}
+                        className="mt-0.5"
+                      />
+                      <Label htmlFor="promote-children" className="text-xs leading-relaxed cursor-pointer">
+                        {language === 'ko'
+                          ? `직속 하위 ${confirmDelete.node.children.length}명을 상위 스폰서로 자동 승격`
+                          : `Auto-promote ${confirmDelete.node.children.length} direct downline to the parent sponsor`}
+                        <span className="block text-[10px] text-muted-foreground mt-0.5">
+                          {language === 'ko'
+                            ? '체크하지 않으면 하위 멤버는 그대로 유지됩니다 (고아 노드 발생 가능).'
+                            : 'If unchecked, downline stays in place (may become orphaned).'}
+                        </span>
+                      </Label>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">
+                      {language === 'ko'
+                        ? '※ 최상위 멤버이므로 하위 승격이 불가합니다.'
+                        : '※ Root member — promotion is not possible.'}
+                    </p>
+                  )}
+                </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
