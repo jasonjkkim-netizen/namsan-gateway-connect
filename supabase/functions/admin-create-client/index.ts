@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
         is_approved: true,
         approved_at: new Date().toISOString(),
         approved_by: callerId,
+        admin_notes: cleanNotes,
       };
 
       // If no parent given, set sales_level explicitly to 0 for webmaster, else 1
