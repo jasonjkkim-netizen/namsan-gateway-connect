@@ -10,8 +10,15 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight, Trash2 } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
+
+// Count all descendants in the subtree
+function countDescendants(node: TreeNode): number {
+  let count = node.children.length;
+  for (const child of node.children) count += countDescendants(child);
+  return count;
+}
 
 interface TreeNode {
   user_id: string;
@@ -100,11 +107,12 @@ interface TreeNodeComponentProps {
   onDragEnd: () => void;
   onDropTarget: (targetId: string | null) => void;
   onDrop: (targetNode: TreeNode) => void;
+  onDelete: (node: TreeNode) => void;
 }
 
 function TreeNodeComponent({
   node, language, depth = 0, draggedNode, dropTargetId, tree,
-  onDragStart, onDragEnd, onDropTarget, onDrop,
+  onDragStart, onDragEnd, onDropTarget, onDrop, onDelete,
 }: TreeNodeComponentProps) {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
@@ -215,15 +223,32 @@ function TreeNodeComponent({
         </div>
 
         {/* Name & Info */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0">
           <MemberLink userId={node.user_id} className="font-medium text-[10px] sm:text-sm truncate">
             {displayName}
           </MemberLink>
           <Badge variant="outline" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 hidden sm:inline-flex">
             {language === 'ko' ? roleLabel?.ko : roleLabel?.en}
           </Badge>
+          {/* Subtree count for managers (DM/Deputy DM/Principal Agent) */}
+          {hasChildren && (role === 'district_manager' || role === 'deputy_district_manager' || role === 'principal_agent') && (
+            <Badge
+              variant="secondary"
+              className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 gap-0.5"
+              title={language === 'ko' ? '하부 멤버 수 (전체)' : 'Total downline members'}
+            >
+              <Users className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+              {countDescendants(node)}
+            </Badge>
+          )}
           {node.sales_status && (
             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${STATUS_DOT[node.sales_status] || 'bg-muted-foreground'}`} title={node.sales_status} />
+          )}
+          {/* Email — placed inline next to name with reduced gap */}
+          {!isDropTarget && (
+            <span className="text-[9px] sm:text-xs text-muted-foreground hidden md:inline truncate ml-1">
+              {node.email}
+            </span>
           )}
         </div>
 
@@ -235,19 +260,23 @@ function TreeNodeComponent({
           </span>
         )}
 
-        {/* Email */}
-        {!isDropTarget && (
-          <span className="text-[9px] sm:text-xs text-muted-foreground hidden md:inline truncate max-w-[200px]">
-            {node.email}
-          </span>
-        )}
-
-        {/* Children count */}
+        {/* Direct children count */}
         {hasChildren && (
-          <Badge variant="secondary" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0">
+          <Badge variant="outline" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0">
             {node.children.length}
           </Badge>
         )}
+
+        {/* Delete button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => { e.stopPropagation(); onDelete(node); }}
+          title={language === 'ko' ? '삭제' : 'Delete'}
+        >
+          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+        </Button>
       </div>
 
       {/* Children */}
@@ -270,6 +299,7 @@ function TreeNodeComponent({
               onDragEnd={onDragEnd}
               onDropTarget={onDropTarget}
               onDrop={onDrop}
+              onDelete={onDelete}
             />
           ))}
         </div>
@@ -296,6 +326,10 @@ export function AdminOrgTree() {
     source: TreeNode | null;
     target: TreeNode | null;
   }>({ open: false, source: null, target: null });
+
+  // Delete confirmation
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; node: TreeNode | null }>({ open: false, node: null });
+  const [deleting, setDeleting] = useState(false);
 
   const buildTree = useCallback((profiles: any[]): TreeNode[] => {
     const nodeMap = new Map<string, TreeNode>();
@@ -365,6 +399,39 @@ export function AdminOrgTree() {
     setConfirmMove({ open: true, source: draggedNode, target: targetNode });
     setDraggedNode(null);
     setDropTargetId(null);
+  };
+
+  const handleDelete = (node: TreeNode) => {
+    setConfirmDelete({ open: true, node });
+  };
+
+  const executeDelete = async () => {
+    const node = confirmDelete.node;
+    if (!node) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          is_deleted: true,
+          deleted_at: new Date().toISOString(),
+          deleted_by: user?.id ?? null,
+          sales_status: 'suspended',
+        })
+        .eq('user_id', node.user_id);
+
+      if (error) {
+        toast.error(language === 'ko' ? `삭제 실패: ${error.message}` : `Delete failed: ${error.message}`);
+      } else {
+        toast.success(language === 'ko' ? '멤버가 삭제되었습니다.' : 'Member deleted.');
+        fetchData();
+      }
+    } catch (err: any) {
+      toast.error(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error during deletion.');
+    } finally {
+      setDeleting(false);
+      setConfirmDelete({ open: false, node: null });
+    }
   };
 
   const executeReassignment = async () => {
@@ -511,6 +578,7 @@ export function AdminOrgTree() {
                 onDragEnd={handleDragEnd}
                 onDropTarget={handleDropTarget}
                 onDrop={handleDrop}
+                onDelete={handleDelete}
               />
             ))}
           </div>
@@ -566,6 +634,45 @@ export function AdminOrgTree() {
               {reassigning
                 ? (language === 'ko' ? '처리 중...' : 'Processing...')
                 : (language === 'ko' ? '재배치' : 'Reassign')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={confirmDelete.open} onOpenChange={(open) => !deleting && setConfirmDelete({ ...confirmDelete, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'ko' ? '멤버 삭제 확인' : 'Confirm Member Deletion'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                {language === 'ko'
+                  ? `${getDisplayName(confirmDelete.node)} 멤버를 삭제하시겠습니까? (소프트 삭제 — 추후 복구 가능)`
+                  : `Delete ${getDisplayName(confirmDelete.node)}? (Soft delete — can be restored later.)`}
+              </p>
+              {confirmDelete.node && countDescendants(confirmDelete.node) > 0 && (
+                <p className="text-xs text-destructive">
+                  {language === 'ko'
+                    ? `⚠️ 이 멤버 하위에 ${countDescendants(confirmDelete.node)}명의 멤버가 있습니다. 하위 멤버는 그대로 유지됩니다.`
+                    : `⚠️ This member has ${countDescendants(confirmDelete.node)} downline member(s). Downline will remain in place.`}
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              {language === 'ko' ? '취소' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); executeDelete(); }}
+            >
+              {deleting
+                ? (language === 'ko' ? '삭제 중...' : 'Deleting...')
+                : (language === 'ko' ? '삭제' : 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
