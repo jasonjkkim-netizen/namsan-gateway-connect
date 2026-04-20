@@ -582,6 +582,10 @@ export function AdminClients() {
                 className="pl-9 text-sm h-8"
               />
             </div>
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1">
+              <UserPlus className="h-4 w-4" />
+              {language === 'ko' ? '고객 추가' : 'Add Client'}
+            </Button>
           </div>
         </div>
 
