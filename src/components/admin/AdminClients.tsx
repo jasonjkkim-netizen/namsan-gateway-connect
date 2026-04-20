@@ -58,6 +58,7 @@ interface Profile {
   deleted_by: string | null;
   parent_id: string | null;
   sales_role: string | null;
+  admin_notes: string | null;
 }
 
 interface SalesMember {
