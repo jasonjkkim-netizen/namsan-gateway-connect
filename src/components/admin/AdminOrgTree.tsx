@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight } from 'lucide-react';
+import { MemberLink } from '@/components/MemberLink';
 
 interface TreeNode {
   user_id: string;
@@ -215,7 +216,9 @@ function TreeNodeComponent({
 
         {/* Name & Info */}
         <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
-          <span className="font-medium text-[10px] sm:text-sm truncate">{displayName}</span>
+          <MemberLink userId={node.user_id} className="font-medium text-[10px] sm:text-sm truncate">
+            {displayName}
+          </MemberLink>
           <Badge variant="outline" className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 h-4 sm:h-5 flex-shrink-0 hidden sm:inline-flex">
             {language === 'ko' ? roleLabel?.ko : roleLabel?.en}
           </Badge>
