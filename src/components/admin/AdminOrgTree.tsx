@@ -357,6 +357,9 @@ export function AdminOrgTree() {
   const [deleting, setDeleting] = useState(false);
   const [promoteChildren, setPromoteChildren] = useState(false);
 
+  // Per-user investment aggregates (count + total normalized to USD for subtree comparability)
+  const [invMap, setInvMap] = useState<Map<string, { count: number; totalUSD: number }>>(new Map());
+
   const buildTree = useCallback((profiles: any[]): TreeNode[] => {
     const nodeMap = new Map<string, TreeNode>();
     profiles.forEach((p) => {
