@@ -21,6 +21,7 @@ import {
 import { MemberLink } from '@/components/MemberLink';
 import { InlineInvestmentForm } from '@/components/sales/InlineInvestmentForm';
 import { EditableCommissionRow } from '@/components/sales/EditableCommissionRow';
+import { EditableInvestmentRow } from '@/components/sales/EditableInvestmentRow';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
   webmaster: { en: 'Webmaster', ko: '웹마스터' },
