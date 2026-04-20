@@ -83,6 +83,19 @@ export function AdminClients() {
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Profile | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    full_name_ko: '',
+    phone: '',
+    address: '',
+    birthday: '',
+    preferred_language: 'ko',
+    parent_id: '__none__',
+  });
 
   const [formData, setFormData] = useState({
     full_name: '',
