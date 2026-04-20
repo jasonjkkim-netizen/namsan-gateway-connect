@@ -1,0 +1,638 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { Header } from '@/components/Header';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
+import { toast } from 'sonner';
+import {
+  ArrowLeft, Mail, Phone, MapPin, Calendar, User as UserIcon,
+  Users, Briefcase, Coins, Save, ChevronUp, ChevronDown,
+} from 'lucide-react';
+import { MemberLink } from '@/components/MemberLink';
+
+const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
+  webmaster: { en: 'Webmaster', ko: '웹마스터' },
+  district_manager: { en: 'General Manager', ko: '총괄관리' },
+  deputy_district_manager: { en: 'Deputy GM', ko: '부총괄관리' },
+  principal_agent: { en: 'Principal Agent', ko: '수석 에이전트' },
+  agent: { en: 'Agent', ko: '에이전트' },
+  client: { en: 'Client', ko: '고객' },
+};
+
+interface MemberProfile {
+  user_id: string;
+  email: string;
+  full_name: string;
+  full_name_ko: string | null;
+  phone: string | null;
+  address: string | null;
+  birthday: string | null;
+  sales_role: string | null;
+  sales_status: string | null;
+  sales_level: number | null;
+  parent_id: string | null;
+  admin_notes: string | null;
+  created_at: string;
+  is_approved: boolean | null;
+}
+
+interface InvestmentRow {
+  id: string;
+  product_name_en: string;
+  product_name_ko: string;
+  investment_amount: number;
+  current_value: number;
+  status: string | null;
+  start_date: string;
+  maturity_date: string | null;
+  invested_currency: string | null;
+}
+
+interface CommissionRow {
+  id: string;
+  investment_id: string;
+  from_user_id: string | null;
+  to_user_id: string;
+  layer: number;
+  upfront_amount: number | null;
+  performance_amount: number | null;
+  rate_used: number | null;
+  currency: string | null;
+  status: string;
+  created_at: string;
+}
+
+interface AncestorRow {
+  user_id: string;
+  full_name: string;
+  sales_role: string;
+  sales_level: number;
+  depth: number;
+}
+
+interface DownlineRow {
+  user_id: string;
+  full_name: string;
+  sales_role: string;
+  sales_level: number;
+  parent_id: string;
+  depth: number;
+}
+
+export default function MemberDetail() {
+  const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
+  const { language, formatCurrency, formatDate } = useLanguage();
+  const { user, isAdmin, profile: myProfile } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
+  const [profile, setProfile] = useState<MemberProfile | null>(null);
+  const [investments, setInvestments] = useState<InvestmentRow[]>([]);
+  const [commissions, setCommissions] = useState<CommissionRow[]>([]);
+  const [ancestors, setAncestors] = useState<AncestorRow[]>([]);
+  const [downline, setDownline] = useState<DownlineRow[]>([]);
+  const [parentName, setParentName] = useState<string>('');
+  const [downlineNames, setDownlineNames] = useState<Record<string, string>>({});
+
+  // Memo (admin notes)
+  const [notesDraft, setNotesDraft] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
+  const canEditNotes = isAdmin;
+
+  const myRole = (myProfile as any)?.sales_role;
+  const isDM = myRole === 'district_manager' || myRole === 'webmaster';
+
+  useEffect(() => {
+    if (!user || !userId) return;
+    loadAll();
+  }, [user, userId]);
+
+  async function loadAll() {
+    if (!userId || !user) return;
+    setLoading(true);
+    setAccessDenied(false);
+
+    try {
+      // 1) Permission gate: admin sees all; DM/sales must be in subtree (or self)
+      let allowed = isAdmin || user.id === userId;
+      if (!allowed) {
+        const { data: subtree } = await supabase.rpc('is_in_subtree', {
+          _ancestor_id: user.id,
+          _descendant_id: userId,
+        });
+        allowed = !!subtree;
+      }
+
+      if (!allowed) {
+        setAccessDenied(true);
+        setLoading(false);
+        return;
+      }
+
+      // 2) Fetch profile (use profiles table — RLS allows admin/DM/self/subtree)
+      const { data: prof, error: profErr } = await supabase
+        .from('profiles')
+        .select('user_id, email, full_name, full_name_ko, phone, address, birthday, sales_role, sales_status, sales_level, parent_id, admin_notes, created_at, is_approved')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (profErr || !prof) {
+        toast.error(language === 'ko' ? '프로필을 불러올 수 없습니다' : 'Cannot load profile');
+        setLoading(false);
+        return;
+      }
+
+      setProfile(prof as MemberProfile);
+      setNotesDraft((prof as MemberProfile).admin_notes || '');
+
+      // 3) Parallel fetches
+      const [invRes, commRes, ancRes, subRes] = await Promise.all([
+        supabase
+          .from('client_investments')
+          .select('id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency')
+          .eq('user_id', userId)
+          .order('start_date', { ascending: false }),
+        supabase
+          .from('commission_distributions')
+          .select('*')
+          .or(`to_user_id.eq.${userId},from_user_id.eq.${userId}`)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase.rpc('get_sales_ancestors', { _user_id: userId }),
+        supabase.rpc('get_sales_subtree', { _user_id: userId }),
+      ]);
+
+      setInvestments((invRes.data || []) as InvestmentRow[]);
+      setCommissions((commRes.data || []) as CommissionRow[]);
+      setAncestors((ancRes.data || []) as AncestorRow[]);
+      setDownline((subRes.data || []) as DownlineRow[]);
+
+      // 4) Resolve parent name + downline names
+      if (prof.parent_id) {
+        const { data: parent } = await supabase
+          .from('profiles')
+          .select('full_name, full_name_ko')
+          .eq('user_id', prof.parent_id)
+          .maybeSingle();
+        if (parent) {
+          setParentName(language === 'ko' && parent.full_name_ko ? parent.full_name_ko : parent.full_name);
+        }
+      }
+
+      // Resolve commission counterpart names
+      const counterpartIds = new Set<string>();
+      (commRes.data || []).forEach((c: any) => {
+        if (c.from_user_id && c.from_user_id !== userId) counterpartIds.add(c.from_user_id);
+        if (c.to_user_id !== userId) counterpartIds.add(c.to_user_id);
+      });
+      if (counterpartIds.size > 0) {
+        const { data: cps } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, full_name_ko')
+          .in('user_id', Array.from(counterpartIds));
+        const map: Record<string, string> = {};
+        (cps || []).forEach((p: any) => {
+          map[p.user_id] = language === 'ko' && p.full_name_ko ? p.full_name_ko : p.full_name;
+        });
+        setDownlineNames(map);
+      }
+    } catch (err) {
+      console.error('MemberDetail load error:', err);
+      toast.error(language === 'ko' ? '데이터 로드 실패' : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const displayName = profile
+    ? (language === 'ko' && profile.full_name_ko ? profile.full_name_ko : profile.full_name)
+    : '';
+  const altName = profile
+    ? (language === 'ko' && profile.full_name_ko ? profile.full_name : profile.full_name_ko || '')
+    : '';
+  const roleLabel = profile?.sales_role
+    ? ROLE_LABELS[profile.sales_role]?.[language === 'ko' ? 'ko' : 'en'] || profile.sales_role
+    : '—';
+
+  const handleSaveNotes = async () => {
+    if (!profile) return;
+    setSavingNotes(true);
+    const cleanNotes = (notesDraft || '').slice(0, 5000) || null;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ admin_notes: cleanNotes })
+      .eq('user_id', profile.user_id);
+    setSavingNotes(false);
+    if (error) {
+      toast.error(language === 'ko' ? '메모 저장 실패' : 'Failed to save notes');
+    } else {
+      toast.success(language === 'ko' ? '메모 저장 완료' : 'Notes saved');
+      setProfile({ ...profile, admin_notes: cleanNotes });
+    }
+  };
+
+  // Aggregations
+  const totalInvested = investments.reduce((s, i) => s + (Number(i.investment_amount) || 0), 0);
+  const totalCurrent = investments.reduce((s, i) => s + (Number(i.current_value) || 0), 0);
+  const earnedTotal = commissions
+    .filter((c) => c.to_user_id === userId)
+    .reduce((s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), 0);
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container py-12 text-center">
+          <h1 className="text-2xl font-serif font-semibold mb-3">
+            {language === 'ko' ? '접근 권한 없음' : 'Access Denied'}
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {language === 'ko'
+              ? '이 멤버 정보를 볼 수 있는 권한이 없습니다.'
+              : 'You do not have permission to view this member.'}
+          </p>
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            {language === 'ko' ? '뒤로' : 'Back'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="container py-4 sm:py-6 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="h-8 px-2">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            <span className="text-xs sm:text-sm">{language === 'ko' ? '뒤로' : 'Back'}</span>
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : !profile ? (
+          <Card className="p-6 text-center text-muted-foreground">
+            {language === 'ko' ? '프로필을 찾을 수 없습니다' : 'Profile not found'}
+          </Card>
+        ) : (
+          <>
+            {/* Header card */}
+            <Card className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="rounded-full bg-primary/10 p-3 shrink-0">
+                    <UserIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <h1 className="text-lg sm:text-2xl font-serif font-semibold truncate">{displayName}</h1>
+                    {altName && <p className="text-xs sm:text-sm text-muted-foreground truncate">{altName}</p>}
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <Badge variant="default" className="text-[10px] sm:text-xs">{roleLabel}</Badge>
+                      {profile.sales_status && (
+                        <Badge variant="outline" className="text-[10px] sm:text-xs capitalize">{profile.sales_status}</Badge>
+                      )}
+                      {profile.is_approved === false && (
+                        <Badge variant="destructive" className="text-[10px] sm:text-xs">
+                          {language === 'ko' ? '미승인' : 'Unapproved'}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full sm:w-auto">
+                  <div className="text-center px-2 py-1 sm:px-3 sm:py-2 rounded border border-border">
+                    <div className="text-[9px] sm:text-[10px] text-muted-foreground">
+                      {language === 'ko' ? '투자건수' : 'Investments'}
+                    </div>
+                    <div className="text-sm sm:text-base font-semibold">{investments.length}</div>
+                  </div>
+                  <div className="text-center px-2 py-1 sm:px-3 sm:py-2 rounded border border-border">
+                    <div className="text-[9px] sm:text-[10px] text-muted-foreground">
+                      {language === 'ko' ? '하부 인원' : 'Downline'}
+                    </div>
+                    <div className="text-sm sm:text-base font-semibold">{downline.length}</div>
+                  </div>
+                  <div className="text-center px-2 py-1 sm:px-3 sm:py-2 rounded border border-border">
+                    <div className="text-[9px] sm:text-[10px] text-muted-foreground">
+                      {language === 'ko' ? '커미션' : 'Commissions'}
+                    </div>
+                    <div className="text-sm sm:text-base font-semibold">{commissions.length}</div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Tabs defaultValue="profile" className="space-y-4">
+              <TabsList className="w-full justify-start overflow-x-auto">
+                <TabsTrigger value="profile" className="text-xs sm:text-sm">
+                  {language === 'ko' ? '프로필' : 'Profile'}
+                </TabsTrigger>
+                <TabsTrigger value="investments" className="text-xs sm:text-sm">
+                  {language === 'ko' ? '투자 내역' : 'Investments'}
+                </TabsTrigger>
+                <TabsTrigger value="organization" className="text-xs sm:text-sm">
+                  {language === 'ko' ? '조직 정보' : 'Organization'}
+                </TabsTrigger>
+                <TabsTrigger value="commissions" className="text-xs sm:text-sm">
+                  {language === 'ko' ? '커미션 내역' : 'Commissions'}
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Profile Tab */}
+              <TabsContent value="profile" className="space-y-4">
+                <Card className="p-4 sm:p-6">
+                  <h2 className="text-sm sm:text-base font-semibold mb-3">
+                    {language === 'ko' ? '기본 정보' : 'Basic Info'}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <InfoRow icon={Mail} label={language === 'ko' ? '이메일' : 'Email'} value={profile.email} />
+                    <InfoRow icon={Phone} label={language === 'ko' ? '연락처' : 'Phone'} value={profile.phone || '—'} />
+                    <InfoRow icon={MapPin} label={language === 'ko' ? '주소' : 'Address'} value={profile.address || '—'} />
+                    <InfoRow icon={Calendar} label={language === 'ko' ? '생년월일' : 'Birthday'} value={profile.birthday ? formatDate(profile.birthday) : '—'} />
+                    <InfoRow icon={Calendar} label={language === 'ko' ? '가입일' : 'Joined'} value={formatDate(profile.created_at)} />
+                    {profile.parent_id && (
+                      <div className="flex items-start gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-[10px] text-muted-foreground">{language === 'ko' ? '상위 담당' : 'Sponsor'}</div>
+                          <MemberLink userId={profile.parent_id} className="text-xs sm:text-sm font-medium">
+                            {parentName || profile.parent_id.slice(0, 8) + '…'}
+                          </MemberLink>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm sm:text-base font-semibold">
+                      {language === 'ko' ? '관리자 메모' : 'Admin Notes'}
+                    </h2>
+                    {canEditNotes && (
+                      <Button size="sm" onClick={handleSaveNotes} disabled={savingNotes} className="h-7 text-xs">
+                        <Save className="h-3 w-3 mr-1" />
+                        {language === 'ko' ? '저장' : 'Save'}
+                      </Button>
+                    )}
+                  </div>
+                  {canEditNotes ? (
+                    <Textarea
+                      value={notesDraft}
+                      onChange={(e) => setNotesDraft(e.target.value)}
+                      placeholder={language === 'ko' ? '고객별 특수 정보, 메모 등' : 'Client-specific notes...'}
+                      rows={6}
+                      maxLength={5000}
+                      className="text-sm"
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {profile.admin_notes || (language === 'ko' ? '메모 없음' : 'No notes')}
+                    </p>
+                  )}
+                </Card>
+              </TabsContent>
+
+              {/* Investments Tab */}
+              <TabsContent value="investments" className="space-y-4">
+                <Card className="p-4 sm:p-6">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    <Stat label={language === 'ko' ? '총 투자' : 'Total Invested'} value={formatCurrency(totalInvested)} />
+                    <Stat label={language === 'ko' ? '현재 가치' : 'Current Value'} value={formatCurrency(totalCurrent)} />
+                    <Stat
+                      label={language === 'ko' ? '평가 손익' : 'Unrealized P/L'}
+                      value={formatCurrency(totalCurrent - totalInvested)}
+                      positive={totalCurrent - totalInvested >= 0}
+                    />
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table className="text-xs">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{language === 'ko' ? '상품' : 'Product'}</TableHead>
+                          <TableHead className="text-right">{language === 'ko' ? '투자금액' : 'Amount'}</TableHead>
+                          <TableHead className="text-right">{language === 'ko' ? '현재가치' : 'Current'}</TableHead>
+                          <TableHead className="text-right hidden sm:table-cell">{language === 'ko' ? '수익률' : 'Return'}</TableHead>
+                          <TableHead className="hidden md:table-cell">{language === 'ko' ? '시작일' : 'Start'}</TableHead>
+                          <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {investments.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                              {language === 'ko' ? '투자 내역이 없습니다' : 'No investments'}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          investments.map((inv) => {
+                            const ret = inv.investment_amount > 0
+                              ? ((inv.current_value - inv.investment_amount) / inv.investment_amount) * 100
+                              : 0;
+                            return (
+                              <TableRow key={inv.id}>
+                                <TableCell className="font-medium">
+                                  {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
+                                </TableCell>
+                                <TableCell className="text-right">{formatCurrency(inv.investment_amount)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(inv.current_value)}</TableCell>
+                                <TableCell className={`text-right hidden sm:table-cell ${ret >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                                  {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell">{formatDate(inv.start_date)}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-[10px]">{inv.status || '—'}</Badge>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              {/* Organization Tab */}
+              <TabsContent value="organization" className="space-y-4">
+                <Card className="p-4 sm:p-6">
+                  <h2 className="text-sm sm:text-base font-semibold mb-3 flex items-center gap-2">
+                    <ChevronUp className="h-4 w-4" />
+                    {language === 'ko' ? '상위 조직 (Sponsor 체인)' : 'Upline (Sponsor Chain)'}
+                  </h2>
+                  {ancestors.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'ko' ? '상위 멤버 없음' : 'No ancestors'}
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {ancestors.map((a) => (
+                        <div key={a.user_id} className="flex items-center justify-between rounded border border-border px-3 py-2 text-xs sm:text-sm">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-muted-foreground text-[10px] w-6 shrink-0">L{a.depth}</span>
+                            <MemberLink userId={a.user_id} className="font-medium truncate">
+                              {a.full_name}
+                            </MemberLink>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] shrink-0">
+                            {ROLE_LABELS[a.sales_role]?.[language === 'ko' ? 'ko' : 'en'] || a.sales_role}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                <Card className="p-4 sm:p-6">
+                  <h2 className="text-sm sm:text-base font-semibold mb-3 flex items-center gap-2">
+                    <ChevronDown className="h-4 w-4" />
+                    {language === 'ko' ? `하위 조직 (${downline.length}명)` : `Downline (${downline.length})`}
+                  </h2>
+                  {downline.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {language === 'ko' ? '하위 멤버 없음' : 'No downline'}
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5 max-h-96 overflow-y-auto">
+                      {downline.map((d) => (
+                        <div
+                          key={d.user_id}
+                          className="flex items-center justify-between rounded border border-border px-3 py-2 text-xs sm:text-sm"
+                          style={{ paddingLeft: `${d.depth * 12 + 12}px` }}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <MemberLink userId={d.user_id} className="font-medium truncate">
+                              {d.full_name}
+                            </MemberLink>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] shrink-0">
+                            {ROLE_LABELS[d.sales_role]?.[language === 'ko' ? 'ko' : 'en'] || d.sales_role}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </TabsContent>
+
+              {/* Commissions Tab */}
+              <TabsContent value="commissions" className="space-y-4">
+                <Card className="p-4 sm:p-6">
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    <Stat
+                      label={language === 'ko' ? '수령 합계' : 'Earned Total'}
+                      value={formatCurrency(earnedTotal)}
+                      positive
+                    />
+                    <Stat label={language === 'ko' ? '건수' : 'Count'} value={String(commissions.length)} />
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table className="text-xs">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{language === 'ko' ? '방향' : 'Direction'}</TableHead>
+                          <TableHead>{language === 'ko' ? '상대' : 'Counterpart'}</TableHead>
+                          <TableHead className="text-right">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                          <TableHead className="text-right">{language === 'ko' ? '성과' : 'Performance'}</TableHead>
+                          <TableHead className="hidden sm:table-cell">{language === 'ko' ? '레이어' : 'Layer'}</TableHead>
+                          <TableHead>{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                          <TableHead className="hidden md:table-cell">{language === 'ko' ? '일자' : 'Date'}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {commissions.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
+                              {language === 'ko' ? '커미션 내역이 없습니다' : 'No commissions'}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          commissions.map((c) => {
+                            const isEarned = c.to_user_id === userId;
+                            const counterpartId = isEarned ? c.from_user_id : c.to_user_id;
+                            const counterpartName = counterpartId
+                              ? downlineNames[counterpartId] || counterpartId.slice(0, 8) + '…'
+                              : '—';
+                            return (
+                              <TableRow key={c.id}>
+                                <TableCell>
+                                  <Badge variant={isEarned ? 'default' : 'outline'} className="text-[10px]">
+                                    {isEarned
+                                      ? (language === 'ko' ? '수령' : 'Earned')
+                                      : (language === 'ko' ? '발생' : 'Source')}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <MemberLink userId={counterpartId} className="text-xs">
+                                    {counterpartName}
+                                  </MemberLink>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {c.upfront_amount ? formatCurrency(Number(c.upfront_amount)) : '—'}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {c.performance_amount ? formatCurrency(Number(c.performance_amount)) : '—'}
+                                </TableCell>
+                                <TableCell className="hidden sm:table-cell">{c.layer}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-[10px] capitalize">{c.status}</Badge>
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell whitespace-nowrap">
+                                  {formatDate(c.created_at)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <div className="text-[10px] text-muted-foreground">{label}</div>
+        <div className="text-xs sm:text-sm break-all">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+  return (
+    <div className="flex-1 min-w-[100px] rounded border border-border p-2 sm:p-3">
+      <div className="text-[10px] sm:text-xs text-muted-foreground">{label}</div>
+      <div className={`text-sm sm:text-lg font-semibold ${positive === true ? 'text-emerald-600' : positive === false ? 'text-destructive' : ''}`}>
+        {value}
+      </div>
+    </div>
+  );
+}
