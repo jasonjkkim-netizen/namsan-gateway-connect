@@ -392,6 +392,8 @@ export function AdminClients() {
       setCreating(false);
     }
   };
+
+  const activeProfiles = profiles.filter(p => !p.is_deleted);
   const deletedProfiles = profiles.filter(p => p.is_deleted);
 
   const filteredProfiles = activeProfiles.filter(
