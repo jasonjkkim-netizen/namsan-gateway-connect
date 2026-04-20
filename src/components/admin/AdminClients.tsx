@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { clientProfileSchema, validateFormData } from '@/lib/admin-validation';
@@ -58,6 +59,7 @@ interface Profile {
   deleted_by: string | null;
   parent_id: string | null;
   sales_role: string | null;
+  admin_notes: string | null;
 }
 
 interface SalesMember {
@@ -97,6 +99,7 @@ export function AdminClients() {
     parent_id: '__none__',
     sales_role: 'client',
     grant_admin: false,
+    admin_notes: '',
   });
 
   const [formData, setFormData] = useState({
@@ -106,6 +109,7 @@ export function AdminClients() {
     address: '',
     birthday: '',
     preferred_language: 'en',
+    admin_notes: '',
   });
 
   useEffect(() => {
@@ -249,6 +253,7 @@ export function AdminClients() {
       address: profile.address || '',
       birthday: profile.birthday || '',
       preferred_language: profile.preferred_language || 'en',
+      admin_notes: profile.admin_notes || '',
     });
     setDialogOpen(true);
   };
@@ -269,6 +274,8 @@ export function AdminClients() {
       return;
     }
 
+    const cleanNotes = (formData.admin_notes || '').slice(0, 5000) || null;
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -278,6 +285,7 @@ export function AdminClients() {
         address: validationResult.data.address ?? null,
         birthday: formData.birthday || null,
         preferred_language: validationResult.data.preferred_language!,
+        admin_notes: cleanNotes,
       })
       .eq('id', editingProfile.id);
 
@@ -352,11 +360,10 @@ export function AdminClients() {
   };
 
   const handleCreate = async () => {
-    if (!createForm.email || !createForm.password || !createForm.full_name) {
-      toast.error(language === 'ko' ? '이메일, 비밀번호, 이름은 필수입니다' : 'Email, password and name are required');
-      return;
-    }
-    if (createForm.password.length < 6) {
+    // Admin direct entry: no required fields. Backend will auto-generate
+    // placeholders for missing email/password/name. Only enforce password
+    // length if the admin explicitly typed one.
+    if (createForm.password && createForm.password.length > 0 && createForm.password.length < 6) {
       toast.error(language === 'ko' ? '비밀번호는 6자 이상이어야 합니다' : 'Password must be at least 6 characters');
       return;
     }
@@ -364,9 +371,9 @@ export function AdminClients() {
     try {
       const { data, error } = await supabase.functions.invoke('admin-create-client', {
         body: {
-          email: createForm.email.trim(),
-          password: createForm.password,
-          full_name: createForm.full_name.trim(),
+          email: createForm.email.trim() || null,
+          password: createForm.password || null,
+          full_name: createForm.full_name.trim() || null,
           full_name_ko: createForm.full_name_ko.trim() || null,
           phone: createForm.phone.trim() || null,
           address: createForm.address.trim() || null,
@@ -375,6 +382,7 @@ export function AdminClients() {
           parent_id: createForm.parent_id === '__none__' ? null : createForm.parent_id,
           sales_role: createForm.sales_role,
           grant_admin: createForm.grant_admin,
+          admin_notes: createForm.admin_notes.trim() || null,
         },
       });
       if (error || (data && (data as any).error)) {
@@ -387,7 +395,7 @@ export function AdminClients() {
           email: '', password: '', full_name: '', full_name_ko: '',
           phone: '', address: '', birthday: '',
           preferred_language: 'ko', parent_id: '__none__',
-          sales_role: 'client', grant_admin: false,
+          sales_role: 'client', grant_admin: false, admin_notes: '',
         });
         fetchData();
       }
@@ -656,6 +664,18 @@ export function AdminClients() {
               <Label>{language === 'ko' ? '생년월일' : 'Birthday'}</Label>
               <Input type="date" value={formData.birthday} onChange={(e) => setFormData({ ...formData, birthday: e.target.value })} />
             </div>
+            <div className="space-y-2">
+              <Label>
+                {language === 'ko' ? '메모 (관리자 전용)' : 'Notes (Admin Only)'}
+              </Label>
+              <Textarea
+                value={formData.admin_notes}
+                onChange={(e) => setFormData({ ...formData, admin_notes: e.target.value })}
+                placeholder={language === 'ko' ? '고객별 특수 정보, 메모 등' : 'Client-specific notes, special information, etc.'}
+                rows={4}
+                maxLength={5000}
+              />
+            </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 {language === 'ko' ? '취소' : 'Cancel'}
@@ -721,9 +741,14 @@ export function AdminClients() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-3 max-h-[70vh] overflow-y-auto pr-2">
+            <p className="text-[11px] text-muted-foreground bg-muted/40 rounded p-2">
+              {language === 'ko'
+                ? '관리자 직접 입력 시 모든 항목은 선택 사항입니다. 비워둔 이메일/비밀번호/이름은 자동으로 임시 값이 생성됩니다.'
+                : 'All fields are optional for admin direct entry. Missing email/password/name will be auto-generated as placeholders.'}
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '이메일 *' : 'Email *'}</Label>
+                <Label>{language === 'ko' ? '이메일' : 'Email'}</Label>
                 <Input
                   type="email"
                   value={createForm.email}
@@ -732,18 +757,18 @@ export function AdminClients() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '비밀번호 *' : 'Password *'}</Label>
+                <Label>{language === 'ko' ? '비밀번호' : 'Password'}</Label>
                 <Input
                   type="text"
                   value={createForm.password}
                   onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                  placeholder={language === 'ko' ? '6자 이상' : 'Min 6 chars'}
+                  placeholder={language === 'ko' ? '6자 이상 (선택)' : 'Min 6 chars (optional)'}
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>{language === 'ko' ? '이름 (영문) *' : 'Name (English) *'}</Label>
+                <Label>{language === 'ko' ? '이름 (영문)' : 'Name (English)'}</Label>
                 <Input
                   value={createForm.full_name}
                   onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
@@ -849,6 +874,18 @@ export function AdminClients() {
               <Switch
                 checked={createForm.grant_admin}
                 onCheckedChange={(checked) => setCreateForm({ ...createForm, grant_admin: checked })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>
+                {language === 'ko' ? '메모 (관리자 전용)' : 'Notes (Admin Only)'}
+              </Label>
+              <Textarea
+                value={createForm.admin_notes}
+                onChange={(e) => setCreateForm({ ...createForm, admin_notes: e.target.value })}
+                placeholder={language === 'ko' ? '고객별 특수 정보, 메모 등' : 'Client-specific notes, special information, etc.'}
+                rows={4}
+                maxLength={5000}
               />
             </div>
             <div className="flex justify-end gap-2 pt-3">

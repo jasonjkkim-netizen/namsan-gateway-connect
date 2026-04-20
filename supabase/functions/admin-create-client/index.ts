@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const {
+    let {
       email,
       password,
       full_name,
@@ -76,32 +76,36 @@ Deno.serve(async (req) => {
       parent_id,
       sales_role,
       grant_admin,
+      admin_notes,
     } = body ?? {};
 
-    // Validate required fields
-    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 255) {
-      return new Response(JSON.stringify({ error: "Valid email is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Admin-create: relax requirements. Auto-generate fallbacks where missing.
+    // Generate placeholder email if missing/invalid
+    const emailValid = typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 255;
+    if (!emailValid) {
+      const ts = Date.now();
+      const rand = Math.random().toString(36).slice(2, 8);
+      email = `client_${ts}_${rand}@placeholder.local`;
     }
+    // Generate random password if missing or too short
     if (!password || typeof password !== "string" || password.length < 6) {
-      return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      password = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
     }
-    if (!full_name || typeof full_name !== "string" || full_name.trim().length < 1 || full_name.length > 100) {
-      return new Response(JSON.stringify({ error: "Full name is required (1-100 chars)" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Use Korean name or email-prefix as fallback for full_name
+    if (!full_name || typeof full_name !== "string" || full_name.trim().length < 1) {
+      if (full_name_ko && String(full_name_ko).trim().length > 0) {
+        full_name = String(full_name_ko).trim();
+      } else {
+        full_name = String(email).split("@")[0];
+      }
     }
+    if (full_name.length > 100) full_name = full_name.slice(0, 100);
 
     const finalRole = sales_role && VALID_ROLES.includes(sales_role) ? sales_role : "client";
 
     const cleanName = full_name.trim().replace(/[\x00-\x1F\x7F]/g, "");
     const cleanNameKo = full_name_ko ? String(full_name_ko).trim().slice(0, 100).replace(/[\x00-\x1F\x7F]/g, "") : null;
+    const cleanNotes = admin_notes ? String(admin_notes).slice(0, 5000).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "") : null;
 
     // Create auth user
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -137,6 +141,7 @@ Deno.serve(async (req) => {
         is_approved: true,
         approved_at: new Date().toISOString(),
         approved_by: callerId,
+        admin_notes: cleanNotes,
       };
 
       // If no parent given, set sales_level explicitly to 0 for webmaster, else 1
