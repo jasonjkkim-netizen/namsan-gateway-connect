@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight, Trash2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { MemberLink } from '@/components/MemberLink';
 
 // Count all descendants in the subtree
