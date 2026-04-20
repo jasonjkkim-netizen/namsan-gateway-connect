@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight, Building2, UserCog, Users, User, RefreshCw, GripVertical, ArrowRight, Trash2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { MemberLink } from '@/components/MemberLink';
 
 // Count all descendants in the subtree
@@ -330,6 +332,7 @@ export function AdminOrgTree() {
   // Delete confirmation
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; node: TreeNode | null }>({ open: false, node: null });
   const [deleting, setDeleting] = useState(false);
+  const [promoteChildren, setPromoteChildren] = useState(false);
 
   const buildTree = useCallback((profiles: any[]): TreeNode[] => {
     const nodeMap = new Map<string, TreeNode>();
@@ -402,6 +405,7 @@ export function AdminOrgTree() {
   };
 
   const handleDelete = (node: TreeNode) => {
+    setPromoteChildren(false);
     setConfirmDelete({ open: true, node });
   };
 
@@ -410,6 +414,43 @@ export function AdminOrgTree() {
     if (!node) return;
     setDeleting(true);
     try {
+      // If requested and node has children, promote them to its parent (grandparent) first.
+      // If node has no parent (root), promotion is not possible — children stay in place.
+      if (promoteChildren && node.children.length > 0 && node.parent_id) {
+        const childIds = node.children.map((c) => c.user_id);
+        const { error: promoteErr } = await supabase
+          .from('profiles')
+          .update({ parent_id: node.parent_id })
+          .in('user_id', childIds);
+
+        if (promoteErr) {
+          toast.error(language === 'ko'
+            ? `하위 멤버 승격 실패: ${promoteErr.message}`
+            : `Failed to promote downline: ${promoteErr.message}`);
+          setDeleting(false);
+          return;
+        }
+
+        // Recalculate commissions for each promoted child's investments
+        for (const childId of childIds) {
+          const { data: invs } = await supabase
+            .from('client_investments')
+            .select('id')
+            .eq('user_id', childId);
+          if (invs) {
+            for (const inv of invs) {
+              try {
+                await supabase.functions.invoke('calculate-commissions', {
+                  body: { investment_id: inv.id },
+                });
+              } catch (e) {
+                console.error('Commission recalc failed for', inv.id, e);
+              }
+            }
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -423,7 +464,13 @@ export function AdminOrgTree() {
       if (error) {
         toast.error(language === 'ko' ? `삭제 실패: ${error.message}` : `Delete failed: ${error.message}`);
       } else {
-        toast.success(language === 'ko' ? '멤버가 삭제되었습니다.' : 'Member deleted.');
+        toast.success(
+          promoteChildren && node.children.length > 0 && node.parent_id
+            ? (language === 'ko'
+                ? `멤버가 삭제되고 하위 ${node.children.length}명이 상위 스폰서로 승격되었습니다.`
+                : `Member deleted and ${node.children.length} downline member(s) promoted to parent sponsor.`)
+            : (language === 'ko' ? '멤버가 삭제되었습니다.' : 'Member deleted.')
+        );
         fetchData();
       }
     } catch (err: any) {
@@ -652,12 +699,41 @@ export function AdminOrgTree() {
                   ? `${getDisplayName(confirmDelete.node)} 멤버를 삭제하시겠습니까? (소프트 삭제 — 추후 복구 가능)`
                   : `Delete ${getDisplayName(confirmDelete.node)}? (Soft delete — can be restored later.)`}
               </p>
-              {confirmDelete.node && countDescendants(confirmDelete.node) > 0 && (
-                <p className="text-xs text-destructive">
-                  {language === 'ko'
-                    ? `⚠️ 이 멤버 하위에 ${countDescendants(confirmDelete.node)}명의 멤버가 있습니다. 하위 멤버는 그대로 유지됩니다.`
-                    : `⚠️ This member has ${countDescendants(confirmDelete.node)} downline member(s). Downline will remain in place.`}
-                </p>
+              {confirmDelete.node && confirmDelete.node.children.length > 0 && (
+                <>
+                  <p className="text-xs text-destructive">
+                    {language === 'ko'
+                      ? `⚠️ 이 멤버는 직속 하위 ${confirmDelete.node.children.length}명 (총 ${countDescendants(confirmDelete.node)}명) 을 가지고 있습니다.`
+                      : `⚠️ This member has ${confirmDelete.node.children.length} direct downline (${countDescendants(confirmDelete.node)} total).`}
+                  </p>
+                  {confirmDelete.node.parent_id ? (
+                    <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3">
+                      <Checkbox
+                        id="promote-children"
+                        checked={promoteChildren}
+                        onCheckedChange={(v) => setPromoteChildren(v === true)}
+                        disabled={deleting}
+                        className="mt-0.5"
+                      />
+                      <Label htmlFor="promote-children" className="text-xs leading-relaxed cursor-pointer">
+                        {language === 'ko'
+                          ? `직속 하위 ${confirmDelete.node.children.length}명을 상위 스폰서로 자동 승격`
+                          : `Auto-promote ${confirmDelete.node.children.length} direct downline to the parent sponsor`}
+                        <span className="block text-[10px] text-muted-foreground mt-0.5">
+                          {language === 'ko'
+                            ? '체크하지 않으면 하위 멤버는 그대로 유지됩니다 (고아 노드 발생 가능).'
+                            : 'If unchecked, downline stays in place (may become orphaned).'}
+                        </span>
+                      </Label>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">
+                      {language === 'ko'
+                        ? '※ 최상위 멤버이므로 하위 승격이 불가합니다.'
+                        : '※ Root member — promotion is not possible.'}
+                    </p>
+                  )}
+                </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
