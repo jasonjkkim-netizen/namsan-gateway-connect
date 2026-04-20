@@ -139,11 +139,6 @@ function TreeNodeComponent({
   node, language, depth = 0, draggedNode, dropTargetId, tree, invMap,
   onDragStart, onDragEnd, onDropTarget, onDrop, onDelete,
 }: TreeNodeComponentProps) {
-
-function TreeNodeComponent({
-  node, language, depth = 0, draggedNode, dropTargetId, tree,
-  onDragStart, onDragEnd, onDropTarget, onDrop, onDelete,
-}: TreeNodeComponentProps) {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
   const role = node.sales_role || 'client';
