@@ -638,6 +638,45 @@ export function AdminOrgTree() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={confirmDelete.open} onOpenChange={(open) => !deleting && setConfirmDelete({ ...confirmDelete, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'ko' ? '멤버 삭제 확인' : 'Confirm Member Deletion'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                {language === 'ko'
+                  ? `${getDisplayName(confirmDelete.node)} 멤버를 삭제하시겠습니까? (소프트 삭제 — 추후 복구 가능)`
+                  : `Delete ${getDisplayName(confirmDelete.node)}? (Soft delete — can be restored later.)`}
+              </p>
+              {confirmDelete.node && countDescendants(confirmDelete.node) > 0 && (
+                <p className="text-xs text-destructive">
+                  {language === 'ko'
+                    ? `⚠️ 이 멤버 하위에 ${countDescendants(confirmDelete.node)}명의 멤버가 있습니다. 하위 멤버는 그대로 유지됩니다.`
+                    : `⚠️ This member has ${countDescendants(confirmDelete.node)} downline member(s). Downline will remain in place.`}
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>
+              {language === 'ko' ? '취소' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={(e) => { e.preventDefault(); executeDelete(); }}
+            >
+              {deleting
+                ? (language === 'ko' ? '삭제 중...' : 'Deleting...')
+                : (language === 'ko' ? '삭제' : 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
