@@ -127,12 +127,18 @@ interface TreeNodeComponentProps {
   draggedNode: TreeNode | null;
   dropTargetId: string | null;
   tree: TreeNode[];
+  invMap: Map<string, { count: number; totalUSD: number }>;
   onDragStart: (node: TreeNode) => void;
   onDragEnd: () => void;
   onDropTarget: (targetId: string | null) => void;
   onDrop: (targetNode: TreeNode) => void;
   onDelete: (node: TreeNode) => void;
 }
+
+function TreeNodeComponent({
+  node, language, depth = 0, draggedNode, dropTargetId, tree, invMap,
+  onDragStart, onDragEnd, onDropTarget, onDrop, onDelete,
+}: TreeNodeComponentProps) {
 
 function TreeNodeComponent({
   node, language, depth = 0, draggedNode, dropTargetId, tree,
