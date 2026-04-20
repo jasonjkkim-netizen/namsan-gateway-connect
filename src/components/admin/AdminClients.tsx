@@ -876,9 +876,18 @@ export function AdminClients() {
                 onCheckedChange={(checked) => setCreateForm({ ...createForm, grant_admin: checked })}
               />
             </div>
-            <div className="flex justify-end gap-2 pt-3">
-              <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={creating}>
-                {language === 'ko' ? '취소' : 'Cancel'}
+            <div className="space-y-2">
+              <Label>
+                {language === 'ko' ? '메모 (관리자 전용)' : 'Notes (Admin Only)'}
+              </Label>
+              <Textarea
+                value={createForm.admin_notes}
+                onChange={(e) => setCreateForm({ ...createForm, admin_notes: e.target.value })}
+                placeholder={language === 'ko' ? '고객별 특수 정보, 메모 등' : 'Client-specific notes, special information, etc.'}
+                rows={4}
+                maxLength={5000}
+              />
+            </div>
               </Button>
               <Button onClick={handleCreate} className="btn-gold" disabled={creating}>
                 {creating
