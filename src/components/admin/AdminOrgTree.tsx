@@ -348,6 +348,7 @@ function TreeNodeComponent({
               draggedNode={draggedNode}
               dropTargetId={dropTargetId}
               tree={tree}
+              invMap={invMap}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
               onDropTarget={onDropTarget}
