@@ -93,6 +93,7 @@ export default function ProductDetail() {
   const [commissions, setCommissions] = useState<any[]>([]);
   const [investorProfiles, setInvestorProfiles] = useState<Record<string, string>>({});
   const [commLoading, setCommLoading] = useState(false);
+  const [usdKrwRate, setUsdKrwRate] = useState(1350);
 
   const handlePrint = () => {
     window.print();
@@ -152,7 +153,11 @@ export default function ProductDetail() {
     if (!id || !canSeeCommissions) return;
     async function fetchCommData() {
       setCommLoading(true);
-      const invRes = await supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id);
+      const [invRes, fxRes] = await Promise.all([
+        supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id),
+        supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
+      ]);
+      if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
       const invData = invRes.data || [];
       setInvestments(invData);
 
@@ -656,13 +661,19 @@ export default function ProductDetail() {
                       <div className="rounded-lg border p-4">
                         <p className="text-xs text-muted-foreground">{language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}</p>
                         <p className="text-2xl font-bold text-success">
-                          {formatCurrency(commissions.reduce((s, c) => s + (Number(c.upfront_amount) || 0), 0))}
+                          ₩{commissions.reduce((s, c) => {
+                            const amt = Number(c.upfront_amount) || 0;
+                            return s + ((c.currency || 'USD') === 'USD' ? amt * usdKrwRate : amt);
+                          }, 0).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}
                         </p>
                       </div>
                       <div className="rounded-lg border p-4">
                         <p className="text-xs text-muted-foreground">{language === 'ko' ? '총 성과 커미션' : 'Total Performance'}</p>
                         <p className="text-2xl font-bold text-success">
-                          {formatCurrency(commissions.reduce((s, c) => s + (Number(c.performance_amount) || 0), 0))}
+                          ₩{commissions.reduce((s, c) => {
+                            const amt = Number(c.performance_amount) || 0;
+                            return s + ((c.currency || 'USD') === 'USD' ? amt * usdKrwRate : amt);
+                          }, 0).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}
                         </p>
                       </div>
                     </div>
