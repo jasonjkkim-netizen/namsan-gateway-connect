@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Plus, Edit, Search, Trash2, Upload, X, Image } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ProductDocuments } from './ProductDocuments';
 
 interface Product {
@@ -86,6 +87,7 @@ const SALES_ROLES = [
 
 export function AdminProducts() {
   const { language, formatCurrency, formatPercent, formatDate } = useLanguage();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -354,7 +356,12 @@ export function AdminProducts() {
               filteredProducts.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">
-                    {language === 'ko' ? product.name_ko : product.name_en}
+                    <button
+                      className="text-primary hover:underline text-left"
+                      onClick={() => navigate(`/products/${product.id}`)}
+                    >
+                      {language === 'ko' ? product.name_ko : product.name_en}
+                    </button>
                   </TableCell>
                   <TableCell>
                     {language === 'ko'
