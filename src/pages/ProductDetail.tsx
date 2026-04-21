@@ -680,127 +680,138 @@ export default function ProductDetail() {
                     </div>
 
                     {/* Investor List */}
-                    <div>
-                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {language === 'ko' ? '투자자 목록' : 'Investor List'}
-                      </h3>
-                      <div className="mb-3">
-                        <ProductInlineInvestmentForm
-                          productId={product.id}
-                          productNameEn={product.name_en}
-                          productNameKo={product.name_ko}
-                          defaultCurrency={product.default_currency || product.currency || 'USD'}
-                          minInvestmentAmount={product.min_investment_amount}
-                          onCreated={() => {
-                            // Re-fetch commission data
-                            (async () => {
-                              setCommLoading(true);
-                              const [invRes, fxRes] = await Promise.all([
-                                supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id!),
-                                supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
-                              ]);
-                              if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
-                              const invData = invRes.data || [];
-                              setInvestments(invData);
-                              const invIds = invData.map((i: any) => i.id);
-                              let relevantComm: any[] = [];
-                              if (invIds.length > 0) {
-                                const { data } = await supabase.from('commission_distributions').select('*').in('investment_id', invIds).order('created_at', { ascending: false });
-                                relevantComm = data || [];
-                              }
-                              setCommissions(relevantComm);
-                              const userIds = new Set<string>();
-                              invData.forEach((i: any) => userIds.add(i.user_id));
-                              relevantComm.forEach((c: any) => { userIds.add(c.to_user_id); if (c.from_user_id) userIds.add(c.from_user_id); });
-                              if (userIds.size > 0) {
-                                const { data: profs } = await supabase.from('profiles').select('user_id, full_name, full_name_ko').in('user_id', Array.from(userIds));
-                                const map: Record<string, string> = {};
-                                (profs || []).forEach((p: any) => { map[p.user_id] = p.full_name_ko || p.full_name; });
-                                setInvestorProfiles(map);
-                              }
-                              setCommLoading(false);
-                            })();
-                          }}
-                        />
-                      </div>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
-                            <TableHead className="text-xs">{language === 'ko' ? '투자금' : 'Amount'}</TableHead>
-                            <TableHead className="text-xs">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
-                            <TableHead className="text-xs">{language === 'ko' ? '투자일' : 'Date'}</TableHead>
-                            <TableHead className="text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {investments.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center py-4 text-muted-foreground text-sm">
-                                {language === 'ko' ? '투자 내역 없음' : 'No investments'}
-                              </TableCell>
-                            </TableRow>
-                          ) : investments.map((inv) => (
-                            <TableRow key={inv.id}>
-                              <TableCell className="text-sm">
-                                <Link to={`/members/${inv.user_id}`} className="text-primary hover:underline">
-                                  {investorProfiles[inv.user_id] || inv.user_id.slice(0, 8)}
-                                </Link>
-                              </TableCell>
-                              <TableCell className="text-sm">{formatCurrency(Number(inv.investment_amount))}</TableCell>
-                              <TableCell className="text-sm">{inv.invested_currency || 'USD'}</TableCell>
-                              <TableCell className="text-sm">{formatDate(inv.start_date)}</TableCell>
-                              <TableCell>
-                                <Badge variant={inv.status === 'active' ? 'default' : 'secondary'} className="text-xs">{inv.status}</Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
 
-                    {/* Commission Distribution List */}
-                    {commissions.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                          <Coins className="h-4 w-4" />
-                          {language === 'ko' ? '커미션 분배 내역' : 'Commission Distributions'}
-                        </h3>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="text-xs">{language === 'ko' ? '수취인' : 'Recipient'}</TableHead>
-                              <TableHead className="text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
-                              <TableHead className="text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
-                              <TableHead className="text-xs">{language === 'ko' ? '성과' : 'Perf.'}</TableHead>
-                              <TableHead className="text-xs">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
-                              <TableHead className="text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {commissions.map((c) => (
-                              <TableRow key={c.id}>
-                                <TableCell className="text-sm">
-                                  <Link to={`/members/${c.to_user_id}`} className="text-primary hover:underline">
-                                    {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
-                                  </Link>
-                                </TableCell>
-                                <TableCell className="text-sm">
-                                  {c.from_user_id ? (investorProfiles[c.from_user_id] || c.from_user_id.slice(0, 8)) : '—'}
-                                </TableCell>
-                                <TableCell className="text-sm text-success">{formatCurrency(Number(c.upfront_amount) || 0)}</TableCell>
-                                <TableCell className="text-sm text-success">{formatCurrency(Number(c.performance_amount) || 0)}</TableCell>
-                                <TableCell className="text-sm">{c.rate_used != null ? `${c.rate_used}%` : '—'}</TableCell>
-                                <TableCell>
-                                  <Badge variant={c.status === 'available' ? 'default' : 'secondary'} className="text-xs">{c.status}</Badge>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
+                     {/* Investor & Commission Waterfall */}
+                     <div>
+                       <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                         <Users className="h-4 w-4" />
+                         {language === 'ko' ? '투자자 & 커미션 현황' : 'Investors & Commissions'}
+                       </h3>
+                       <div className="mb-3">
+                         <ProductInlineInvestmentForm
+                           productId={product.id}
+                           productNameEn={product.name_en}
+                           productNameKo={product.name_ko}
+                           defaultCurrency={product.default_currency || product.currency || 'USD'}
+                           minInvestmentAmount={product.min_investment_amount}
+                           onCreated={() => {
+                             (async () => {
+                               setCommLoading(true);
+                               const [invRes, fxRes] = await Promise.all([
+                                 supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id!),
+                                 supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
+                               ]);
+                               if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
+                               const invData = invRes.data || [];
+                               setInvestments(invData);
+                               const invIds = invData.map((i: any) => i.id);
+                               let relevantComm: any[] = [];
+                               if (invIds.length > 0) {
+                                 const { data } = await supabase.from('commission_distributions').select('*').in('investment_id', invIds).order('layer', { ascending: true });
+                                 relevantComm = data || [];
+                               }
+                               setCommissions(relevantComm);
+                               const userIds = new Set<string>();
+                               invData.forEach((i: any) => userIds.add(i.user_id));
+                               relevantComm.forEach((c: any) => { userIds.add(c.to_user_id); if (c.from_user_id) userIds.add(c.from_user_id); });
+                               if (userIds.size > 0) {
+                                 const { data: profs } = await supabase.from('profiles').select('user_id, full_name, full_name_ko').in('user_id', Array.from(userIds));
+                                 const map: Record<string, string> = {};
+                                 (profs || []).forEach((p: any) => { map[p.user_id] = p.full_name_ko || p.full_name; });
+                                 setInvestorProfiles(map);
+                               }
+                               setCommLoading(false);
+                             })();
+                           }}
+                         />
+                       </div>
+ 
+                       {investments.length === 0 ? (
+                         <p className="text-sm text-muted-foreground text-center py-4">
+                           {language === 'ko' ? '투자 내역 없음' : 'No investments'}
+                         </p>
+                       ) : (
+                         <div className="space-y-3">
+                           {investments.map((inv) => {
+                             const invCommissions = commissions
+                               .filter((c) => c.investment_id === inv.id)
+                               .sort((a, b) => (a.layer || 0) - (b.layer || 0));
+                             const chainNames = invCommissions.map((c) => investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8));
+                             const investorName = investorProfiles[inv.user_id] || inv.user_id.slice(0, 8);
+ 
+                             return (
+                               <div key={inv.id} className="rounded-lg border p-3 space-y-2">
+                                 {/* Investor header row */}
+                                 <div className="flex flex-wrap items-center justify-between gap-2">
+                                   <div className="flex items-center gap-2">
+                                     <Link to={`/members/${inv.user_id}`} className="text-sm font-semibold text-primary hover:underline">
+                                       {investorName}
+                                     </Link>
+                                     <Badge variant={inv.status === 'active' ? 'default' : 'secondary'} className="text-[10px]">{inv.status}</Badge>
+                                   </div>
+                                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                     <span className="font-medium text-foreground">{formatCurrency(Number(inv.investment_amount))} {inv.invested_currency || 'USD'}</span>
+                                     <span>{formatDate(inv.start_date)}</span>
+                                   </div>
+                                 </div>
+ 
+                                 {/* Waterfall chain */}
+                                 {invCommissions.length > 0 && (
+                                   <div className="pl-2 border-l-2 border-primary/20 ml-1 space-y-1">
+                                     {/* Chain summary line */}
+                                     <p className="text-[11px] text-muted-foreground">
+                                       {language === 'ko' ? '커미션 체인' : 'Commission chain'}:{' '}
+                                       <span className="text-foreground font-medium">{investorName}</span>
+                                       {chainNames.length > 0 && (
+                                         <>
+                                           {' → '}
+                                           {chainNames.map((name, idx) => (
+                                             <span key={idx}>
+                                               <span className="text-foreground font-medium">{name}</span>
+                                               {idx < chainNames.length - 1 && ' → '}
+                                             </span>
+                                           ))}
+                                         </>
+                                       )}
+                                     </p>
+ 
+                                     {/* Detail rows */}
+                                     <Table>
+                                       <TableHeader>
+                                         <TableRow>
+                                           <TableHead className="text-[11px] h-7">{language === 'ko' ? '수취인' : 'Recipient'}</TableHead>
+                                           <TableHead className="text-[11px] h-7">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                                           <TableHead className="text-[11px] h-7">{language === 'ko' ? '성과' : 'Perf.'}</TableHead>
+                                           <TableHead className="text-[11px] h-7">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
+                                           <TableHead className="text-[11px] h-7">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                                         </TableRow>
+                                       </TableHeader>
+                                       <TableBody>
+                                         {invCommissions.map((c) => (
+                                           <TableRow key={c.id}>
+                                             <TableCell className="text-xs py-1">
+                                               <Link to={`/members/${c.to_user_id}`} className="text-primary hover:underline">
+                                                 {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
+                                               </Link>
+                                             </TableCell>
+                                             <TableCell className="text-xs py-1 text-success">{formatCurrency(Number(c.upfront_amount) || 0)}</TableCell>
+                                             <TableCell className="text-xs py-1 text-success">{formatCurrency(Number(c.performance_amount) || 0)}</TableCell>
+                                             <TableCell className="text-xs py-1">{c.rate_used != null ? `${c.rate_used}%` : '—'}</TableCell>
+                                             <TableCell className="py-1">
+                                               <Badge variant={c.status === 'available' ? 'default' : 'secondary'} className="text-[10px]">{c.status}</Badge>
+                                             </TableCell>
+                                           </TableRow>
+                                         ))}
+                                       </TableBody>
+                                     </Table>
+                                   </div>
+                                 )}
+                               </div>
+                             );
+                           })}
+                         </div>
+                       )}
+                     </div>
                   </>
                 )}
               </CardContent>
