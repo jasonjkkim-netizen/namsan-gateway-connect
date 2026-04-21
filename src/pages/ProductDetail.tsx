@@ -152,16 +152,21 @@ export default function ProductDetail() {
     if (!id || !canSeeCommissions) return;
     async function fetchCommData() {
       setCommLoading(true);
-      const [invRes, commRes] = await Promise.all([
-        supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id),
-        supabase.from('commission_distributions').select('*').order('created_at', { ascending: false }),
-      ]);
+      const invRes = await supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id);
       const invData = invRes.data || [];
       setInvestments(invData);
 
-      // Filter commissions to this product's investments
-      const invIds = new Set(invData.map((i: any) => i.id));
-      const relevantComm = (commRes.data || []).filter((c: any) => invIds.has(c.investment_id));
+      // Fetch commissions server-side filtered by investment IDs
+      const invIds = invData.map((i: any) => i.id);
+      let relevantComm: any[] = [];
+      if (invIds.length > 0) {
+        const { data } = await supabase
+          .from('commission_distributions')
+          .select('*')
+          .in('investment_id', invIds)
+          .order('created_at', { ascending: false });
+        relevantComm = data || [];
+      }
       setCommissions(relevantComm);
 
       // Fetch profile names for investors & commission recipients
