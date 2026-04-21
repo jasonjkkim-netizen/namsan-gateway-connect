@@ -16,8 +16,9 @@ import {
 import { toast } from 'sonner';
 import {
   ArrowLeft, Mail, Phone, MapPin, Calendar, User as UserIcon,
-  Users, Briefcase, Coins, Save, ChevronUp, ChevronDown,
+  Users, Briefcase, Coins, Save, ChevronUp, ChevronDown, Pencil,
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { MemberLink } from '@/components/MemberLink';
 import { InlineInvestmentForm } from '@/components/sales/InlineInvestmentForm';
 import { EditableCommissionRow } from '@/components/sales/EditableCommissionRow';
@@ -114,8 +115,60 @@ export default function MemberDetail() {
   const [savingNotes, setSavingNotes] = useState(false);
   const canEditNotes = isAdmin;
 
+  // Inline profile editing
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileDraft, setProfileDraft] = useState({
+    full_name: '',
+    full_name_ko: '' as string,
+    email: '',
+    phone: '' as string,
+    address: '' as string,
+    birthday: '' as string,
+  });
   const myRole = (myProfile as any)?.sales_role;
   const isDM = myRole === 'district_manager' || myRole === 'webmaster';
+  const [savingProfile, setSavingProfile] = useState(false);
+  const canEditProfile = !!(isAdmin || isDM);
+
+  const startEditProfile = () => {
+    if (!profile) return;
+    setProfileDraft({
+      full_name: profile.full_name || '',
+      full_name_ko: profile.full_name_ko || '',
+      email: profile.email || '',
+      phone: profile.phone || '',
+      address: profile.address || '',
+      birthday: profile.birthday || '',
+    });
+    setEditingProfile(true);
+  };
+
+  const cancelEditProfile = () => setEditingProfile(false);
+
+  const saveProfile = async () => {
+    if (!profile) return;
+    setSavingProfile(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: profileDraft.full_name.trim() || profile.full_name,
+        full_name_ko: profileDraft.full_name_ko.trim() || null,
+        email: profileDraft.email.trim() || profile.email,
+        phone: profileDraft.phone.trim() || null,
+        address: profileDraft.address.trim() || null,
+        birthday: profileDraft.birthday || null,
+      })
+      .eq('user_id', profile.user_id);
+    setSavingProfile(false);
+    if (error) {
+      console.error('Profile save error:', error);
+      toast.error(language === 'ko' ? '프로필 저장 실패' : 'Failed to save profile');
+    } else {
+      toast.success(language === 'ko' ? '프로필 저장 완료' : 'Profile saved');
+      setEditingProfile(false);
+      loadAll();
+    }
+  };
 
   useEffect(() => {
     if (!user || !userId) return;
@@ -369,27 +422,72 @@ export default function MemberDetail() {
               {/* Profile Tab */}
               <TabsContent value="profile" className="space-y-4">
                 <Card className="p-4 sm:p-6">
-                  <h2 className="text-sm sm:text-base font-semibold mb-3">
-                    {language === 'ko' ? '기본 정보' : 'Basic Info'}
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <InfoRow icon={Mail} label={language === 'ko' ? '이메일' : 'Email'} value={profile.email} />
-                    <InfoRow icon={Phone} label={language === 'ko' ? '연락처' : 'Phone'} value={profile.phone || '—'} />
-                    <InfoRow icon={MapPin} label={language === 'ko' ? '주소' : 'Address'} value={profile.address || '—'} />
-                    <InfoRow icon={Calendar} label={language === 'ko' ? '생년월일' : 'Birthday'} value={profile.birthday ? formatDate(profile.birthday) : '—'} />
-                    <InfoRow icon={Calendar} label={language === 'ko' ? '가입일' : 'Joined'} value={formatDate(profile.created_at)} />
-                    {profile.parent_id && (
-                      <div className="flex items-start gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <div className="min-w-0">
-                          <div className="text-[10px] text-muted-foreground">{language === 'ko' ? '상위 담당' : 'Sponsor'}</div>
-                          <MemberLink userId={profile.parent_id} className="text-xs sm:text-sm font-medium">
-                            {parentName || profile.parent_id.slice(0, 8) + '…'}
-                          </MemberLink>
-                        </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm sm:text-base font-semibold">
+                      {language === 'ko' ? '기본 정보' : 'Basic Info'}
+                    </h2>
+                    {canEditProfile && !editingProfile && (
+                      <Button size="sm" variant="outline" onClick={startEditProfile} className="h-7 text-xs">
+                        <Pencil className="h-3 w-3 mr-1" />
+                        {language === 'ko' ? '수정' : 'Edit'}
+                      </Button>
+                    )}
+                    {editingProfile && (
+                      <div className="flex gap-1">
+                        <Button size="sm" onClick={saveProfile} disabled={savingProfile} className="h-7 text-xs">
+                          <Save className="h-3 w-3 mr-1" />
+                          {language === 'ko' ? '저장' : 'Save'}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEditProfile} disabled={savingProfile} className="h-7 text-xs">
+                          {language === 'ko' ? '취소' : 'Cancel'}
+                        </Button>
                       </div>
                     )}
                   </div>
+
+                  {editingProfile ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <EditField icon={UserIcon} label={language === 'ko' ? '영문 이름' : 'English Name'} value={profileDraft.full_name} onChange={(v) => setProfileDraft({ ...profileDraft, full_name: v })} />
+                      <EditField icon={UserIcon} label={language === 'ko' ? '한국어 이름' : 'Korean Name'} value={profileDraft.full_name_ko} onChange={(v) => setProfileDraft({ ...profileDraft, full_name_ko: v })} />
+                      <EditField icon={Mail} label={language === 'ko' ? '이메일' : 'Email'} value={profileDraft.email} onChange={(v) => setProfileDraft({ ...profileDraft, email: v })} type="email" />
+                      <EditField icon={Phone} label={language === 'ko' ? '연락처' : 'Phone'} value={profileDraft.phone} onChange={(v) => setProfileDraft({ ...profileDraft, phone: v })} type="tel" />
+                      <EditField icon={MapPin} label={language === 'ko' ? '주소' : 'Address'} value={profileDraft.address} onChange={(v) => setProfileDraft({ ...profileDraft, address: v })} />
+                      <EditField icon={Calendar} label={language === 'ko' ? '생년월일' : 'Birthday'} value={profileDraft.birthday} onChange={(v) => setProfileDraft({ ...profileDraft, birthday: v })} type="date" />
+                      <InfoRow icon={Calendar} label={language === 'ko' ? '가입일' : 'Joined'} value={formatDate(profile.created_at)} />
+                      {profile.parent_id && (
+                        <div className="flex items-start gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-[10px] text-muted-foreground">{language === 'ko' ? '상위 담당' : 'Sponsor'}</div>
+                            <MemberLink userId={profile.parent_id} className="text-xs sm:text-sm font-medium">
+                              {parentName || profile.parent_id.slice(0, 8) + '…'}
+                            </MemberLink>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <InfoRow icon={UserIcon} label={language === 'ko' ? '영문 이름' : 'English Name'} value={profile.full_name} />
+                      <InfoRow icon={UserIcon} label={language === 'ko' ? '한국어 이름' : 'Korean Name'} value={profile.full_name_ko || '—'} />
+                      <InfoRow icon={Mail} label={language === 'ko' ? '이메일' : 'Email'} value={profile.email} />
+                      <InfoRow icon={Phone} label={language === 'ko' ? '연락처' : 'Phone'} value={profile.phone || '—'} />
+                      <InfoRow icon={MapPin} label={language === 'ko' ? '주소' : 'Address'} value={profile.address || '—'} />
+                      <InfoRow icon={Calendar} label={language === 'ko' ? '생년월일' : 'Birthday'} value={profile.birthday ? formatDate(profile.birthday) : '—'} />
+                      <InfoRow icon={Calendar} label={language === 'ko' ? '가입일' : 'Joined'} value={formatDate(profile.created_at)} />
+                      {profile.parent_id && (
+                        <div className="flex items-start gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-[10px] text-muted-foreground">{language === 'ko' ? '상위 담당' : 'Sponsor'}</div>
+                            <MemberLink userId={profile.parent_id} className="text-xs sm:text-sm font-medium">
+                              {parentName || profile.parent_id.slice(0, 8) + '…'}
+                            </MemberLink>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </Card>
 
                 <Card className="p-4 sm:p-6">
@@ -622,6 +720,25 @@ function Stat({ label, value, positive }: { label: string; value: string; positi
       <div className="text-[10px] sm:text-xs text-muted-foreground">{label}</div>
       <div className={`text-sm sm:text-lg font-semibold ${positive === true ? 'text-emerald-600' : positive === false ? 'text-destructive' : ''}`}>
         {value}
+      </div>
+    </div>
+  );
+}
+
+function EditField({ icon: Icon, label, value, onChange, type = 'text' }: {
+  icon: any; label: string; value: string; onChange: (v: string) => void; type?: string;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="h-4 w-4 text-muted-foreground mt-2 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
+        <Input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 text-xs sm:text-sm"
+        />
       </div>
     </div>
   );
