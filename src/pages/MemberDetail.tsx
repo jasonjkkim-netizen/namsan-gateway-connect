@@ -16,7 +16,7 @@ import {
 import { toast } from 'sonner';
 import {
   ArrowLeft, Mail, Phone, MapPin, Calendar, User as UserIcon,
-  Users, Briefcase, Coins, Save, ChevronUp, ChevronDown,
+  Users, Briefcase, Coins, Save, ChevronUp, ChevronDown, Pencil,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { MemberLink } from '@/components/MemberLink';
@@ -125,11 +125,10 @@ export default function MemberDetail() {
     address: '' as string,
     birthday: '' as string,
   });
-  const [savingProfile, setSavingProfile] = useState(false);
-  const canEditProfile = !!(isAdmin || isDM);
-
   const myRole = (myProfile as any)?.sales_role;
   const isDM = myRole === 'district_manager' || myRole === 'webmaster';
+  const [savingProfile, setSavingProfile] = useState(false);
+  const canEditProfile = !!(isAdmin || isDM);
 
   const startEditProfile = () => {
     if (!profile) return;
