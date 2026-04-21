@@ -724,3 +724,22 @@ function Stat({ label, value, positive }: { label: string; value: string; positi
     </div>
   );
 }
+
+function EditField({ icon: Icon, label, value, onChange, type = 'text' }: {
+  icon: any; label: string; value: string; onChange: (v: string) => void; type?: string;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <Icon className="h-4 w-4 text-muted-foreground mt-2 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
+        <Input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 text-xs sm:text-sm"
+        />
+      </div>
+    </div>
+  );
+}
