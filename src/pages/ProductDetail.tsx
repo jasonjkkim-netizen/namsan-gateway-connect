@@ -704,7 +704,7 @@ export default function ProductDetail() {
                           ) : investments.map((inv) => (
                             <TableRow key={inv.id}>
                               <TableCell className="text-sm">
-                                <Link to="/admin" className="text-primary hover:underline">
+                                <Link to={`/members/${inv.user_id}`} className="text-primary hover:underline">
                                   {investorProfiles[inv.user_id] || inv.user_id.slice(0, 8)}
                                 </Link>
                               </TableCell>
@@ -742,7 +742,7 @@ export default function ProductDetail() {
                             {commissions.map((c) => (
                               <TableRow key={c.id}>
                                 <TableCell className="text-sm">
-                                  <Link to="/admin" className="text-primary hover:underline">
+                                  <Link to={`/members/${c.to_user_id}`} className="text-primary hover:underline">
                                     {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
                                   </Link>
                                 </TableCell>
