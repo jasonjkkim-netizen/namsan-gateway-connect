@@ -444,7 +444,7 @@ export function AdminCommissions() {
       role: string | null;
       totalUpfront: number;
       totalPerformance: number;
-      sources: { investorName: string; investmentId: string; upfront: number; performance: number; currency: string; status: string; date: string }[];
+      sources: { investorName: string; investmentId: string; upfront: number; performance: number; rate: number | null; currency: string; status: string; date: string }[];
     }> = {};
     distributions.forEach((d) => {
       if (!map[d.to_user_id]) {
@@ -465,6 +465,7 @@ export function AdminCommissions() {
         investmentId: d.investment_id,
         upfront: up,
         performance: perf,
+        rate: d.rate_used,
         currency: d.currency || 'USD',
         status: d.status,
         date: d.created_at,
@@ -1404,7 +1405,7 @@ export function AdminCommissions() {
               <TableBody>
                 {personAttribution.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {language === 'ko' ? '귀속 내역이 없습니다' : 'No attribution data'}
                     </TableCell>
                   </TableRow>
@@ -1431,7 +1432,7 @@ export function AdminCommissions() {
                       </TableRow>
                       {expandedPerson === userId && (
                         <TableRow>
-                          <TableCell colSpan={6} className="bg-muted/20 p-0">
+                          <TableCell colSpan={7} className="bg-muted/20 p-0">
                             <div className="px-8 py-3">
                               <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
                                 {language === 'ko' ? '출처별 상세 내역' : 'Breakdown by Source'}
@@ -1442,9 +1443,11 @@ export function AdminCommissions() {
                                     <TableHead className="text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
                                     <TableHead className="text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
                                     <TableHead className="text-xs">{language === 'ko' ? '성과' : 'Performance'}</TableHead>
+                                    <TableHead className="text-xs">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
                                     <TableHead className="text-xs">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
                                     <TableHead className="text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
                                     <TableHead className="text-xs">{language === 'ko' ? '일자' : 'Date'}</TableHead>
+                                    <TableHead className="text-xs">{language === 'ko' ? 'D+' : 'Days'}</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -1453,11 +1456,15 @@ export function AdminCommissions() {
                                       <TableCell className="text-sm">{src.investorName}</TableCell>
                                       <TableCell className="text-sm text-success">{formatCommAmount(src.upfront, src.currency)}</TableCell>
                                       <TableCell className="text-sm text-success">{formatCommAmount(src.performance, src.currency)}</TableCell>
+                                      <TableCell className="text-sm">{src.rate != null ? `${src.rate}%` : '—'}</TableCell>
                                       <TableCell className="text-sm">{src.currency}</TableCell>
                                       <TableCell>
                                         <Badge variant={STATUS_COLORS[src.status] as any || 'secondary'} className="text-xs">{src.status}</Badge>
                                       </TableCell>
                                       <TableCell className="text-sm text-muted-foreground">{formatDate(src.date)}</TableCell>
+                                      <TableCell className="text-sm text-muted-foreground">
+                                        D+{Math.floor((Date.now() - new Date(src.date).getTime()) / (1000 * 60 * 60 * 24))}
+                                      </TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
