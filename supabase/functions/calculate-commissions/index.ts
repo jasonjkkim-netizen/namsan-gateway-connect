@@ -159,8 +159,9 @@ Deno.serve(async (req) => {
       if (productData?.upfront_commission_percent) {
         const totalUpfront = Number(productData.upfront_commission_percent);
         const totalPerformance = Number(productData.performance_fee_percent) || 0;
-        // Default split: upper hierarchy favored (40%, 25%, 20%, 15%)
+        // Default split: upper hierarchy favored
         const defaultSplits: Record<string, number> = {
+          webmaster: 0.40,
           district_manager: 0.40,
           deputy_district_manager: 0.25,
           principal_agent: 0.20,
