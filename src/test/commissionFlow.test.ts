@@ -305,3 +305,167 @@ describe('Commission Flow — Multi-Investment Admin Summary', () => {
     expect(grand).toBe(585_000); // 340k + 5k + 240k
   });
 });
+
+// ═══════════════════════════════════════════════════════════════
+// Single-Ancestor Full Commission Tests
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Mirrors the edge function logic: when there is exactly one ancestor
+ * and no manual rates are configured, the sole ancestor receives the
+ * full product commission rate (not the default split percentage).
+ */
+function calculateDistributionsWithSingleAncestorRule(
+  ancestors: Ancestor[],
+  investmentAmount: number,
+  realizedReturn: number,
+  ratesByRole: Record<string, { upfront_rate: number; performance_rate: number }>,
+  productUpfrontPercent: number,
+  productPerformancePercent: number,
+  hasManualRates: boolean,
+  overrides: Record<string, { upfront_rate: number; performance_rate: number }> = {},
+): Distribution[] {
+  const sorted = [...ancestors].sort((a, b) => a.depth - b.depth);
+  const distributions: Distribution[] = [];
+
+  for (const ancestor of sorted) {
+    let rate = overrides[ancestor.user_id] || ratesByRole[ancestor.sales_role];
+
+    // Single ancestor with no manual rates → full product commission
+    if (sorted.length === 1 && !hasManualRates && !overrides[ancestor.user_id]) {
+      rate = {
+        upfront_rate: productUpfrontPercent,
+        performance_rate: productPerformancePercent,
+      };
+    }
+
+    if (!rate) continue;
+
+    const upfrontAmount = investmentAmount * (rate.upfront_rate / 100);
+    const performanceAmount = realizedReturn * (rate.performance_rate / 100);
+
+    if (upfrontAmount === 0 && performanceAmount === 0) continue;
+
+    distributions.push({
+      to_user_id: ancestor.user_id,
+      upfront_amount: Math.round(upfrontAmount * 100) / 100,
+      performance_amount: Math.round(performanceAmount * 100) / 100,
+      layer: ancestor.depth,
+    });
+  }
+  return distributions;
+}
+
+describe('Commission Flow — Single Ancestor Full Rate', () => {
+  const WEBMASTER_ID = 'webmaster-001';
+  const CLIENT_ID = 'client-001';
+  const PRODUCT_UPFRONT = 3; // 3%
+  const PRODUCT_PERF = 1;    // 1%
+  const INVESTMENT = 20_000_000; // ₩20M
+  const REALIZED = 2_000_000;   // ₩2M
+
+  const singleAncestor: Ancestor[] = [
+    { user_id: WEBMASTER_ID, sales_role: 'webmaster', depth: 1 },
+  ];
+
+  it('single webmaster ancestor receives full 3% upfront (not 1.2% default split)', () => {
+    const defaultRates = computeDefaultRates(PRODUCT_UPFRONT, PRODUCT_PERF);
+    const distributions = calculateDistributionsWithSingleAncestorRule(
+      singleAncestor, INVESTMENT, 0, defaultRates,
+      PRODUCT_UPFRONT, PRODUCT_PERF, false,
+    );
+
+    expect(distributions).toHaveLength(1);
+    expect(distributions[0].to_user_id).toBe(WEBMASTER_ID);
+    // Full 3% of ₩20M = ₩600,000
+    expect(distributions[0].upfront_amount).toBe(600_000);
+    // NOT the default split: 1.2% of ₩20M = ₩240,000
+    expect(distributions[0].upfront_amount).not.toBe(240_000);
+  });
+
+  it('single ancestor receives full performance fee too', () => {
+    const defaultRates = computeDefaultRates(PRODUCT_UPFRONT, PRODUCT_PERF);
+    const distributions = calculateDistributionsWithSingleAncestorRule(
+      singleAncestor, INVESTMENT, REALIZED, defaultRates,
+      PRODUCT_UPFRONT, PRODUCT_PERF, false,
+    );
+
+    expect(distributions).toHaveLength(1);
+    // Full 1% of ₩2M realized = ₩20,000
+    expect(distributions[0].performance_amount).toBe(20_000);
+  });
+
+  it('admin summary shows full commission for single ancestor', () => {
+    const defaultRates = computeDefaultRates(PRODUCT_UPFRONT, PRODUCT_PERF);
+    const distributions = calculateDistributionsWithSingleAncestorRule(
+      singleAncestor, INVESTMENT, REALIZED, defaultRates,
+      PRODUCT_UPFRONT, PRODUCT_PERF, false,
+    );
+
+    const summary = adminSummary(distributions);
+    expect(summary[WEBMASTER_ID].totalUpfront).toBe(600_000);
+    expect(summary[WEBMASTER_ID].totalPerformance).toBe(20_000);
+    expect(summary[WEBMASTER_ID].count).toBe(1);
+  });
+
+  it('client earned total matches full product rate for single ancestor', () => {
+    const defaultRates = computeDefaultRates(PRODUCT_UPFRONT, PRODUCT_PERF);
+    const distributions = calculateDistributionsWithSingleAncestorRule(
+      singleAncestor, INVESTMENT, REALIZED, defaultRates,
+      PRODUCT_UPFRONT, PRODUCT_PERF, false,
+    );
+
+    const earned = clientEarnedTotal(distributions, WEBMASTER_ID);
+    expect(earned).toBe(620_000); // 600k upfront + 20k performance
+  });
+
+  it('does NOT apply full rate when manual rates exist', () => {
+    const manualRates: Record<string, { upfront_rate: number; performance_rate: number }> = {
+      webmaster: { upfront_rate: 1.5, performance_rate: 0.5 },
+    };
+    const distributions = calculateDistributionsWithSingleAncestorRule(
+      singleAncestor, INVESTMENT, REALIZED, manualRates,
+      PRODUCT_UPFRONT, PRODUCT_PERF, true, // hasManualRates = true
+    );
+
+    expect(distributions).toHaveLength(1);
+    // Uses manual 1.5%, not full 3%
+    expect(distributions[0].upfront_amount).toBe(300_000);
+    expect(distributions[0].performance_amount).toBe(10_000);
+  });
+
+  it('does NOT apply full rate when user-specific override exists', () => {
+    const defaultRates = computeDefaultRates(PRODUCT_UPFRONT, PRODUCT_PERF);
+    const overrides = {
+      [WEBMASTER_ID]: { upfront_rate: 2.0, performance_rate: 0.8 },
+    };
+    const distributions = calculateDistributionsWithSingleAncestorRule(
+      singleAncestor, INVESTMENT, REALIZED, defaultRates,
+      PRODUCT_UPFRONT, PRODUCT_PERF, false, overrides,
+    );
+
+    expect(distributions).toHaveLength(1);
+    // Uses override 2%, not full 3%
+    expect(distributions[0].upfront_amount).toBe(400_000);
+  });
+
+  it('multi-ancestor chain still uses default splits (not full rate)', () => {
+    const multiAncestors: Ancestor[] = [
+      { user_id: 'wm', sales_role: 'webmaster', depth: 2 },
+      { user_id: 'dm', sales_role: 'district_manager', depth: 1 },
+    ];
+    const defaultRates = computeDefaultRates(PRODUCT_UPFRONT, PRODUCT_PERF);
+    const distributions = calculateDistributionsWithSingleAncestorRule(
+      multiAncestors, INVESTMENT, 0, defaultRates,
+      PRODUCT_UPFRONT, PRODUCT_PERF, false,
+    );
+
+    expect(distributions).toHaveLength(2);
+    // DM gets 40% of 3% = 1.2% = ₩240,000
+    const dmDist = distributions.find(d => d.to_user_id === 'dm')!;
+    expect(dmDist.upfront_amount).toBe(240_000);
+    // WM also gets 40% of 3% = 1.2% = ₩240,000
+    const wmDist = distributions.find(d => d.to_user_id === 'wm')!;
+    expect(wmDist.upfront_amount).toBe(240_000);
+  });
+});
