@@ -1405,7 +1405,7 @@ export function AdminCommissions() {
               <TableBody>
                 {personAttribution.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {language === 'ko' ? '귀속 내역이 없습니다' : 'No attribution data'}
                     </TableCell>
                   </TableRow>
