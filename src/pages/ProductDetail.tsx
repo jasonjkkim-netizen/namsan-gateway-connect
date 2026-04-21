@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Link } from 'react-router-dom';
 import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart';
 import { ProductPrintSummary } from '@/components/products/ProductPrintSummary';
+import { ProductInlineInvestmentForm } from '@/components/products/ProductInlineInvestmentForm';
 
 interface Product {
   id: string;
@@ -684,6 +685,45 @@ export default function ProductDetail() {
                         <Users className="h-4 w-4" />
                         {language === 'ko' ? '투자자 목록' : 'Investor List'}
                       </h3>
+                      <div className="mb-3">
+                        <ProductInlineInvestmentForm
+                          productId={product.id}
+                          productNameEn={product.name_en}
+                          productNameKo={product.name_ko}
+                          defaultCurrency={product.default_currency || product.currency || 'USD'}
+                          minInvestmentAmount={product.min_investment_amount}
+                          onCreated={() => {
+                            // Re-fetch commission data
+                            (async () => {
+                              setCommLoading(true);
+                              const [invRes, fxRes] = await Promise.all([
+                                supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id!),
+                                supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
+                              ]);
+                              if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
+                              const invData = invRes.data || [];
+                              setInvestments(invData);
+                              const invIds = invData.map((i: any) => i.id);
+                              let relevantComm: any[] = [];
+                              if (invIds.length > 0) {
+                                const { data } = await supabase.from('commission_distributions').select('*').in('investment_id', invIds).order('created_at', { ascending: false });
+                                relevantComm = data || [];
+                              }
+                              setCommissions(relevantComm);
+                              const userIds = new Set<string>();
+                              invData.forEach((i: any) => userIds.add(i.user_id));
+                              relevantComm.forEach((c: any) => { userIds.add(c.to_user_id); if (c.from_user_id) userIds.add(c.from_user_id); });
+                              if (userIds.size > 0) {
+                                const { data: profs } = await supabase.from('profiles').select('user_id, full_name, full_name_ko').in('user_id', Array.from(userIds));
+                                const map: Record<string, string> = {};
+                                (profs || []).forEach((p: any) => { map[p.user_id] = p.full_name_ko || p.full_name; });
+                                setInvestorProfiles(map);
+                              }
+                              setCommLoading(false);
+                            })();
+                          }}
+                        />
+                      </div>
                       <Table>
                         <TableHeader>
                           <TableRow>
