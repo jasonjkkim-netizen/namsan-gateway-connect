@@ -21,7 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight } from 'lucide-react';
+import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight, Save, X, Loader2 } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
@@ -348,6 +348,19 @@ export function AdminCommissions() {
 
   useEffect(() => { fetchAll(); }, []);
 
+  // Realtime subscription for commission_distributions
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-commission-distributions')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'commission_distributions' },
+        () => { fetchAll(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   async function fetchAll() {
     setLoading(true);
     const [distRes, auditRes, profilesRes, productsRes, ratesRes, settingsRes, fxRes] = await Promise.all([
@@ -620,6 +633,49 @@ export function AdminCommissions() {
   // === Bulk Selection ===
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [editingDistId, setEditingDistId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ upfront: '', performance: '', status: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const startEditDist = (d: Distribution) => {
+    setEditingDistId(d.id);
+    setEditForm({
+      upfront: String(d.upfront_amount ?? ''),
+      performance: String(d.performance_amount ?? ''),
+      status: d.status,
+    });
+  };
+
+  const cancelEditDist = () => { setEditingDistId(null); };
+
+  const saveEditDist = async (d: Distribution) => {
+    const upfrontNum = editForm.upfront === '' ? null : Number(editForm.upfront);
+    const perfNum = editForm.performance === '' ? null : Number(editForm.performance);
+    if (upfrontNum !== null && (isNaN(upfrontNum) || upfrontNum < 0)) {
+      toast.error(language === 'ko' ? '선취 금액이 유효하지 않습니다' : 'Invalid upfront amount');
+      return;
+    }
+    if (perfNum !== null && (isNaN(perfNum) || perfNum < 0)) {
+      toast.error(language === 'ko' ? '성과 금액이 유효하지 않습니다' : 'Invalid performance amount');
+      return;
+    }
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from('commission_distributions')
+      .update({ upfront_amount: upfrontNum, performance_amount: perfNum, status: editForm.status })
+      .eq('id', d.id);
+    setSavingEdit(false);
+    if (error) {
+      toast.error(language === 'ko' ? '커미션 수정 실패' : 'Failed to update commission');
+    } else {
+      toast.success(language === 'ko' ? '커미션 수정 완료' : 'Commission updated');
+      setEditingDistId(null);
+      // Notify the recipient
+      supabase.functions.invoke('notify-sales', {
+        body: { type: 'commission_status_changed', commission_id: d.id, new_status: editForm.status, recipient_ids: [d.to_user_id] },
+      }).catch(console.error);
+    }
+  };
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
