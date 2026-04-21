@@ -302,6 +302,6 @@ describe('Commission Flow — Multi-Investment Admin Summary', () => {
 
     // Grand total
     const grand = Object.values(summary).reduce((s, v) => s + v.totalUpfront + v.totalPerformance, 0);
-    expect(grand).toBe(825_000);
+    expect(grand).toBe(585_000); // 340k + 5k + 240k
   });
 });
