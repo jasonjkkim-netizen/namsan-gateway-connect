@@ -166,6 +166,7 @@ export default function MemberDetail() {
           .from('client_investments')
           .select('id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency, realized_return_amount')
           .eq('user_id', userId)
+          .neq('status', 'deleted')
           .order('start_date', { ascending: false }),
         supabase
           .from('commission_distributions')

@@ -9,7 +9,12 @@ import { Input } from '@/components/ui/input';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Pencil, Check, X, Loader2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Pencil, Check, X, Loader2, Trash2 } from 'lucide-react';
 
 export interface InvestmentRowData {
   id: string;
@@ -36,6 +41,7 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
   const { language, formatCurrency, formatDate } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [currentValue, setCurrentValue] = useState(String(inv.current_value ?? 0));
   const [status, setStatus] = useState(inv.status || 'active');
@@ -112,6 +118,36 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
     onChanged();
   };
 
+  const softDelete = async () => {
+    setDeleting(true);
+    try {
+      // 1. Delete related commission distributions
+      const { error: cdErr } = await supabase
+        .from('commission_distributions')
+        .delete()
+        .eq('investment_id', inv.id);
+      if (cdErr) console.warn('Failed to delete commission distributions:', cdErr);
+
+      // 2. Soft-delete the investment (set status to 'deleted')
+      const { error } = await supabase
+        .from('client_investments')
+        .update({ status: 'deleted', current_value: 0 })
+        .eq('id', inv.id);
+
+      if (error) {
+        console.error('Soft delete error:', error);
+        toast.error(language === 'ko' ? '삭제 실패' : 'Delete failed');
+      } else {
+        toast.success(language === 'ko' ? '투자 삭제 완료' : 'Investment deleted');
+        onChanged();
+      }
+    } catch (e) {
+      console.error('Soft delete exception:', e);
+      toast.error(language === 'ko' ? '삭제 실패' : 'Delete failed');
+    }
+    setDeleting(false);
+  };
+
   if (!editing) {
     return (
       <TableRow>
@@ -129,14 +165,41 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
         </TableCell>
         <TableCell className="text-right">
           {canEdit && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2"
-              onClick={() => setEditing(true)}
-            >
-              <Pencil className="h-3 w-3" />
-            </Button>
+            <div className="flex items-center justify-end gap-0.5">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2"
+                onClick={() => setEditing(true)}
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:text-destructive" disabled={deleting}>
+                    {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      {language === 'ko' ? '투자 삭제' : 'Delete Investment'}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {language === 'ko'
+                        ? '이 투자 건과 관련된 모든 커미션 분배 내역이 함께 삭제됩니다. 계속하시겠습니까?'
+                        : 'This will delete the investment and all related commission distributions. Continue?'}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>{language === 'ko' ? '취소' : 'Cancel'}</AlertDialogCancel>
+                    <AlertDialogAction onClick={softDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      {language === 'ko' ? '삭제' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           )}
         </TableCell>
       </TableRow>
