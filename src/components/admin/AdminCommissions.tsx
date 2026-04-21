@@ -21,7 +21,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight } from 'lucide-react';
+import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight, Save, X, Loader2 } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
@@ -348,6 +348,19 @@ export function AdminCommissions() {
 
   useEffect(() => { fetchAll(); }, []);
 
+  // Realtime subscription for commission_distributions
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-commission-distributions')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'commission_distributions' },
+        () => { fetchAll(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   async function fetchAll() {
     setLoading(true);
     const [distRes, auditRes, profilesRes, productsRes, ratesRes, settingsRes, fxRes] = await Promise.all([
@@ -620,6 +633,49 @@ export function AdminCommissions() {
   // === Bulk Selection ===
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [editingDistId, setEditingDistId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ upfront: '', performance: '', status: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const startEditDist = (d: Distribution) => {
+    setEditingDistId(d.id);
+    setEditForm({
+      upfront: String(d.upfront_amount ?? ''),
+      performance: String(d.performance_amount ?? ''),
+      status: d.status,
+    });
+  };
+
+  const cancelEditDist = () => { setEditingDistId(null); };
+
+  const saveEditDist = async (d: Distribution) => {
+    const upfrontNum = editForm.upfront === '' ? null : Number(editForm.upfront);
+    const perfNum = editForm.performance === '' ? null : Number(editForm.performance);
+    if (upfrontNum !== null && (isNaN(upfrontNum) || upfrontNum < 0)) {
+      toast.error(language === 'ko' ? '선취 금액이 유효하지 않습니다' : 'Invalid upfront amount');
+      return;
+    }
+    if (perfNum !== null && (isNaN(perfNum) || perfNum < 0)) {
+      toast.error(language === 'ko' ? '성과 금액이 유효하지 않습니다' : 'Invalid performance amount');
+      return;
+    }
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from('commission_distributions')
+      .update({ upfront_amount: upfrontNum, performance_amount: perfNum, status: editForm.status })
+      .eq('id', d.id);
+    setSavingEdit(false);
+    if (error) {
+      toast.error(language === 'ko' ? '커미션 수정 실패' : 'Failed to update commission');
+    } else {
+      toast.success(language === 'ko' ? '커미션 수정 완료' : 'Commission updated');
+      setEditingDistId(null);
+      // Notify the recipient
+      supabase.functions.invoke('notify-sales', {
+        body: { type: 'commission_status_changed', commission_id: d.id, new_status: editForm.status, recipient_ids: [d.to_user_id] },
+      }).catch(console.error);
+    }
+  };
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -961,7 +1017,7 @@ export function AdminCommissions() {
                   </TableRow>
                 ) : (
                   filteredDistributions.map((d) => (
-                    <TableRow key={d.id} data-state={selectedIds.has(d.id) ? 'selected' : undefined}>
+                    <TableRow key={d.id} data-state={selectedIds.has(d.id) ? 'selected' : undefined} className={editingDistId === d.id ? 'bg-primary/5' : ''}>
                       <TableCell>
                         <Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => toggleSelect(d.id)} />
                       </TableCell>
@@ -978,42 +1034,74 @@ export function AdminCommissions() {
                         {d.from_user_id ? <MemberLink userId={d.from_user_id}>{getName(d.from_user_id)}</MemberLink> : '—'}
                       </TableCell>
                       <TableCell>
-                        {d.upfront_amount ? (
+                        {editingDistId === d.id ? (
+                          <Input type="number" step="0.01" min="0" value={editForm.upfront} onChange={(e) => setEditForm(f => ({ ...f, upfront: e.target.value }))} className="h-7 text-xs w-24" />
+                        ) : d.upfront_amount ? (
                           <span className="text-success font-medium">{formatCommAmount(Number(d.upfront_amount), d.currency)}</span>
                         ) : '—'}
                       </TableCell>
                       <TableCell>
-                        {d.performance_amount ? (
+                        {editingDistId === d.id ? (
+                          <Input type="number" step="0.01" min="0" value={editForm.performance} onChange={(e) => setEditForm(f => ({ ...f, performance: e.target.value }))} className="h-7 text-xs w-24" />
+                        ) : d.performance_amount ? (
                           <span className="text-success font-medium">{formatCommAmount(Number(d.performance_amount), d.currency)}</span>
                         ) : '—'}
                       </TableCell>
                       <TableCell>{d.rate_used ? `${d.rate_used}%` : '—'}</TableCell>
                       <TableCell>
-                        <Badge variant={STATUS_COLORS[d.status] as any || 'secondary'}>{d.status}</Badge>
+                        {editingDistId === d.id ? (
+                          <Select value={editForm.status} onValueChange={(v) => setEditForm(f => ({ ...f, status: v }))}>
+                            <SelectTrigger className="h-7 text-[10px] w-24"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="available">available</SelectItem>
+                              <SelectItem value="pending">pending</SelectItem>
+                              <SelectItem value="paid">paid</SelectItem>
+                              <SelectItem value="cancelled">cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={STATUS_COLORS[d.status] as any || 'secondary'}>{d.status}</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(d.created_at)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          {d.status === 'pending' && (
-                            <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'available')}>
-                              {language === 'ko' ? '승인' : 'Approve'}
-                            </Button>
+                          {editingDistId === d.id ? (
+                            <>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveEditDist(d)} disabled={savingEdit}>
+                                {savingEdit ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelEditDist} disabled={savingEdit}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => startEditDist(d)} title={language === 'ko' ? '수정' : 'Edit'}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              {d.status === 'pending' && (
+                                <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'available')}>
+                                  {language === 'ko' ? '승인' : 'Approve'}
+                                </Button>
+                              )}
+                              {d.status === 'available' && (
+                                <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'paid')}>
+                                  {language === 'ko' ? '지급완료' : 'Mark Paid'}
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs"
+                                disabled={recalculating[d.investment_id]}
+                                onClick={() => handleRecalculate(d.investment_id)}
+                                title={language === 'ko' ? '재계산' : 'Recalculate'}
+                              >
+                                <RefreshCw className={`h-3.5 w-3.5 ${recalculating[d.investment_id] ? 'animate-spin' : ''}`} />
+                              </Button>
+                            </>
                           )}
-                          {d.status === 'available' && (
-                            <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'paid')}>
-                              {language === 'ko' ? '지급완료' : 'Mark Paid'}
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs"
-                            disabled={recalculating[d.investment_id]}
-                            onClick={() => handleRecalculate(d.investment_id)}
-                            title={language === 'ko' ? '재계산' : 'Recalculate'}
-                          >
-                            <RefreshCw className={`h-3.5 w-3.5 ${recalculating[d.investment_id] ? 'animate-spin' : ''}`} />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>

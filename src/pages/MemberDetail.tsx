@@ -175,6 +175,25 @@ export default function MemberDetail() {
     loadAll();
   }, [user, userId]);
 
+  // Realtime subscription for commission_distributions changes
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`member-commissions-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'commission_distributions' },
+        (payload: any) => {
+          const row = payload.new || payload.old;
+          if (row && (row.to_user_id === userId || row.from_user_id === userId)) {
+            loadAll();
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, user]);
+
   async function loadAll() {
     if (!userId || !user) return;
     setLoading(true);
