@@ -825,8 +825,18 @@ export function AdminCommissions() {
     fetchAll();
   };
 
-  const totalUpfront = distributions.reduce((s, d) => s + (Number(d.upfront_amount) || 0), 0);
-  const totalPerformance = distributions.reduce((s, d) => s + (Number(d.performance_amount) || 0), 0);
+  // Normalize amounts to display currency before summing
+  const normalizeToDisplay = (amount: number, srcCurrency: string) => {
+    if (displayCurrency === 'USD') {
+      return srcCurrency === 'KRW' ? amount / usdKrwRate : amount;
+    }
+    if (displayCurrency === 'KRW') {
+      return srcCurrency === 'USD' ? amount * usdKrwRate : amount;
+    }
+    return amount;
+  };
+  const totalUpfront = distributions.reduce((s, d) => s + normalizeToDisplay(Number(d.upfront_amount) || 0, d.currency || 'USD'), 0);
+  const totalPerformance = distributions.reduce((s, d) => s + normalizeToDisplay(Number(d.performance_amount) || 0, d.currency || 'USD'), 0);
   const pendingCount = distributions.filter(d => d.status === 'pending').length;
   const availableCount = distributions.filter(d => d.status === 'available').length;
 
@@ -871,11 +881,19 @@ export function AdminCommissions() {
         <div className="grid grid-cols-3 gap-4 mt-4">
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}</p>
-            <p className="text-2xl font-semibold">{formatCommAmount(totalUpfront)}</p>
+            <p className="text-2xl font-semibold">
+              {displayCurrency === 'KRW'
+                ? `₩${Math.round(totalUpfront).toLocaleString('ko-KR')}`
+                : `$${totalUpfront.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 성과 커미션' : 'Total Performance'}</p>
-            <p className="text-2xl font-semibold">{formatCommAmount(totalPerformance)}</p>
+            <p className="text-2xl font-semibold">
+              {displayCurrency === 'KRW'
+                ? `₩${Math.round(totalPerformance).toLocaleString('ko-KR')}`
+                : `$${totalPerformance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '대기중' : 'Pending'}</p>
