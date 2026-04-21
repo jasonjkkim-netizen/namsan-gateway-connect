@@ -217,7 +217,23 @@ Deno.serve(async (req) => {
     const sortedAncestors = (ancestors || []).sort((a: any, b: any) => a.depth - b.depth);
 
     for (const ancestor of sortedAncestors) {
-      const rate = overridesByUser[ancestor.user_id] || ratesByRole[ancestor.sales_role];
+      let rate = overridesByUser[ancestor.user_id] || ratesByRole[ancestor.sales_role];
+
+      // Single ancestor with no manual rates: give full product commission
+      if (sortedAncestors.length === 1 && !(rates && rates.length > 0) && !overridesByUser[ancestor.user_id]) {
+        const { data: pd } = await supabase
+          .from("investment_products")
+          .select("upfront_commission_percent, performance_fee_percent")
+          .eq("id", productId)
+          .single();
+        if (pd) {
+          rate = {
+            upfront_rate: Number(pd.upfront_commission_percent) || 0,
+            performance_rate: Number(pd.performance_fee_percent) || 0,
+          };
+        }
+      }
+
       if (!rate) continue;
 
       const upfrontAmount = investmentAmount * (rate.upfront_rate / 100);
