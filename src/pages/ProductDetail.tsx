@@ -623,6 +623,134 @@ export default function ProductDetail() {
             </p>
           </div>
         )}
+
+        {/* Admin / Webmaster Commission & Investor Section */}
+        {canSeeCommissions && product && (
+          <div className="space-y-6 animate-fade-in" style={{ animationDelay: '700ms' }}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Coins className="h-5 w-5 text-primary" />
+                  {language === 'ko' ? '커미션 & 투자자 현황' : 'Commissions & Investors'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {commLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="rounded-lg border p-4">
+                        <p className="text-xs text-muted-foreground">{language === 'ko' ? '총 투자 건수' : 'Total Investments'}</p>
+                        <p className="text-2xl font-bold">{investments.length}</p>
+                      </div>
+                      <div className="rounded-lg border p-4">
+                        <p className="text-xs text-muted-foreground">{language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}</p>
+                        <p className="text-2xl font-bold text-success">
+                          {formatCurrency(commissions.reduce((s, c) => s + (Number(c.upfront_amount) || 0), 0))}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border p-4">
+                        <p className="text-xs text-muted-foreground">{language === 'ko' ? '총 성과 커미션' : 'Total Performance'}</p>
+                        <p className="text-2xl font-bold text-success">
+                          {formatCurrency(commissions.reduce((s, c) => s + (Number(c.performance_amount) || 0), 0))}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Investor List */}
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        {language === 'ko' ? '투자자 목록' : 'Investor List'}
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
+                            <TableHead className="text-xs">{language === 'ko' ? '투자금' : 'Amount'}</TableHead>
+                            <TableHead className="text-xs">{language === 'ko' ? '통화' : 'Currency'}</TableHead>
+                            <TableHead className="text-xs">{language === 'ko' ? '투자일' : 'Date'}</TableHead>
+                            <TableHead className="text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {investments.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-4 text-muted-foreground text-sm">
+                                {language === 'ko' ? '투자 내역 없음' : 'No investments'}
+                              </TableCell>
+                            </TableRow>
+                          ) : investments.map((inv) => (
+                            <TableRow key={inv.id}>
+                              <TableCell className="text-sm">
+                                <Link to="/admin" className="text-primary hover:underline">
+                                  {investorProfiles[inv.user_id] || inv.user_id.slice(0, 8)}
+                                </Link>
+                              </TableCell>
+                              <TableCell className="text-sm">{formatCurrency(Number(inv.investment_amount))}</TableCell>
+                              <TableCell className="text-sm">{inv.invested_currency || 'USD'}</TableCell>
+                              <TableCell className="text-sm">{formatDate(inv.start_date)}</TableCell>
+                              <TableCell>
+                                <Badge variant={inv.status === 'active' ? 'default' : 'secondary'} className="text-xs">{inv.status}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Commission Distribution List */}
+                    {commissions.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                          <Coins className="h-4 w-4" />
+                          {language === 'ko' ? '커미션 분배 내역' : 'Commission Distributions'}
+                        </h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="text-xs">{language === 'ko' ? '수취인' : 'Recipient'}</TableHead>
+                              <TableHead className="text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
+                              <TableHead className="text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                              <TableHead className="text-xs">{language === 'ko' ? '성과' : 'Perf.'}</TableHead>
+                              <TableHead className="text-xs">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
+                              <TableHead className="text-xs">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {commissions.map((c) => (
+                              <TableRow key={c.id}>
+                                <TableCell className="text-sm">
+                                  <Link to="/admin" className="text-primary hover:underline">
+                                    {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
+                                  </Link>
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                  {c.from_user_id ? (investorProfiles[c.from_user_id] || c.from_user_id.slice(0, 8)) : '—'}
+                                </TableCell>
+                                <TableCell className="text-sm text-success">{formatCurrency(Number(c.upfront_amount) || 0)}</TableCell>
+                                <TableCell className="text-sm text-success">{formatCurrency(Number(c.performance_amount) || 0)}</TableCell>
+                                <TableCell className="text-sm">{c.rate_used != null ? `${c.rate_used}%` : '—'}</TableCell>
+                                <TableCell>
+                                  <Badge variant={c.status === 'available' ? 'default' : 'secondary'} className="text-xs">{c.status}</Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
 
       {/* PDF Preview Dialog */}
