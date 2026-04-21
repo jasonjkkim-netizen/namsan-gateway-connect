@@ -11,10 +11,13 @@ import {
 } from '@/components/ui/dialog';
 import { 
   ArrowLeft, TrendingUp, Calendar, DollarSign, Briefcase, Building2, 
-  Landmark, LineChart, Layers, Clock, Target, Shield, FileText, Download, Eye, Printer
+  Landmark, LineChart, Layers, Clock, Target, Shield, FileText, Download, Eye, Printer, Users, Coins
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { ConsultationButton } from '@/components/ConsultationButton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Link } from 'react-router-dom';
 import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart';
 import { ProductPrintSummary } from '@/components/products/ProductPrintSummary';
 
@@ -82,6 +85,14 @@ export default function ProductDetail() {
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isFlagshipProduct, setIsFlagshipProduct] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
+  const { profile, isAdmin } = useAuth();
+  const isWebmaster = profile?.sales_role === 'webmaster';
+  const canSeeCommissions = isAdmin || isWebmaster;
+
+  const [investments, setInvestments] = useState<any[]>([]);
+  const [commissions, setCommissions] = useState<any[]>([]);
+  const [investorProfiles, setInvestorProfiles] = useState<Record<string, string>>({});
+  const [commLoading, setCommLoading] = useState(false);
 
   const handlePrint = () => {
     window.print();
@@ -135,6 +146,38 @@ export default function ProductDetail() {
 
     fetchProduct();
   }, [id, navigate]);
+
+  // Fetch commissions & investors for admin/webmaster
+  useEffect(() => {
+    if (!id || !canSeeCommissions) return;
+    async function fetchCommData() {
+      setCommLoading(true);
+      const [invRes, commRes] = await Promise.all([
+        supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id),
+        supabase.from('commission_distributions').select('*').order('created_at', { ascending: false }),
+      ]);
+      const invData = invRes.data || [];
+      setInvestments(invData);
+
+      // Filter commissions to this product's investments
+      const invIds = new Set(invData.map((i: any) => i.id));
+      const relevantComm = (commRes.data || []).filter((c: any) => invIds.has(c.investment_id));
+      setCommissions(relevantComm);
+
+      // Fetch profile names for investors & commission recipients
+      const userIds = new Set<string>();
+      invData.forEach((i: any) => userIds.add(i.user_id));
+      relevantComm.forEach((c: any) => { userIds.add(c.to_user_id); if (c.from_user_id) userIds.add(c.from_user_id); });
+      if (userIds.size > 0) {
+        const { data: profs } = await supabase.from('profiles').select('user_id, full_name, full_name_ko').in('user_id', Array.from(userIds));
+        const map: Record<string, string> = {};
+        (profs || []).forEach((p: any) => { map[p.user_id] = p.full_name_ko || p.full_name; });
+        setInvestorProfiles(map);
+      }
+      setCommLoading(false);
+    }
+    fetchCommData();
+  }, [id, canSeeCommissions]);
 
   async function getSignedUrl(doc: ProductDocument): Promise<string | null> {
     if (doc.file_url.startsWith('http')) return doc.file_url;
