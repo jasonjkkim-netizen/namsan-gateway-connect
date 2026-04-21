@@ -1012,7 +1012,52 @@ export function AdminCommissions() {
                 ) : filteredDistributions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                      {language === 'ko' ? '분배 내역이 없습니다' : 'No distributions found'}
+                      <div className="space-y-3">
+                        <p>{language === 'ko' ? '분배 내역이 없습니다' : 'No distributions found'}</p>
+                        {distributions.length === 0 && (
+                          <>
+                            <p className="text-xs">
+                              {language === 'ko' ? '최근 갱신: ' : 'Last refreshed: '}
+                              {format(new Date(), 'yyyy-MM-dd HH:mm:ss')}
+                            </p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                if (!user || profiles.length < 2) {
+                                  toast.error(language === 'ko' ? '프로필이 부족합니다' : 'Not enough profiles');
+                                  return;
+                                }
+                                const salesUser = profiles.find(p => p.sales_role && p.sales_role !== 'client');
+                                const investor = profiles.find(p => p.user_id !== salesUser?.user_id);
+                                if (!salesUser || !investor) return;
+                                // Find any investment to link
+                                const { data: inv } = await supabase.from('client_investments').select('id').limit(1).maybeSingle();
+                                if (!inv) {
+                                  toast.error(language === 'ko' ? '투자 내역이 없어 샘플을 생성할 수 없습니다' : 'No investments exist to link a sample commission');
+                                  return;
+                                }
+                                const { error } = await supabase.from('commission_distributions').insert({
+                                  investment_id: inv.id,
+                                  to_user_id: salesUser.user_id,
+                                  from_user_id: investor.user_id,
+                                  layer: 1,
+                                  upfront_amount: 100,
+                                  performance_amount: 50,
+                                  rate_used: 1.0,
+                                  currency: 'USD',
+                                  status: 'pending',
+                                });
+                                if (error) { toast.error(error.message); }
+                                else { toast.success(language === 'ko' ? '샘플 커미션 생성 완료' : 'Sample commission created'); fetchAll(); }
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              {language === 'ko' ? '샘플 커미션 생성' : 'Create Sample Commission'}
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
