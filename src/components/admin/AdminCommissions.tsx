@@ -1017,7 +1017,7 @@ export function AdminCommissions() {
                   </TableRow>
                 ) : (
                   filteredDistributions.map((d) => (
-                    <TableRow key={d.id} data-state={selectedIds.has(d.id) ? 'selected' : undefined}>
+                    <TableRow key={d.id} data-state={selectedIds.has(d.id) ? 'selected' : undefined} className={editingDistId === d.id ? 'bg-primary/5' : ''}>
                       <TableCell>
                         <Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => toggleSelect(d.id)} />
                       </TableCell>
@@ -1034,42 +1034,74 @@ export function AdminCommissions() {
                         {d.from_user_id ? <MemberLink userId={d.from_user_id}>{getName(d.from_user_id)}</MemberLink> : '—'}
                       </TableCell>
                       <TableCell>
-                        {d.upfront_amount ? (
+                        {editingDistId === d.id ? (
+                          <Input type="number" step="0.01" min="0" value={editForm.upfront} onChange={(e) => setEditForm(f => ({ ...f, upfront: e.target.value }))} className="h-7 text-xs w-24" />
+                        ) : d.upfront_amount ? (
                           <span className="text-success font-medium">{formatCommAmount(Number(d.upfront_amount), d.currency)}</span>
                         ) : '—'}
                       </TableCell>
                       <TableCell>
-                        {d.performance_amount ? (
+                        {editingDistId === d.id ? (
+                          <Input type="number" step="0.01" min="0" value={editForm.performance} onChange={(e) => setEditForm(f => ({ ...f, performance: e.target.value }))} className="h-7 text-xs w-24" />
+                        ) : d.performance_amount ? (
                           <span className="text-success font-medium">{formatCommAmount(Number(d.performance_amount), d.currency)}</span>
                         ) : '—'}
                       </TableCell>
                       <TableCell>{d.rate_used ? `${d.rate_used}%` : '—'}</TableCell>
                       <TableCell>
-                        <Badge variant={STATUS_COLORS[d.status] as any || 'secondary'}>{d.status}</Badge>
+                        {editingDistId === d.id ? (
+                          <Select value={editForm.status} onValueChange={(v) => setEditForm(f => ({ ...f, status: v }))}>
+                            <SelectTrigger className="h-7 text-[10px] w-24"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="available">available</SelectItem>
+                              <SelectItem value="pending">pending</SelectItem>
+                              <SelectItem value="paid">paid</SelectItem>
+                              <SelectItem value="cancelled">cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={STATUS_COLORS[d.status] as any || 'secondary'}>{d.status}</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(d.created_at)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          {d.status === 'pending' && (
-                            <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'available')}>
-                              {language === 'ko' ? '승인' : 'Approve'}
-                            </Button>
+                          {editingDistId === d.id ? (
+                            <>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveEditDist(d)} disabled={savingEdit}>
+                                {savingEdit ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelEditDist} disabled={savingEdit}>
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => startEditDist(d)} title={language === 'ko' ? '수정' : 'Edit'}>
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              {d.status === 'pending' && (
+                                <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'available')}>
+                                  {language === 'ko' ? '승인' : 'Approve'}
+                                </Button>
+                              )}
+                              {d.status === 'available' && (
+                                <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'paid')}>
+                                  {language === 'ko' ? '지급완료' : 'Mark Paid'}
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-xs"
+                                disabled={recalculating[d.investment_id]}
+                                onClick={() => handleRecalculate(d.investment_id)}
+                                title={language === 'ko' ? '재계산' : 'Recalculate'}
+                              >
+                                <RefreshCw className={`h-3.5 w-3.5 ${recalculating[d.investment_id] ? 'animate-spin' : ''}`} />
+                              </Button>
+                            </>
                           )}
-                          {d.status === 'available' && (
-                            <Button variant="outline" size="sm" className="text-xs" onClick={() => handleStatusChange(d.id, d.to_user_id, 'paid')}>
-                              {language === 'ko' ? '지급완료' : 'Mark Paid'}
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-xs"
-                            disabled={recalculating[d.investment_id]}
-                            onClick={() => handleRecalculate(d.investment_id)}
-                            title={language === 'ko' ? '재계산' : 'Recalculate'}
-                          >
-                            <RefreshCw className={`h-3.5 w-3.5 ${recalculating[d.investment_id] ? 'animate-spin' : ''}`} />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
