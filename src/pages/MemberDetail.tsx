@@ -371,9 +371,21 @@ export default function MemberDetail() {
             <Skeleton className="h-64 w-full" />
           </div>
         ) : !profile ? (
-          <Card className="p-6 text-center text-muted-foreground">
-            {language === 'ko' ? '프로필을 찾을 수 없습니다' : 'Profile not found'}
-          </Card>
+          <div className="py-12 text-center">
+            <UserIcon className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <h2 className="text-lg font-serif font-semibold mb-2">
+              {language === 'ko' ? '멤버를 찾을 수 없습니다' : 'Member Not Found'}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              {language === 'ko'
+                ? '해당 멤버 정보가 존재하지 않거나 삭제되었습니다.'
+                : 'This member does not exist or has been removed.'}
+            </p>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {language === 'ko' ? '뒤로 가기' : 'Go Back'}
+            </Button>
+          </div>
         ) : (
           <>
             {/* Header card */}
