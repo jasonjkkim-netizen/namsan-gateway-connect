@@ -881,11 +881,19 @@ export function AdminCommissions() {
         <div className="grid grid-cols-3 gap-4 mt-4">
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}</p>
-            <p className="text-2xl font-semibold">{formatCommAmount(totalUpfront)}</p>
+            <p className="text-2xl font-semibold">
+              {displayCurrency === 'KRW'
+                ? `₩${Math.round(totalUpfront).toLocaleString('ko-KR')}`
+                : `$${totalUpfront.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 성과 커미션' : 'Total Performance'}</p>
-            <p className="text-2xl font-semibold">{formatCommAmount(totalPerformance)}</p>
+            <p className="text-2xl font-semibold">
+              {displayCurrency === 'KRW'
+                ? `₩${Math.round(totalPerformance).toLocaleString('ko-KR')}`
+                : `$${totalPerformance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '대기중' : 'Pending'}</p>
