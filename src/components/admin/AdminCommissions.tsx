@@ -825,8 +825,18 @@ export function AdminCommissions() {
     fetchAll();
   };
 
-  const totalUpfront = distributions.reduce((s, d) => s + (Number(d.upfront_amount) || 0), 0);
-  const totalPerformance = distributions.reduce((s, d) => s + (Number(d.performance_amount) || 0), 0);
+  // Normalize amounts to display currency before summing
+  const normalizeToDisplay = (amount: number, srcCurrency: string) => {
+    if (displayCurrency === 'USD') {
+      return srcCurrency === 'KRW' ? amount / usdKrwRate : amount;
+    }
+    if (displayCurrency === 'KRW') {
+      return srcCurrency === 'USD' ? amount * usdKrwRate : amount;
+    }
+    return amount;
+  };
+  const totalUpfront = distributions.reduce((s, d) => s + normalizeToDisplay(Number(d.upfront_amount) || 0, d.currency || 'USD'), 0);
+  const totalPerformance = distributions.reduce((s, d) => s + normalizeToDisplay(Number(d.performance_amount) || 0, d.currency || 'USD'), 0);
   const pendingCount = distributions.filter(d => d.status === 'pending').length;
   const availableCount = distributions.filter(d => d.status === 'available').length;
 
