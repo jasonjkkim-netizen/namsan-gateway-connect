@@ -339,7 +339,25 @@ export default function MemberDetail() {
         });
       }
 
-      setInvestments(mergedInvestments);
+      const displayInvestments = mergedInvestments.map((row) => {
+        const valuation = computeInvestmentValuation({
+          investmentAmount: row.investment_amount,
+          currentValue: row.current_value,
+          startDate: row.start_date,
+          investmentMaturityDate: row.maturity_date,
+          productMaturityDate: row.product_maturity_date,
+          annualRatePercent: row.annual_rate_percent,
+          status: row.status,
+        });
+
+        return {
+          ...row,
+          display_current_value: valuation.displayCurrentValue,
+          display_return_percent: valuation.displayReturnPercent,
+        };
+      });
+
+      setInvestments(displayInvestments);
       setCommissions((commRes.data || []) as CommissionRow[]);
       setAncestors((ancRes.data || []) as AncestorRow[]);
       setDownline((subRes.data || []) as DownlineRow[]);
@@ -409,20 +427,8 @@ export default function MemberDetail() {
   };
 
   // Aggregations
-  const investmentValuations = investments.map((investment) => ({
-    investment,
-    valuation: computeInvestmentValuation({
-      investmentAmount: investment.investment_amount,
-      currentValue: investment.current_value,
-      startDate: investment.start_date,
-      investmentMaturityDate: investment.maturity_date,
-      productMaturityDate: investment.product_maturity_date,
-      annualRatePercent: investment.annual_rate_percent,
-      status: investment.status,
-    }),
-  }));
-  const totalInvested = investmentValuations.reduce((s, { investment }) => s + (Number(investment.investment_amount) || 0), 0);
-  const totalCurrent = investmentValuations.reduce((s, { valuation }) => s + valuation.displayCurrentValue, 0);
+  const totalInvested = investments.reduce((s, investment) => s + (Number(investment.investment_amount) || 0), 0);
+  const totalCurrent = investments.reduce((s, investment) => s + (Number(investment.display_current_value) || 0), 0);
   const earnedTotal = commissions
     .filter((c) => c.to_user_id === userId)
     .reduce((s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), 0);

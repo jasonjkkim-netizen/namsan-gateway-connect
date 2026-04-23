@@ -30,6 +30,8 @@ export interface InvestmentRowData {
   realized_return_amount?: number | null;
   product_maturity_date?: string | null;
   annual_rate_percent?: number | null;
+  display_current_value?: number;
+  display_return_percent?: number;
 }
 
 interface Props {
@@ -62,7 +64,8 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
     annualRatePercent: inv.annual_rate_percent,
     status: inv.status,
   });
-  const ret = valuation.displayReturnPercent;
+  const displayCurrentValue = inv.display_current_value ?? valuation.displayCurrentValue;
+  const ret = inv.display_return_percent ?? valuation.displayReturnPercent;
 
   const cancel = () => {
     setCurrentValue(String(inv.current_value ?? 0));
@@ -180,7 +183,7 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
           {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
         </TableCell>
         <TableCell className="text-right">{formatCurrency(inv.investment_amount)}</TableCell>
-        <TableCell className="text-right">{formatCurrency(valuation.displayCurrentValue, inv.invested_currency || undefined)}</TableCell>
+        <TableCell className="text-right">{formatCurrency(displayCurrentValue, inv.invested_currency || undefined)}</TableCell>
         <TableCell className={`text-right hidden sm:table-cell ${ret >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
           {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
         </TableCell>
