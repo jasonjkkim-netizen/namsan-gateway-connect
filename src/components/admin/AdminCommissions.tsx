@@ -395,7 +395,7 @@ export function AdminCommissions() {
       supabase.from('commission_distributions').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('commission_audit_log').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('profiles').select('user_id, full_name, email, sales_role'),
-      supabase.from('investment_products').select('id, name_en, name_ko').eq('is_active', true),
+      supabase.from('investment_products').select('id, name_en, name_ko, upfront_commission_percent, performance_fee_percent').eq('is_active', true),
       supabase.from('commission_rates').select('*').order('sales_level', { ascending: true }),
       supabase.from('app_settings').select('*').eq('key', 'commission_display_currency').maybeSingle(),
       supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
@@ -414,6 +414,26 @@ export function AdminCommissions() {
       setDisplayCurrency(val || 'KRW');
     }
     if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
+
+    const productRows = (productsRes.data as Product[]) || [];
+    const rateRows = (ratesRes.data as CommissionRate[]) || [];
+    const nextConfigs = productRows.reduce<Record<string, ProductCommissionConfig>>((acc, product) => {
+      const roleRates = rateRows.filter((rate) => rate.product_id === product.id && !rate.is_override);
+      const totalUpfrontRate = Number(product.upfront_commission_percent) || 0;
+      const derivedRatios = deriveRatiosFromAbsoluteRates(
+        roleRates.reduce<Partial<Record<CommissionRole, number>>>((map, rate) => {
+          if (ROLE_SEQUENCE.includes(rate.sales_role as CommissionRole)) {
+            map[rate.sales_role as CommissionRole] = Number(rate.upfront_rate) || 0;
+          }
+          return map;
+        }, {}),
+        totalUpfrontRate,
+      );
+
+      acc[product.id] = buildProductCommissionConfig(null, derivedRatios);
+      return acc;
+    }, {});
+    setProductConfigs(nextConfigs);
     setLoading(false);
   }
 
