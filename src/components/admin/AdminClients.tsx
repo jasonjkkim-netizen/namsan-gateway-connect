@@ -471,7 +471,7 @@ export function AdminClients() {
     if (loading) {
       return Array.from({ length: 3 }).map((_, i) => (
         <TableRow key={i}>
-          {Array.from({ length: isDeletedSection ? 8 : 10 }).map((_, j) => (
+          {Array.from({ length: isDeletedSection ? 10 : 12 }).map((_, j) => (
             <TableCell key={j}><Skeleton className="h-5 w-24" /></TableCell>
           ))}
         </TableRow>
@@ -481,7 +481,7 @@ export function AdminClients() {
     if (list.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={isDeletedSection ? 8 : 10} className="text-center py-8 text-muted-foreground">
+          <TableCell colSpan={isDeletedSection ? 10 : 12} className="text-center py-8 text-muted-foreground">
             {language === 'ko' ? '데이터가 없습니다' : 'No data found'}
           </TableCell>
         </TableRow>
@@ -510,6 +510,8 @@ export function AdminClients() {
         <TableCell className="hidden md:table-cell">{profile.phone || '-'}</TableCell>
         {!isDeletedSection && <TableCell className="hidden lg:table-cell max-w-[150px] truncate">{profile.address || '-'}</TableCell>}
         <TableCell className="hidden md:table-cell">{profile.birthday ? formatDate(profile.birthday) : '-'}</TableCell>
+        <TableCell className="hidden sm:table-cell whitespace-nowrap">{roleLabel(profile.sales_role) || '-'}</TableCell>
+        <TableCell className="hidden sm:table-cell whitespace-nowrap">{profile.sales_level ?? '-'}</TableCell>
         <TableCell className="hidden sm:table-cell whitespace-nowrap">{isDeletedSection && profile.deleted_at ? formatDate(profile.deleted_at) : formatDate(profile.created_at)}</TableCell>
         {!isDeletedSection && (
           <TableCell className="min-w-[90px] sm:min-w-[160px] max-w-[120px] sm:max-w-none">
@@ -585,6 +587,8 @@ export function AdminClients() {
         <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
         {!isDeletedSection && <TableHead className="whitespace-nowrap hidden lg:table-cell">{language === 'ko' ? '주소' : 'Address'}</TableHead>}
         <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
+        <TableHead className="whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '역할' : 'Role'}</TableHead>
+        <TableHead className="whitespace-nowrap hidden sm:table-cell">{language === 'ko' ? '등급' : 'Level'}</TableHead>
         <TableHead className="whitespace-nowrap hidden sm:table-cell">{isDeletedSection ? (language === 'ko' ? '삭제일' : 'Deleted') : (language === 'ko' ? '가입일' : 'Joined')}</TableHead>
         {!isDeletedSection && <TableHead className="whitespace-nowrap">{language === 'ko' ? '담당자' : 'Manager'}</TableHead>}
         {!isDeletedSection && <TableHead className="text-center whitespace-nowrap">{language === 'ko' ? '관리자' : 'Admin'}</TableHead>}
@@ -612,6 +616,26 @@ export function AdminClients() {
             <span className="text-muted-foreground text-xs ml-2">({filteredProfiles.length})</span>
           </h2>
           <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={roleSort} onValueChange={setRoleSort}>
+              <SelectTrigger className="h-8 text-xs w-full sm:w-44">
+                <SelectValue placeholder={language === 'ko' ? '역할 정렬' : 'Sort by role'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_desc">{language === 'ko' ? '최신순' : 'Newest first'}</SelectItem>
+                <SelectItem value="role_asc">{language === 'ko' ? '역할 높은순' : 'Role high to low'}</SelectItem>
+                <SelectItem value="role_desc">{language === 'ko' ? '역할 낮은순' : 'Role low to high'}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={gradeSort} onValueChange={setGradeSort}>
+              <SelectTrigger className="h-8 text-xs w-full sm:w-40">
+                <SelectValue placeholder={language === 'ko' ? '등급 정렬' : 'Sort by level'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{language === 'ko' ? '등급 정렬 안함' : 'No level sort'}</SelectItem>
+                <SelectItem value="level_asc">{language === 'ko' ? '등급 낮은순' : 'Level low to high'}</SelectItem>
+                <SelectItem value="level_desc">{language === 'ko' ? '등급 높은순' : 'Level high to low'}</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={managerFilter} onValueChange={setManagerFilter}>
               <SelectTrigger className="h-8 text-xs w-full sm:w-48">
                 <SelectValue placeholder={language === 'ko' ? '담당자 필터' : 'Filter by manager'} />
@@ -629,7 +653,7 @@ export function AdminClients() {
             <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={language === 'ko' ? '검색...' : 'Search...'}
+                placeholder={language === 'ko' ? '이메일/이름/연락처/역할/등급 검색' : 'Search email/name/phone/role/level'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 text-sm h-8"
