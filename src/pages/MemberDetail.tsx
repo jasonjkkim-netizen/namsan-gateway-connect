@@ -16,7 +16,7 @@ import {
 import { toast } from 'sonner';
 import {
   ArrowLeft, Mail, Phone, MapPin, Calendar, User as UserIcon,
-  Users, Briefcase, Coins, Save, ChevronUp, ChevronDown, Pencil, AlertTriangle,
+  Users, Briefcase, Coins, Save, AlertTriangle,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { MemberLink } from '@/components/MemberLink';
@@ -169,8 +169,6 @@ export default function MemberDetail() {
   const [savingNotes, setSavingNotes] = useState(false);
   const canEditNotes = isAdmin;
 
-  // Inline profile editing
-  const [editingProfile, setEditingProfile] = useState(false);
   const [profileDraft, setProfileDraft] = useState({
     full_name: '',
     full_name_ko: '' as string,
@@ -184,20 +182,16 @@ export default function MemberDetail() {
   const [savingProfile, setSavingProfile] = useState(false);
   const canEditProfile = !!(isAdmin || user?.id === userId);
 
-  const startEditProfile = () => {
-    if (!profile) return;
+  const syncProfileDraft = (nextProfile: MemberProfile) => {
     setProfileDraft({
-      full_name: profile.full_name || '',
-      full_name_ko: profile.full_name_ko || '',
-      email: profile.email || '',
-      phone: profile.phone || '',
-      address: profile.address || '',
-      birthday: profile.birthday || '',
+      full_name: nextProfile.full_name || '',
+      full_name_ko: nextProfile.full_name_ko || '',
+      email: nextProfile.email || '',
+      phone: nextProfile.phone || '',
+      address: nextProfile.address || '',
+      birthday: nextProfile.birthday || '',
     });
-    setEditingProfile(true);
   };
-
-  const cancelEditProfile = () => setEditingProfile(false);
 
   const saveProfile = async () => {
     if (!profile) return;
@@ -219,7 +213,6 @@ export default function MemberDetail() {
       toast.error(language === 'ko' ? '프로필 저장 실패' : 'Failed to save profile');
     } else {
       toast.success(language === 'ko' ? '프로필 저장 완료' : 'Profile saved');
-      setEditingProfile(false);
       loadAll();
     }
   };
@@ -298,6 +291,7 @@ export default function MemberDetail() {
 
       setProfile(prof as MemberProfile);
       setNotesDraft((prof as MemberProfile).admin_notes || '');
+      syncProfileDraft(prof as MemberProfile);
 
       // 3) Parallel fetches
       const [invRes, commRes, ancRes, subRes] = await Promise.all([
@@ -430,6 +424,14 @@ export default function MemberDetail() {
   const roleLabel = profile?.sales_role
     ? ROLE_LABELS[profile.sales_role]?.[language === 'ko' ? 'ko' : 'en'] || profile.sales_role
     : '—';
+  const hasProfileChanges = !!profile && (
+    profileDraft.full_name !== (profile.full_name || '')
+    || profileDraft.full_name_ko !== (profile.full_name_ko || '')
+    || profileDraft.email !== (profile.email || '')
+    || profileDraft.phone !== (profile.phone || '')
+    || profileDraft.address !== (profile.address || '')
+    || profileDraft.birthday !== (profile.birthday || '')
+  );
 
   const handleSaveNotes = async () => {
     if (!profile) return;
