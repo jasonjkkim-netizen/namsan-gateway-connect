@@ -87,10 +87,10 @@ const ROLE_LEVELS: Record<string, number> = {
 // Default splits when no rates are configured
 const DEFAULT_SPLITS: Record<string, number> = {
   webmaster: 0.00,
-  district_manager: 0.40,
-  deputy_district_manager: 0.25,
-  principal_agent: 0.20,
-  agent: 0.15,
+  district_manager: 0.15,
+  deputy_district_manager: 0.20,
+  principal_agent: 0.25,
+  agent: 0.40,
 };
 
 export function SalesCommissionRates({ downline }: SalesCommissionRatesProps) {
