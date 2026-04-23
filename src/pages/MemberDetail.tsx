@@ -65,6 +65,8 @@ interface InvestmentRow {
   product_id?: string | null;
   product_maturity_date?: string | null;
   annual_rate_percent?: number | null;
+  display_current_value?: number;
+  display_return_percent?: number;
 }
 
 interface CommissionRow {
