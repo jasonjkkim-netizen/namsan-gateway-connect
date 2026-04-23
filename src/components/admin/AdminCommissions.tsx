@@ -26,6 +26,7 @@ import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, User
 import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
 import {
@@ -524,6 +525,28 @@ export function AdminCommissions() {
     sortKey: 'upfront' | 'performance' | 'other'
   ) => getCommissionBreakdownItems(source.upfront, source.performance)
     .find((item) => item.key === sortKey)?.ratio ?? 0;
+
+  const getBreakdownTooltipText = (
+    item: { key: string; label: string; amount: number; ratio: number },
+    source: { upfront: number; performance: number; currency: string }
+  ) => {
+    const total = (Number(source.upfront) || 0) + (Number(source.performance) || 0);
+    const baseAmount = formatCommAmount(item.amount, source.currency);
+    const totalAmount = formatCommAmount(total, source.currency);
+
+    if (language === 'ko') {
+      if (item.key === 'other') {
+        return `기타 비중 = 기타 금액 ${baseAmount} ÷ 총합 ${totalAmount}. 현재 총합은 선취 + 성과 기준이라 기타는 0원(0.00%)입니다.`;
+      }
+      return `${item.label} 비중 = ${item.label} 금액 ${baseAmount} ÷ 총합 ${totalAmount}. 총합은 해당 행의 선취 + 성과 금액입니다.`;
+    }
+
+    if (item.key === 'other') {
+      return `Other % = Other amount ${baseAmount} ÷ total ${totalAmount}. The current total uses upfront + performance for this row, so other is 0.00%.`;
+    }
+
+    return `${item.label} % = ${item.label} amount ${baseAmount} ÷ total ${totalAmount}. The total for this row is upfront + performance.`;
+  };
 
   // Per-person attribution
   const personAttribution = useMemo(() => {
@@ -1952,20 +1975,39 @@ export function AdminCommissions() {
                                       <TableCell className="text-sm">{src.investorName}</TableCell>
                                       <TableCell className="min-w-[280px]">
                                         <div className="rounded-md border border-border bg-background p-2">
-                                          <div className="grid gap-2 md:grid-cols-3">
-                                            {getCommissionBreakdownItems(src.upfront, src.performance).map((item) => (
-                                              <div key={item.key} className="rounded-sm border border-border/70 bg-muted/20 p-2">
-                                                <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
-                                                  <span className="font-medium text-foreground">{item.label}</span>
-                                                  <span className="tabular-nums text-muted-foreground">{item.ratio.toFixed(2)}%</span>
+                                          <TooltipProvider>
+                                            <div className="grid gap-2 md:grid-cols-3">
+                                              {getCommissionBreakdownItems(src.upfront, src.performance).map((item) => (
+                                                <div key={item.key} className="rounded-sm border border-border/70 bg-muted/20 p-2">
+                                                  <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
+                                                    <span className="font-medium text-foreground">{item.label}</span>
+                                                    <Tooltip>
+                                                      <TooltipTrigger asChild>
+                                                        <button
+                                                          type="button"
+                                                          className="tabular-nums text-muted-foreground underline decoration-dotted underline-offset-2"
+                                                          aria-label={language === 'ko' ? `${item.label} 비중 계산 방식 보기` : `View ${item.label} percentage formula`}
+                                                        >
+                                                          {item.ratio.toFixed(2)}%
+                                                        </button>
+                                                      </TooltipTrigger>
+                                                      <TooltipContent className="max-w-[280px] text-[11px] leading-relaxed">
+                                                        {getBreakdownTooltipText(item, {
+                                                          upfront: src.upfront,
+                                                          performance: src.performance,
+                                                          currency: src.currency,
+                                                        })}
+                                                      </TooltipContent>
+                                                    </Tooltip>
+                                                  </div>
+                                                  <div className="truncate text-[11px] font-medium text-foreground">
+                                                    {formatCommAmount(item.amount, src.currency)}
+                                                  </div>
+                                                  <Progress value={item.ratio} className="mt-2 h-1.5" />
                                                 </div>
-                                                <div className="truncate text-[11px] font-medium text-foreground">
-                                                  {formatCommAmount(item.amount, src.currency)}
-                                                </div>
-                                                <Progress value={item.ratio} className="mt-2 h-1.5" />
-                                              </div>
-                                            ))}
-                                          </div>
+                                              ))}
+                                            </div>
+                                          </TooltipProvider>
                                           <div className="flex items-center justify-between border-t border-border pt-2 text-[11px] font-medium">
                                             <span>{language === 'ko' ? '총합' : 'Total'}</span>
                                             <span>{formatCommAmount(src.upfront + src.performance, src.currency)}</span>
