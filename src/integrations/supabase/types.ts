@@ -1579,6 +1579,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_commission_recipient_depth: {
+        Args: { _investment_id: string; _recipient_id: string }
+        Returns: number
+      }
       get_manager_subtree_investment_summaries: {
         Args: { _manager_id: string }
         Returns: {
