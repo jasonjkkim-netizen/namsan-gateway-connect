@@ -967,6 +967,18 @@ export function AdminCommissions() {
     }
     return amount;
   };
+
+  const getAttributionDisplayTotals = (sources: { upfront: number; performance: number; currency: string }[]) => {
+    const upfront = sources.reduce((sum, src) => sum + normalizeToDisplay(src.upfront, src.currency || 'USD'), 0);
+    const performance = sources.reduce((sum, src) => sum + normalizeToDisplay(src.performance, src.currency || 'USD'), 0);
+
+    return {
+      upfront,
+      performance,
+      total: upfront + performance,
+    };
+  };
+
   const totalUpfront = distributions.reduce((s, d) => s + normalizeToDisplay(Number(d.upfront_amount) || 0, d.currency || 'USD'), 0);
   const totalPerformance = distributions.reduce((s, d) => s + normalizeToDisplay(Number(d.performance_amount) || 0, d.currency || 'USD'), 0);
   const totalCommission = totalUpfront + totalPerformance;
