@@ -149,8 +149,7 @@ function extractNumericText(value: string | null) {
 
 describe('MemberDetail language toggle valuation consistency', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-04-01T00:00:00Z'));
+    vi.clearAllMocks();
     localStorage.setItem('preferredLanguage', 'ko');
     mockUseAuth.mockReturnValue({
       user: { id: 'member-1', email: 'member@example.com' },
