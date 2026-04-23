@@ -14,7 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Pencil, Check, X, Loader2, Trash2 } from 'lucide-react';
+import { Pencil, Check, X, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { computeInvestmentValuation } from '@/lib/investment-valuation';
 
 export interface InvestmentRowData {
@@ -32,6 +32,7 @@ export interface InvestmentRowData {
   annual_rate_percent?: number | null;
   display_current_value?: number;
   display_return_percent?: number;
+  valuation_warning?: string | null;
 }
 
 interface Props {
@@ -181,6 +182,12 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
       <TableRow>
         <TableCell className="font-medium">
           {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
+          {inv.valuation_warning && (
+            <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-600">
+              <AlertTriangle className="h-3 w-3" />
+              <span>{inv.valuation_warning}</span>
+            </div>
+          )}
         </TableCell>
         <TableCell className="text-right">{formatCurrency(inv.investment_amount)}</TableCell>
         <TableCell className="text-right">{formatCurrency(displayCurrentValue, inv.invested_currency || undefined)}</TableCell>
