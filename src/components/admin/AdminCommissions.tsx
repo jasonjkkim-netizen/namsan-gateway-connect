@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight, Save, X, Loader2, ArrowDownUp, Eye } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
 import {
@@ -486,6 +487,36 @@ export function AdminCommissions() {
       return `₩${krwAmount.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return formatCurrency(amount);
+  };
+
+  const getCommissionBreakdownItems = (upfront: number, performance: number) => {
+    const normalizedUpfront = Number(upfront) || 0;
+    const normalizedPerformance = Number(performance) || 0;
+    const total = normalizedUpfront + normalizedPerformance;
+    const other = Math.max(0, total - normalizedUpfront - normalizedPerformance);
+
+    const items = [
+      {
+        key: 'upfront',
+        label: language === 'ko' ? '선취' : 'Upfront',
+        amount: normalizedUpfront,
+      },
+      {
+        key: 'performance',
+        label: language === 'ko' ? '성과' : 'Performance',
+        amount: normalizedPerformance,
+      },
+      {
+        key: 'other',
+        label: language === 'ko' ? '기타' : 'Other',
+        amount: other,
+      },
+    ];
+
+    return items.map((item) => ({
+      ...item,
+      ratio: total > 0 ? (item.amount / total) * 100 : 0,
+    }));
   };
 
   // Per-person attribution
@@ -1857,6 +1888,7 @@ export function AdminCommissions() {
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead className="text-xs">{language === 'ko' ? '투자자' : 'Investor'}</TableHead>
+                                    <TableHead className="text-xs">{language === 'ko' ? '항목별 분해' : 'Item Breakdown'}</TableHead>
                                     <TableHead className="text-xs">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
                                     <TableHead className="text-xs">{language === 'ko' ? '성과' : 'Performance'}</TableHead>
                                     <TableHead className="text-xs">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
@@ -1870,6 +1902,26 @@ export function AdminCommissions() {
                                   {data.sources.map((src, idx) => (
                                     <TableRow key={idx}>
                                       <TableCell className="text-sm">{src.investorName}</TableCell>
+                                      <TableCell className="min-w-[280px]">
+                                        <div className="space-y-2 rounded-md border border-border bg-background p-2">
+                                          {getCommissionBreakdownItems(src.upfront, src.performance).map((item) => (
+                                            <div key={item.key} className="space-y-1">
+                                              <div className="flex items-center justify-between gap-3 text-[11px]">
+                                                <span className="text-muted-foreground">{item.label}</span>
+                                                <div className="flex items-center gap-2 text-right">
+                                                  <span className="font-medium text-foreground">{formatCommAmount(item.amount, src.currency)}</span>
+                                                  <span className="tabular-nums text-muted-foreground">{item.ratio.toFixed(2)}%</span>
+                                                </div>
+                                              </div>
+                                              <Progress value={item.ratio} className="h-1.5" />
+                                            </div>
+                                          ))}
+                                          <div className="flex items-center justify-between border-t border-border pt-2 text-[11px] font-medium">
+                                            <span>{language === 'ko' ? '총합' : 'Total'}</span>
+                                            <span>{formatCommAmount(src.upfront + src.performance, src.currency)}</span>
+                                          </div>
+                                        </div>
+                                      </TableCell>
                                       <TableCell className="text-sm text-success">{formatCommAmount(src.upfront, src.currency)}</TableCell>
                                       <TableCell className="text-sm text-success">{formatCommAmount(src.performance, src.currency)}</TableCell>
                                       <TableCell className="text-sm">{src.rate != null ? `${src.rate}%` : '—'}</TableCell>
