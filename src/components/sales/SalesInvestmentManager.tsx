@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,6 +69,7 @@ interface Props {
 export function SalesInvestmentManager({ downline, onDataChange }: Props) {
   const { language, formatCurrency, formatDate } = useLanguage();
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
 
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [commissions, setCommissions] = useState<CommissionDist[]>([]);
@@ -423,9 +425,17 @@ export function SalesInvestmentManager({ downline, onDataChange }: Props) {
 
                   return (
                     <TableRow key={inv.id}>
-                      <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">{getName(inv.user_id)}</TableCell>
+                      <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
+                        <Link to={`/members/${inv.user_id}`} className="text-primary hover:underline">
+                          {getName(inv.user_id)}
+                        </Link>
+                      </TableCell>
                       <TableCell className="text-[10px] sm:text-sm max-w-[80px] sm:max-w-none truncate">
-                        {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
+                        {inv.product_id ? (
+                          <Link to={`/products/${inv.product_id}`} className="text-primary hover:underline">
+                            {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
+                          </Link>
+                        ) : (language === 'ko' ? inv.product_name_ko : inv.product_name_en)}
                       </TableCell>
                       <TableCell className="text-right font-mono text-[10px] sm:text-sm whitespace-nowrap">
                         {Number(inv.investment_amount).toLocaleString()}
@@ -516,7 +526,7 @@ export function SalesInvestmentManager({ downline, onDataChange }: Props) {
                                     variant="ghost"
                                     className="h-7 px-2"
                                     title={language === 'ko' ? '커미션 입력' : 'Edit commission'}
-                                    onClick={() => startCommissionEdit(inv.id)}
+                                    onClick={() => navigate('/sales-dashboard?tab=commissions')}
                                   >
                                     $
                                   </Button>

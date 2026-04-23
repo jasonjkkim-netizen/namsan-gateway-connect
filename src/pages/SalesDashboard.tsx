@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
@@ -29,6 +29,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
 
 interface DownlineMember {
@@ -113,6 +114,7 @@ export default function SalesDashboard() {
   const { language, formatCurrency, formatDate } = useLanguage();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [downline, setDownline] = useState<DownlineMember[]>([]);
   const [commissions, setCommissions] = useState<CommissionDist[]>([]);
@@ -132,6 +134,7 @@ export default function SalesDashboard() {
   }>({ open: false, member: null, newRole: '' });
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'downline');
 
   const userSalesRole = (profile as any)?.sales_role;
   const isWebmaster = userSalesRole === 'webmaster';
@@ -371,6 +374,20 @@ export default function SalesDashboard() {
 
   const getRoleLabel = (role: string) =>
     ROLE_LABELS[language]?.[role] || role;
+
+  const openSalesTab = (tab: string) => {
+    setActiveTab(tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const tab = searchParams.get('tab') || 'downline';
+    setActiveTab(tab);
+  }, [searchParams]);
 
   const formatCommAmount = (amount: number, currency?: string | null) => {
     const srcCurrency = currency || 'USD';
@@ -776,7 +793,7 @@ export default function SalesDashboard() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="downline" className="space-y-4 sm:space-y-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
+        <Tabs value={activeTab} onValueChange={openSalesTab} className="space-y-4 sm:space-y-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
           <TabsList className="flex flex-wrap h-auto gap-1 p-1">
             <TabsTrigger value="downline" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -839,7 +856,7 @@ export default function SalesDashboard() {
                   });
 
                   return (
-                    <div className="space-y-1">
+                    <div className="space-y-3">
                       {/* Self row */}
                       <div className="flex items-center gap-1.5 sm:gap-2 rounded border-2 border-primary/30 bg-primary/5 px-2 sm:px-3 py-1 sm:py-1.5">
                         <Crown className="h-3 w-3 text-primary shrink-0" />
@@ -851,70 +868,73 @@ export default function SalesDashboard() {
                         </Badge>
                       </div>
 
-                      {/* Role-grouped table */}
-                      {ROLE_ORDER_LIST.filter((r) => byRole[r]?.length).map((role) => (
-                        <div key={role}>
-                          <div className="flex items-center gap-1.5 mt-2 mb-0.5 px-1">
-                            <Badge variant={(ROLE_COLORS[role] as any) || 'secondary'} className={`text-[7px] sm:text-[10px] h-4 whitespace-nowrap ${ROLE_EXTRA_CLASS[role] || ''}`}>
-                              {getRoleLabel(role)}
-                            </Badge>
-                            <span className="text-[9px] sm:text-[11px] text-muted-foreground">
-                              ({byRole[role].length})
-                            </span>
-                          </div>
-                          <Table>
-                            <TableBody>
-                              {byRole[role].map((m) => (
-                                <TableRow key={m.user_id} className="h-7 sm:h-8">
-                                  <TableCell
-                                    className="text-[10px] sm:text-xs py-1 px-2 cursor-pointer hover:text-primary truncate max-w-[160px] sm:max-w-none"
-                                    onClick={() => navigate(`/members/${m.user_id}`)}
-                                  >
-                                    {m.full_name}
-                                  </TableCell>
-                                  <TableCell className="text-right py-1 px-1 w-[130px] sm:w-[180px]">
-                                    <div className="flex items-center justify-end gap-1">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-5 w-5 sm:h-6 sm:w-6 p-0"
-                                        onClick={(e) => { e.stopPropagation(); setEditMemberId(m.user_id); }}
-                                        title={language === 'ko' ? '정보 수정' : 'Edit Info'}
+                      <Accordion type="multiple" className="rounded-lg border border-border">
+                        {ROLE_ORDER_LIST.filter((r) => byRole[r]?.length).map((role) => (
+                          <AccordionItem key={role} value={role} className="border-border px-3 sm:px-4">
+                            <AccordionTrigger className="py-3 hover:no-underline">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Badge variant={(ROLE_COLORS[role] as any) || 'secondary'} className={`text-[8px] sm:text-[10px] whitespace-nowrap ${ROLE_EXTRA_CLASS[role] || ''}`}>
+                                  {getRoleLabel(role)}
+                                </Badge>
+                                <span className="text-[10px] sm:text-xs text-muted-foreground">{byRole[role].length}</span>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pt-1">
+                              <Table>
+                                <TableBody>
+                                  {byRole[role].map((m) => (
+                                    <TableRow key={m.user_id} className="h-8 sm:h-9">
+                                      <TableCell
+                                        className="text-[10px] sm:text-xs py-1 px-2 cursor-pointer hover:text-primary truncate max-w-[160px] sm:max-w-none"
+                                        onClick={() => navigate(`/members/${m.user_id}`)}
                                       >
-                                        <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                                      </Button>
-                                      {canChangeRoles && m.user_id !== user?.id && (isDM || m.sales_role !== 'deputy_district_manager') && (
-                                        <Select
-                                          value={m.sales_role}
-                                          onValueChange={(newRole) => {
-                                            if (newRole !== m.sales_role) {
-                                              setRoleChangeDialog({ open: true, member: m, newRole });
-                                            }
-                                          }}
-                                          disabled={changingRoleId === m.user_id}
-                                        >
-                                          <SelectTrigger className="w-[80px] sm:w-[120px] h-5 sm:h-6 text-[8px] sm:text-[10px] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                                            <UserCog className="h-2.5 w-2.5 mr-0.5 shrink-0" />
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent className="bg-popover z-50">
-                                            {isWebmaster && <SelectItem value="webmaster" className="text-xs">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>}
-                                            {isWebmaster && <SelectItem value="district_manager" className="text-xs">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>}
-                                            {isDM && <SelectItem value="deputy_district_manager" className="text-xs">{language === 'ko' ? '부총괄' : 'Deputy GM'}</SelectItem>}
-                                            <SelectItem value="principal_agent" className="text-xs">{language === 'ko' ? '수석' : 'Principal'}</SelectItem>
-                                            <SelectItem value="agent" className="text-xs">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
-                                            <SelectItem value="client" className="text-xs">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      ))}
+                                        {m.full_name}
+                                      </TableCell>
+                                      <TableCell className="text-right py-1 px-1 w-[130px] sm:w-[180px]">
+                                        <div className="flex items-center justify-end gap-1">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 sm:h-6 sm:w-6 p-0"
+                                            onClick={(e) => { e.stopPropagation(); setEditMemberId(m.user_id); }}
+                                            title={language === 'ko' ? '정보 수정' : 'Edit Info'}
+                                          >
+                                            <Pencil className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                          </Button>
+                                          {canChangeRoles && m.user_id !== user?.id && (isDM || m.sales_role !== 'deputy_district_manager') && (
+                                            <Select
+                                              value={m.sales_role}
+                                              onValueChange={(newRole) => {
+                                                if (newRole !== m.sales_role) {
+                                                  setRoleChangeDialog({ open: true, member: m, newRole });
+                                                }
+                                              }}
+                                              disabled={changingRoleId === m.user_id}
+                                            >
+                                              <SelectTrigger className="w-[80px] sm:w-[120px] h-5 sm:h-6 text-[8px] sm:text-[10px] whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                                                <UserCog className="h-2.5 w-2.5 mr-0.5 shrink-0" />
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent className="bg-popover z-50">
+                                                {isWebmaster && <SelectItem value="webmaster" className="text-xs">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>}
+                                                {isWebmaster && <SelectItem value="district_manager" className="text-xs">{language === 'ko' ? '총괄관리' : 'General Manager'}</SelectItem>}
+                                                {isDM && <SelectItem value="deputy_district_manager" className="text-xs">{language === 'ko' ? '부총괄' : 'Deputy GM'}</SelectItem>}
+                                                <SelectItem value="principal_agent" className="text-xs">{language === 'ko' ? '수석' : 'Principal'}</SelectItem>
+                                                <SelectItem value="agent" className="text-xs">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
+                                                <SelectItem value="client" className="text-xs">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
                     </div>
                   );
                 })()
@@ -1187,17 +1207,28 @@ export default function SalesDashboard() {
                         return (
                           <TableRow key={c.id} className={isSelf ? 'bg-primary/5' : ''}>
                             <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
-                              {getName(c.to_user_id)}
+                              <Link to={`/members/${c.to_user_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                                {getName(c.to_user_id)}
+                              </Link>
                               {isSelf && <span className="text-[8px] sm:text-xs text-primary ml-1">★</span>}
                             </TableCell>
                             <TableCell className="text-[10px] sm:text-sm whitespace-nowrap">
-                              {c.from_user_id ? getName(c.from_user_id) : '—'}
+                              {c.from_user_id ? (
+                                <Link to={`/members/${c.from_user_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                                  {getName(c.from_user_id)}
+                                </Link>
+                              ) : '—'}
                             </TableCell>
                             <TableCell className="text-[10px] sm:text-sm hidden sm:table-cell max-w-[120px] truncate">
                               {(() => {
                                 const inv = downlineInvestments.find((i) => i.id === c.investment_id);
                                 if (!inv) return '—';
-                                return language === 'ko' ? inv.product_name_ko : inv.product_name_en;
+                                const label = language === 'ko' ? inv.product_name_ko : inv.product_name_en;
+                                return inv.product_id ? (
+                                  <Link to={`/products/${inv.product_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                                    {label}
+                                  </Link>
+                                ) : label;
                               })()}
                             </TableCell>
                             <TableCell className="text-[10px] sm:text-sm">{c.layer}</TableCell>
@@ -1306,12 +1337,16 @@ export default function SalesDashboard() {
                       downlineInvestments.map((inv) => (
                         <TableRow key={inv.id}>
                           <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
-                            {getName(inv.user_id)}
+                              <Link to={`/members/${inv.user_id}`} className="text-primary hover:underline">
+                                {getName(inv.user_id)}
+                              </Link>
                           </TableCell>
                           <TableCell className="text-[10px] sm:text-sm max-w-[80px] sm:max-w-none truncate">
-                            {language === 'ko'
-                              ? inv.product_name_ko
-                              : inv.product_name_en}
+                              {inv.product_id ? (
+                                <Link to={`/products/${inv.product_id}`} className="text-primary hover:underline">
+                                  {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
+                                </Link>
+                              ) : (language === 'ko' ? inv.product_name_ko : inv.product_name_en)}
                           </TableCell>
                           <TableCell className="text-[10px] sm:text-sm whitespace-nowrap">
                             {formatCurrency(inv.investment_amount)}
