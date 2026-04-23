@@ -215,6 +215,7 @@ Deno.serve(async (req) => {
     const distributions: any[] = [];
 
     const sortedAncestors = (ancestors || []).sort((a: any, b: any) => a.depth - b.depth);
+    const validAncestorIds = new Set(sortedAncestors.map((ancestor: any) => ancestor.user_id));
 
     for (const ancestor of sortedAncestors) {
       let rate = overridesByUser[ancestor.user_id] || ratesByRole[ancestor.sales_role];
@@ -255,12 +256,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    const sanitizedDistributions = distributions.filter(
+      (distribution) => validAncestorIds.has(distribution.to_user_id),
+    );
+
     // 9. Insert new distributions
     let insertedCount = 0;
-    if (distributions.length > 0) {
+    if (sanitizedDistributions.length > 0) {
       const { error: insertErr } = await supabase
         .from("commission_distributions")
-        .insert(distributions);
+        .insert(sanitizedDistributions);
 
       if (insertErr) {
         console.error("Error inserting distributions:", insertErr);
@@ -269,7 +274,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      insertedCount = distributions.length;
+      insertedCount = sanitizedDistributions.length;
     }
 
     // 10. Write audit log
@@ -285,7 +290,7 @@ Deno.serve(async (req) => {
         count: insertedCount,
         investment_amount: investmentAmount,
         realized_return: realizedReturn,
-        distributions: distributions.map((d) => ({
+        distributions: sanitizedDistributions.map((d) => ({
           to_user_id: d.to_user_id,
           layer: d.layer,
           upfront: d.upfront_amount,
@@ -325,8 +330,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         distributions_created: insertedCount,
-        total_upfront: distributions.reduce((s, d) => s + d.upfront_amount, 0),
-        total_performance: distributions.reduce((s, d) => s + d.performance_amount, 0),
+        total_upfront: sanitizedDistributions.reduce((s, d) => s + d.upfront_amount, 0),
+        total_performance: sanitizedDistributions.reduce((s, d) => s + d.performance_amount, 0),
       }),
       {
         status: 200,
