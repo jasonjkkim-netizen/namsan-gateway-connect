@@ -121,31 +121,46 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
   const softDelete = async () => {
     setDeleting(true);
     try {
-      // 1. Delete related commission distributions
-      const { error: cdErr } = await supabase
+      const { error: commissionError } = await supabase
         .from('commission_distributions')
         .delete()
         .eq('investment_id', inv.id);
-      if (cdErr) console.warn('Failed to delete commission distributions:', cdErr);
 
-      // 2. Soft-delete the investment (set status to 'deleted')
+      if (commissionError) {
+        console.error('Failed to delete commission distributions:', commissionError);
+        toast.error(language === 'ko' ? '연결된 커미션 삭제 실패' : 'Failed to delete linked commissions');
+        return;
+      }
+
+      const { error: distributionError } = await supabase
+        .from('distributions')
+        .delete()
+        .eq('investment_id', inv.id);
+
+      if (distributionError) {
+        console.error('Failed to delete related distributions:', distributionError);
+        toast.error(language === 'ko' ? '연결된 분배 내역 삭제 실패' : 'Failed to delete linked distributions');
+        return;
+      }
+
       const { error } = await supabase
         .from('client_investments')
-        .update({ status: 'deleted', current_value: 0 })
+        .delete()
         .eq('id', inv.id);
 
       if (error) {
-        console.error('Soft delete error:', error);
+        console.error('Delete investment error:', error);
         toast.error(language === 'ko' ? '삭제 실패' : 'Delete failed');
       } else {
         toast.success(language === 'ko' ? '투자 삭제 완료' : 'Investment deleted');
         onChanged();
       }
     } catch (e) {
-      console.error('Soft delete exception:', e);
+      console.error('Delete investment exception:', e);
       toast.error(language === 'ko' ? '삭제 실패' : 'Delete failed');
+    } finally {
+      setDeleting(false);
     }
-    setDeleting(false);
   };
 
   if (!editing) {
