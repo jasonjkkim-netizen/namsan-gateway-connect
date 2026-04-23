@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
             performance_rate: Math.round(totalPerformance * ratio * 100) / 100,
           };
         }
-        console.log("Using default auto-distribution rates:", ratesByRole);
+        console.log("Using product default or fallback auto-distribution rates:", ratesByRole);
       }
     }
 

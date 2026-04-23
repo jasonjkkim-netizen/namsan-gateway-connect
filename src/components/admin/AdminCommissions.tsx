@@ -19,13 +19,24 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight, Save, X, Loader2 } from 'lucide-react';
+import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight, Save, X, Loader2, ArrowDownUp, Eye } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
+import {
+  COMMISSION_ROLES,
+  CommissionDirection,
+  CommissionRole,
+  ProductCommissionConfig,
+  buildProductCommissionConfig,
+  computeCommissionPreview,
+  DEFAULT_DIRECTION_PRESETS,
+  deriveRatiosFromAbsoluteRates,
+} from '@/lib/commission-defaults';
 
 interface Distribution {
   id: string;
@@ -77,6 +88,15 @@ interface Product {
   id: string;
   name_en: string;
   name_ko: string;
+  default_currency?: string | null;
+  upfront_commission_percent?: number | null;
+  performance_fee_percent?: number | null;
+}
+
+interface CommissionPreviewInput {
+  investmentAmount: string;
+  realizedReturnAmount: string;
+  notes: string;
 }
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
@@ -93,6 +113,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const SALES_ROLES = ['district_manager', 'deputy_district_manager', 'principal_agent', 'agent'] as const;
 const ROLE_LEVELS: Record<string, number> = { district_manager: 1, deputy_district_manager: 2, principal_agent: 3, agent: 4 };
+const ROLE_SEQUENCE = COMMISSION_ROLES as readonly CommissionRole[];
 
 // Reports sub-component
 function AdminCommissionReports({
@@ -345,6 +366,14 @@ export function AdminCommissions() {
   const [editingRate, setEditingRate] = useState<CommissionRate | null>(null);
   const [rateForm, setRateForm] = useState({ sales_role: 'district_manager', upfront_rate: '0', performance_rate: '0' });
   const [overrideForm, setOverrideForm] = useState({ override_user_id: '', upfront_rate: '0', performance_rate: '0' });
+  const [savingProductConfig, setSavingProductConfig] = useState(false);
+  const [productConfigs, setProductConfigs] = useState<Record<string, ProductCommissionConfig>>({});
+  const [draftConfig, setDraftConfig] = useState<ProductCommissionConfig | null>(null);
+  const [previewInput, setPreviewInput] = useState<CommissionPreviewInput>({
+    investmentAmount: '100000000',
+    realizedReturnAmount: '5000000',
+    notes: '',
+  });
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -367,7 +396,7 @@ export function AdminCommissions() {
       supabase.from('commission_distributions').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('commission_audit_log').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('profiles').select('user_id, full_name, email, sales_role'),
-      supabase.from('investment_products').select('id, name_en, name_ko').eq('is_active', true),
+      supabase.from('investment_products').select('id, name_en, name_ko, default_currency, upfront_commission_percent, performance_fee_percent').eq('is_active', true),
       supabase.from('commission_rates').select('*').order('sales_level', { ascending: true }),
       supabase.from('app_settings').select('*').eq('key', 'commission_display_currency').maybeSingle(),
       supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
@@ -386,6 +415,26 @@ export function AdminCommissions() {
       setDisplayCurrency(val || 'KRW');
     }
     if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
+
+    const productRows = (productsRes.data as Product[]) || [];
+    const rateRows = (ratesRes.data as CommissionRate[]) || [];
+    const nextConfigs = productRows.reduce<Record<string, ProductCommissionConfig>>((acc, product) => {
+      const roleRates = rateRows.filter((rate) => rate.product_id === product.id && !rate.is_override);
+      const totalUpfrontRate = Number(product.upfront_commission_percent) || 0;
+      const derivedRatios = deriveRatiosFromAbsoluteRates(
+        roleRates.reduce<Partial<Record<CommissionRole, number>>>((map, rate) => {
+          if (ROLE_SEQUENCE.includes(rate.sales_role as CommissionRole)) {
+            map[rate.sales_role as CommissionRole] = Number(rate.upfront_rate) || 0;
+          }
+          return map;
+        }, {}),
+        totalUpfrontRate,
+      );
+
+      acc[product.id] = buildProductCommissionConfig(null, derivedRatios);
+      return acc;
+    }, {});
+    setProductConfigs(nextConfigs);
     setLoading(false);
   }
 
@@ -846,6 +895,116 @@ export function AdminCommissions() {
   const overrideRates = rates.filter(r => r.product_id === selectedProductId && r.is_override);
 
   const salesUsers = profiles.filter(p => p.sales_role && p.sales_role !== 'client');
+  const selectedProduct = products.find((product) => product.id === selectedProductId);
+
+  useEffect(() => {
+    if (!selectedProductId) {
+      setDraftConfig(null);
+      return;
+    }
+
+    setDraftConfig(productConfigs[selectedProductId] || buildProductCommissionConfig());
+  }, [selectedProductId, productConfigs]);
+
+  const previewRows = useMemo(() => {
+    if (!selectedProduct || !draftConfig) return [];
+
+    return computeCommissionPreview({
+      totalUpfrontRate: Number(selectedProduct.upfront_commission_percent) || 0,
+      totalPerformanceRate: Number(selectedProduct.performance_fee_percent) || 0,
+      investmentAmount: Number(previewInput.investmentAmount) || 0,
+      realizedReturnAmount: Number(previewInput.realizedReturnAmount) || 0,
+      ratios: draftConfig.ratios,
+    });
+  }, [selectedProduct, draftConfig, previewInput]);
+
+  const previewTotals = useMemo(() => previewRows.reduce((acc, row) => {
+    acc.share += row.sharePercent;
+    acc.upfrontRate += row.upfrontRate;
+    acc.performanceRate += row.performanceRate;
+    acc.upfrontAmount += row.upfrontAmount;
+    acc.performanceAmount += row.performanceAmount;
+    return acc;
+  }, { share: 0, upfrontRate: 0, performanceRate: 0, upfrontAmount: 0, performanceAmount: 0 }), [previewRows]);
+
+  const handleDirectionChange = (direction: CommissionDirection) => {
+    setDraftConfig({ direction, ratios: { ...DEFAULT_DIRECTION_PRESETS[direction] } });
+  };
+
+  const handleDraftRatioChange = (role: CommissionRole, value: string) => {
+    const numeric = Number(value);
+    setDraftConfig((current) => current ? {
+      ...current,
+      ratios: {
+        ...current.ratios,
+        [role]: Number.isFinite(numeric) && numeric >= 0 ? numeric : 0,
+      },
+    } : current);
+  };
+
+  const handleSaveProductConfig = async () => {
+    if (!selectedProductId || !selectedProduct || !draftConfig || !user) return;
+
+    const totalUpfrontRate = Number(selectedProduct.upfront_commission_percent) || 0;
+    const totalPerformanceRate = Number(selectedProduct.performance_fee_percent) || 0;
+    const normalizedRows = computeCommissionPreview({
+      totalUpfrontRate,
+      totalPerformanceRate,
+      investmentAmount: Number(previewInput.investmentAmount) || 0,
+      realizedReturnAmount: Number(previewInput.realizedReturnAmount) || 0,
+      ratios: draftConfig.ratios,
+    });
+
+    setSavingProductConfig(true);
+    try {
+      const deletePromise = supabase
+        .from('commission_rates')
+        .delete()
+        .eq('product_id', selectedProductId)
+        .eq('is_override', false);
+
+      const insertPromise = deletePromise.then(({ error }) => {
+        if (error) throw error;
+        return supabase.from('commission_rates').insert(
+          normalizedRows.map((row) => ({
+            product_id: selectedProductId,
+            sales_role: row.role,
+            sales_level: ROLE_LEVELS[row.role] || 0,
+            upfront_rate: row.upfrontRate,
+            performance_rate: row.performanceRate,
+            is_override: false,
+            set_by: user.id,
+          }))
+        );
+      });
+
+      const { error: insertError } = await insertPromise;
+      if (insertError) throw insertError;
+
+      setProductConfigs((current) => ({
+        ...current,
+        [selectedProductId]: draftConfig,
+      }));
+
+      toast.success(language === 'ko' ? '상품별 커미션 방향과 기본 비율을 저장했습니다' : 'Saved commission direction and default ratios');
+      await fetchAll();
+
+      const { data: investments } = await supabase.from('client_investments').select('id').eq('product_id', selectedProductId);
+      if (investments?.length) {
+        await Promise.all(
+          investments.map((investment) =>
+            supabase.functions.invoke('calculate-commissions', {
+              body: { investment_id: investment.id },
+            })
+          )
+        );
+      }
+    } catch (error: any) {
+      toast.error(error?.message || (language === 'ko' ? '상품 설정 저장 실패' : 'Failed to save product settings'));
+    } finally {
+      setSavingProductConfig(false);
+    }
+  };
 
   return (
     <div className="card-elevated">
@@ -1179,13 +1338,12 @@ export function AdminCommissions() {
         {/* Rate Settings Tab */}
         <TabsContent value="rates">
           <div className="space-y-6">
-            {/* Product Selector */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <Label className="whitespace-nowrap font-medium">
                 {language === 'ko' ? '상품 선택' : 'Select Product'}
               </Label>
               <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                <SelectTrigger className="w-[280px]">
+                <SelectTrigger className="w-[320px]">
                   <SelectValue placeholder={language === 'ko' ? '상품 선택' : 'Select product'} />
                 </SelectTrigger>
                 <SelectContent>
@@ -1198,114 +1356,223 @@ export function AdminCommissions() {
               </Select>
             </div>
 
-            {/* Default Rates Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  {language === 'ko' ? '기본 요율 (역할별)' : 'Default Rates (by Role)'}
-                </h3>
-                <Button size="sm" onClick={openAddRate}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {language === 'ko' ? '요율 추가' : 'Add Rate'}
-                </Button>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
-                    <TableHead>{language === 'ko' ? '선취 요율 (%)' : 'Upfront Rate (%)'}</TableHead>
-                    <TableHead>{language === 'ko' ? '성과 요율 (%)' : 'Performance Rate (%)'}</TableHead>
-                    <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {defaultRates.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                        {language === 'ko' ? '설정된 기본 요율이 없습니다' : 'No default rates configured'}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    defaultRates.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {ROLE_LABELS[language]?.[r.sales_role] || r.sales_role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{r.upfront_rate}%</TableCell>
-                        <TableCell className="font-medium">{r.performance_rate}%</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => openEditRate(r)}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteRate(r.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
+            {selectedProduct && draftConfig ? (
+              <>
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                  <section className="rounded-lg border border-border p-4 space-y-4">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <h3 className="text-base font-semibold flex items-center gap-2">
+                          <ArrowDownUp className="h-4 w-4" />
+                          {language === 'ko' ? '상품별 커미션 방향 / 기본 비율' : 'Per-product direction / default ratios'}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {language === 'ko'
+                            ? '각 역할의 배분 비율을 바꾸면 우측 미리보기가 즉시 재계산됩니다.'
+                            : 'Adjust role share ratios and the preview updates immediately.'}
+                        </p>
+                      </div>
+                      <Button onClick={handleSaveProductConfig} disabled={savingProductConfig}>
+                        <Save className="h-4 w-4 mr-2" />
+                        {savingProductConfig ? (language === 'ko' ? '저장중...' : 'Saving...') : (language === 'ko' ? '상품 설정 저장' : 'Save Product Settings')}
+                      </Button>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDirectionChange('agent-first')}
+                        className={cn(
+                          'rounded-md border p-3 text-left transition-colors',
+                          draftConfig.direction === 'agent-first' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
+                        )}
+                      >
+                        <div className="font-medium">{language === 'ko' ? '하위 우선' : 'Agent first'}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{language === 'ko' ? '에이전트가 가장 크고 총괄이 가장 작음' : 'Agent gets the largest share, manager the smallest.'}</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDirectionChange('manager-first')}
+                        className={cn(
+                          'rounded-md border p-3 text-left transition-colors',
+                          draftConfig.direction === 'manager-first' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
+                        )}
+                      >
+                        <div className="font-medium">{language === 'ko' ? '상위 우선' : 'Manager first'}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{language === 'ko' ? '총괄이 가장 크고 에이전트가 가장 작음' : 'Manager gets the largest share, agent the smallest.'}</div>
+                      </button>
+                    </div>
+
+                    <div className="rounded-md border border-border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
+                            <TableHead>{language === 'ko' ? '기본 비율 (%)' : 'Default ratio (%)'}</TableHead>
+                            <TableHead>{language === 'ko' ? '현재 선취 요율' : 'Current upfront rate'}</TableHead>
+                            <TableHead>{language === 'ko' ? '현재 성과 요율' : 'Current performance rate'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {ROLE_SEQUENCE.map((role) => {
+                            const rateRow = previewRows.find((row) => row.role === role);
+                            return (
+                              <TableRow key={role}>
+                                <TableCell>
+                                  <Badge variant="outline">{ROLE_LABELS[language]?.[role] || role}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={draftConfig.ratios[role]}
+                                    onChange={(e) => handleDraftRatioChange(role, e.target.value)}
+                                    className="h-9 w-28"
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">{rateRow?.upfrontRate.toFixed(2) || '0.00'}%</TableCell>
+                                <TableCell className="font-medium">{rateRow?.performanceRate.toFixed(2) || '0.00'}%</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-md border border-border p-3">
+                        <div className="text-xs text-muted-foreground">{language === 'ko' ? '상품 총 선취' : 'Product upfront total'}</div>
+                        <div className="mt-1 font-semibold">{(Number(selectedProduct.upfront_commission_percent) || 0).toFixed(2)}%</div>
+                      </div>
+                      <div className="rounded-md border border-border p-3">
+                        <div className="text-xs text-muted-foreground">{language === 'ko' ? '상품 총 성과' : 'Product performance total'}</div>
+                        <div className="mt-1 font-semibold">{(Number(selectedProduct.performance_fee_percent) || 0).toFixed(2)}%</div>
+                      </div>
+                      <div className="rounded-md border border-border p-3">
+                        <div className="text-xs text-muted-foreground">{language === 'ko' ? '비율 합계' : 'Ratio total'}</div>
+                        <div className="mt-1 font-semibold">{previewTotals.share.toFixed(2)}%</div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="rounded-lg border border-border p-4 space-y-4">
+                    <div>
+                      <h3 className="text-base font-semibold flex items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        {language === 'ko' ? '즉시 재계산 미리보기' : 'Immediate recalculation preview'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {language === 'ko'
+                          ? '샘플 투자금과 실현수익을 기준으로 역할별 커미션을 바로 확인합니다.'
+                          : 'See the recalculated commission result instantly using sample inputs.'}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label>{language === 'ko' ? '샘플 투자금' : 'Sample investment amount'}</Label>
+                        <Input type="number" min="0" value={previewInput.investmentAmount} onChange={(e) => setPreviewInput((current) => ({ ...current, investmentAmount: e.target.value }))} className="mt-1" />
+                      </div>
+                      <div>
+                        <Label>{language === 'ko' ? '샘플 실현수익' : 'Sample realized return'}</Label>
+                        <Input type="number" min="0" value={previewInput.realizedReturnAmount} onChange={(e) => setPreviewInput((current) => ({ ...current, realizedReturnAmount: e.target.value }))} className="mt-1" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>{language === 'ko' ? '메모' : 'Notes'}</Label>
+                      <Textarea value={previewInput.notes} onChange={(e) => setPreviewInput((current) => ({ ...current, notes: e.target.value }))} className="mt-1 min-h-20" placeholder={language === 'ko' ? '시나리오 메모를 남길 수 있습니다.' : 'Optional scenario notes.'} />
+                    </div>
+
+                    <div className="rounded-md border border-border overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
+                            <TableHead>{language === 'ko' ? '비중' : 'Share'}</TableHead>
+                            <TableHead>{language === 'ko' ? '선취 금액' : 'Upfront amount'}</TableHead>
+                            <TableHead>{language === 'ko' ? '성과 금액' : 'Performance amount'}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {previewRows.map((row) => (
+                            <TableRow key={row.role}>
+                              <TableCell>
+                                <Badge variant="outline">{ROLE_LABELS[language]?.[row.role] || row.role}</Badge>
+                              </TableCell>
+                              <TableCell>{row.sharePercent.toFixed(2)}%</TableCell>
+                              <TableCell className="font-medium">{formatCommAmount(row.upfrontAmount, selectedProduct.default_currency || 'USD')}</TableCell>
+                              <TableCell className="font-medium">{formatCommAmount(row.performanceAmount, selectedProduct.default_currency || 'USD')}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    <div className="rounded-md border border-border bg-muted/20 p-3 text-sm space-y-1">
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">{language === 'ko' ? '선취 요율 합계' : 'Total upfront rate'}</span><span className="font-medium">{previewTotals.upfrontRate.toFixed(2)}%</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">{language === 'ko' ? '성과 요율 합계' : 'Total performance rate'}</span><span className="font-medium">{previewTotals.performanceRate.toFixed(2)}%</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">{language === 'ko' ? '선취 커미션 합계' : 'Total upfront commission'}</span><span className="font-medium">{formatCommAmount(previewTotals.upfrontAmount, selectedProduct.default_currency || 'USD')}</span></div>
+                      <div className="flex justify-between gap-3"><span className="text-muted-foreground">{language === 'ko' ? '성과 커미션 합계' : 'Total performance commission'}</span><span className="font-medium">{formatCommAmount(previewTotals.performanceAmount, selectedProduct.default_currency || 'USD')}</span></div>
+                    </div>
+                  </section>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold flex items-center gap-2">
+                      <UserCog className="h-4 w-4" />
+                      {language === 'ko' ? '개인별 요율 (오버라이드)' : 'Per-User Overrides'}
+                    </h3>
+                    <Button size="sm" variant="outline" onClick={openAddOverride}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      {language === 'ko' ? '오버라이드 추가' : 'Add Override'}
+                    </Button>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{language === 'ko' ? '사용자' : 'User'}</TableHead>
+                        <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
+                        <TableHead>{language === 'ko' ? '선취 요율 (%)' : 'Upfront Rate (%)'}</TableHead>
+                        <TableHead>{language === 'ko' ? '성과 요율 (%)' : 'Performance Rate (%)'}</TableHead>
+                        <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {overrideRates.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                            {language === 'ko' ? '개인별 오버라이드가 없습니다' : 'No per-user overrides'}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        overrideRates.map((r) => (
+                          <TableRow key={r.id}>
+                            <TableCell className="font-medium">{r.override_user_id ? getName(r.override_user_id) : '—'}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs">{ROLE_LABELS[language]?.[r.sales_role] || r.sales_role}</Badge></TableCell>
+                            <TableCell className="font-medium">{r.upfront_rate}%</TableCell>
+                            <TableCell className="font-medium">{r.performance_rate}%</TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteRate(r.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
+                {language === 'ko' ? '상품을 선택하면 커미션 방향과 기본 비율을 편집할 수 있습니다.' : 'Select a product to edit commission direction and default ratios.'}
+              </div>
+            )}
 
             {/* Per-User Overrides Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-semibold flex items-center gap-2">
-                  <UserCog className="h-4 w-4" />
-                  {language === 'ko' ? '개인별 요율 (오버라이드)' : 'Per-User Overrides'}
-                </h3>
-                <Button size="sm" variant="outline" onClick={openAddOverride}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  {language === 'ko' ? '오버라이드 추가' : 'Add Override'}
-                </Button>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{language === 'ko' ? '사용자' : 'User'}</TableHead>
-                    <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
-                    <TableHead>{language === 'ko' ? '선취 요율 (%)' : 'Upfront Rate (%)'}</TableHead>
-                    <TableHead>{language === 'ko' ? '성과 요율 (%)' : 'Performance Rate (%)'}</TableHead>
-                    <TableHead>{language === 'ko' ? '작업' : 'Actions'}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {overrideRates.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                        {language === 'ko' ? '개인별 오버라이드가 없습니다' : 'No per-user overrides'}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    overrideRates.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="font-medium">
-                          {r.override_user_id ? getName(r.override_user_id) : '—'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {ROLE_LABELS[language]?.[r.sales_role] || r.sales_role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{r.upfront_rate}%</TableCell>
-                        <TableCell className="font-medium">{r.performance_rate}%</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteRate(r.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
           </div>
         </TabsContent>
 
