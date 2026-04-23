@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight, Save, X, Loader2, ArrowDownUp, Eye } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
 import {
@@ -486,6 +487,36 @@ export function AdminCommissions() {
       return `₩${krwAmount.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return formatCurrency(amount);
+  };
+
+  const getCommissionBreakdownItems = (upfront: number, performance: number) => {
+    const normalizedUpfront = Number(upfront) || 0;
+    const normalizedPerformance = Number(performance) || 0;
+    const total = normalizedUpfront + normalizedPerformance;
+    const other = Math.max(0, total - normalizedUpfront - normalizedPerformance);
+
+    const items = [
+      {
+        key: 'upfront',
+        label: language === 'ko' ? '선취' : 'Upfront',
+        amount: normalizedUpfront,
+      },
+      {
+        key: 'performance',
+        label: language === 'ko' ? '성과' : 'Performance',
+        amount: normalizedPerformance,
+      },
+      {
+        key: 'other',
+        label: language === 'ko' ? '기타' : 'Other',
+        amount: other,
+      },
+    ];
+
+    return items.map((item) => ({
+      ...item,
+      ratio: total > 0 ? (item.amount / total) * 100 : 0,
+    }));
   };
 
   // Per-person attribution
