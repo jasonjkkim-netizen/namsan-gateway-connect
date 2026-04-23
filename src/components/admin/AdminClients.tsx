@@ -491,20 +491,20 @@ export function AdminClients() {
 
       return (
       <TableRow key={profile.id}>
-        <TableCell>
-          <div>
-            <MemberLink userId={profile.user_id} className="text-xs sm:text-sm font-medium">
+        <TableCell className="min-w-[180px] sm:min-w-[220px] whitespace-nowrap align-top">
+          <div className="flex flex-col gap-0.5">
+            <MemberLink userId={profile.user_id} className="text-xs sm:text-sm font-medium leading-tight whitespace-nowrap">
               {primaryName}
             </MemberLink>
             {secondaryName && (
-              <MemberLink userId={profile.user_id} className="block text-[10px] sm:text-xs text-muted-foreground">
+              <MemberLink userId={profile.user_id} className="block text-[10px] sm:text-xs text-muted-foreground leading-tight whitespace-nowrap">
                 {secondaryName}
               </MemberLink>
             )}
           </div>
         </TableCell>
-        <TableCell className="font-medium max-w-[140px] sm:max-w-none truncate">
-          <MemberLink userId={profile.user_id} className="text-xs text-muted-foreground sm:text-sm">
+        <TableCell className="min-w-[220px] sm:min-w-[260px] whitespace-nowrap align-top">
+          <MemberLink userId={profile.user_id} className="text-xs text-muted-foreground sm:text-sm whitespace-nowrap">
             {profile.email}
           </MemberLink>
         </TableCell>
@@ -583,8 +583,8 @@ export function AdminClients() {
   const renderTableHeader = (isDeletedSection: boolean) => (
     <TableHeader>
       <TableRow>
-        <TableHead className="whitespace-nowrap">{language === 'ko' ? '이름' : 'Name'}</TableHead>
-        <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
+        <TableHead className="whitespace-nowrap min-w-[180px] sm:min-w-[220px]">{language === 'ko' ? '이름' : 'Name'}</TableHead>
+        <TableHead className="whitespace-nowrap min-w-[220px] sm:min-w-[260px]">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
         <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
         {!isDeletedSection && <TableHead className="whitespace-nowrap hidden lg:table-cell">{language === 'ko' ? '주소' : 'Address'}</TableHead>}
         <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
