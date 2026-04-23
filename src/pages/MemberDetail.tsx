@@ -970,19 +970,40 @@ function Stat({ label, value, positive }: { label: string; value: string; positi
   );
 }
 
-function EditField({ icon: Icon, label, value, onChange, type = 'text' }: {
-  icon: any; label: string; value: string; onChange: (v: string) => void; type?: string;
+function EditField({
+  icon: Icon,
+  label,
+  value,
+  onChange,
+  type = 'text',
+  dirty = false,
+  language,
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  dirty?: boolean;
+  language: 'ko' | 'en';
 }) {
   return (
     <div className="flex items-start gap-2">
       <Icon className="h-4 w-4 text-muted-foreground mt-2 shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="text-[10px] text-muted-foreground mb-0.5">{label}</div>
+        <div className="mb-0.5 flex items-center gap-2">
+          <div className="text-[10px] text-muted-foreground">{label}</div>
+          {dirty && (
+            <span className="rounded border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+              {language === 'ko' ? '미저장' : 'Unsaved'}
+            </span>
+          )}
+        </div>
         <Input
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-8 text-xs sm:text-sm"
+          className={dirty ? 'h-8 border-primary/50 bg-primary/5 text-xs sm:text-sm' : 'h-8 text-xs sm:text-sm'}
         />
       </div>
     </div>
