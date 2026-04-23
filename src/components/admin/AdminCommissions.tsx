@@ -894,6 +894,116 @@ export function AdminCommissions() {
   const overrideRates = rates.filter(r => r.product_id === selectedProductId && r.is_override);
 
   const salesUsers = profiles.filter(p => p.sales_role && p.sales_role !== 'client');
+  const selectedProduct = products.find((product) => product.id === selectedProductId);
+
+  useEffect(() => {
+    if (!selectedProductId) {
+      setDraftConfig(null);
+      return;
+    }
+
+    setDraftConfig(productConfigs[selectedProductId] || buildProductCommissionConfig());
+  }, [selectedProductId, productConfigs]);
+
+  const previewRows = useMemo(() => {
+    if (!selectedProduct || !draftConfig) return [];
+
+    return computeCommissionPreview({
+      totalUpfrontRate: Number(selectedProduct.upfront_commission_percent) || 0,
+      totalPerformanceRate: Number(selectedProduct.performance_fee_percent) || 0,
+      investmentAmount: Number(previewInput.investmentAmount) || 0,
+      realizedReturnAmount: Number(previewInput.realizedReturnAmount) || 0,
+      ratios: draftConfig.ratios,
+    });
+  }, [selectedProduct, draftConfig, previewInput]);
+
+  const previewTotals = useMemo(() => previewRows.reduce((acc, row) => {
+    acc.share += row.sharePercent;
+    acc.upfrontRate += row.upfrontRate;
+    acc.performanceRate += row.performanceRate;
+    acc.upfrontAmount += row.upfrontAmount;
+    acc.performanceAmount += row.performanceAmount;
+    return acc;
+  }, { share: 0, upfrontRate: 0, performanceRate: 0, upfrontAmount: 0, performanceAmount: 0 }), [previewRows]);
+
+  const handleDirectionChange = (direction: CommissionDirection) => {
+    setDraftConfig({ direction, ratios: { ...DEFAULT_DIRECTION_PRESETS[direction] } });
+  };
+
+  const handleDraftRatioChange = (role: CommissionRole, value: string) => {
+    const numeric = Number(value);
+    setDraftConfig((current) => current ? {
+      ...current,
+      ratios: {
+        ...current.ratios,
+        [role]: Number.isFinite(numeric) && numeric >= 0 ? numeric : 0,
+      },
+    } : current);
+  };
+
+  const handleSaveProductConfig = async () => {
+    if (!selectedProductId || !selectedProduct || !draftConfig || !user) return;
+
+    const totalUpfrontRate = Number(selectedProduct.upfront_commission_percent) || 0;
+    const totalPerformanceRate = Number(selectedProduct.performance_fee_percent) || 0;
+    const normalizedRows = computeCommissionPreview({
+      totalUpfrontRate,
+      totalPerformanceRate,
+      investmentAmount: Number(previewInput.investmentAmount) || 0,
+      realizedReturnAmount: Number(previewInput.realizedReturnAmount) || 0,
+      ratios: draftConfig.ratios,
+    });
+
+    setSavingProductConfig(true);
+    try {
+      const deletePromise = supabase
+        .from('commission_rates')
+        .delete()
+        .eq('product_id', selectedProductId)
+        .eq('is_override', false);
+
+      const insertPromise = deletePromise.then(({ error }) => {
+        if (error) throw error;
+        return supabase.from('commission_rates').insert(
+          normalizedRows.map((row) => ({
+            product_id: selectedProductId,
+            sales_role: row.role,
+            sales_level: ROLE_LEVELS[row.role] || 0,
+            upfront_rate: row.upfrontRate,
+            performance_rate: row.performanceRate,
+            is_override: false,
+            set_by: user.id,
+          }))
+        );
+      });
+
+      const { error: insertError } = await insertPromise;
+      if (insertError) throw insertError;
+
+      setProductConfigs((current) => ({
+        ...current,
+        [selectedProductId]: draftConfig,
+      }));
+
+      toast.success(language === 'ko' ? '상품별 커미션 방향과 기본 비율을 저장했습니다' : 'Saved commission direction and default ratios');
+      await fetchAll();
+
+      const { data: investments } = await supabase.from('client_investments').select('id').eq('product_id', selectedProductId);
+      if (investments?.length) {
+        await Promise.all(
+          investments.map((investment) =>
+            supabase.functions.invoke('calculate-commissions', {
+              body: { investment_id: investment.id },
+            })
+          )
+        );
+      }
+    } catch (error: any) {
+      toast.error(error?.message || (language === 'ko' ? '상품 설정 저장 실패' : 'Failed to save product settings'));
+    } finally {
+      setSavingProductConfig(false);
+    }
+  };
 
   return (
     <div className="card-elevated">
