@@ -1,4 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import {
+  buildProductCommissionConfig,
+  computeCommissionPreview,
+  DEFAULT_DIRECTION_PRESETS,
+} from '@/lib/commission-defaults';
 
 /**
  * Integration tests verifying that the commission calculation engine
@@ -112,6 +117,28 @@ describe('Commission Flow — Default Rate Computation', () => {
     for (const role of Object.keys(DEFAULT_SPLITS)) {
       expect(rates[role].performance_rate).toBe(0);
     }
+  });
+
+  it('supports manager-first presets for product-level preview editing', () => {
+    const config = buildProductCommissionConfig({
+      direction: 'manager-first',
+      ratios: DEFAULT_DIRECTION_PRESETS['manager-first'],
+    });
+
+    const preview = computeCommissionPreview({
+      totalUpfrontRate: 3,
+      totalPerformanceRate: 1,
+      investmentAmount: 10_000_000,
+      realizedReturnAmount: 1_000_000,
+      ratios: config.ratios,
+    });
+
+    expect(preview[0].role).toBe('district_manager');
+    expect(preview[0].sharePercent).toBe(40);
+    expect(preview[0].upfrontRate).toBe(1.2);
+    expect(preview[3].role).toBe('agent');
+    expect(preview[3].sharePercent).toBe(15);
+    expect(preview[3].upfrontRate).toBe(0.45);
   });
 });
 
