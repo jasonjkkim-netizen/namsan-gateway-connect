@@ -1107,7 +1107,7 @@ export function AdminCommissions() {
                 <>
                   <span className="text-sm text-muted-foreground">
                     {selectedIds.size}{language === 'ko' ? '건 선택' : ' selected'}
-                    {selectedTotal > 0 && ` · ${formatCurrency(selectedTotal)}`}
+                    {selectedTotal > 0 && ` · ${formatCommissionAmount(selectedTotal, language as 'ko' | 'en')}`}
                   </span>
                   {canBulkApprove && (
                     <Button size="sm" onClick={() => handleBulkStatusChange('available')} disabled={bulkProcessing}>

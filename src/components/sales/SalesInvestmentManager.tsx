@@ -512,12 +512,12 @@ export function SalesInvestmentManager({ downline, activeTab = 'pipeline', onDat
                         <>
                           <TableCell className="text-right font-mono text-[10px] sm:text-sm">
                             {myComm?.upfront_amount != null ? (
-                              <span className="text-success whitespace-nowrap">+{formatCommissionAmount(Number(myComm.upfront_amount), language, myComm.currency).replace(/^[^\d-]+\s?/, '')}</span>
+                              <span className="text-success whitespace-nowrap">+{formatCommissionAmount(Number(myComm.upfront_amount), language, myComm.currency)}</span>
                             ) : '—'}
                           </TableCell>
                           <TableCell className="text-right font-mono text-[10px] sm:text-sm">
                             {myComm?.performance_amount != null ? (
-                              <span className="text-success whitespace-nowrap">+{formatCommissionAmount(Number(myComm.performance_amount), language, myComm.currency).replace(/^[^\d-]+\s?/, '')}</span>
+                              <span className="text-success whitespace-nowrap">+{formatCommissionAmount(Number(myComm.performance_amount), language, myComm.currency)}</span>
                             ) : '—'}
                           </TableCell>
                           <TableCell>
