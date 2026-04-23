@@ -23,7 +23,6 @@ import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart
 import { ProductPrintSummary } from '@/components/products/ProductPrintSummary';
 import { ProductInlineInvestmentForm } from '@/components/products/ProductInlineInvestmentForm';
 import { formatCommissionAmount } from '@/lib/commission-format';
-import { computeInvestmentValuation } from '@/lib/investment-valuation';
 
 interface Product {
   id: string;
@@ -193,27 +192,11 @@ export default function ProductDetail() {
     async function fetchCommData() {
       setCommLoading(true);
       const [invRes, fxRes] = await Promise.all([
-        supabase.from('client_investments').select('id, user_id, investment_amount, current_value, invested_currency, start_date, maturity_date, status').eq('product_id', id),
+        supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id),
         supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
       ]);
       if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
-      const invData = (invRes.data || []).map((investment: any) => {
-        const valuation = computeInvestmentValuation({
-          investmentAmount: Number(investment.investment_amount) || 0,
-          currentValue: Number(investment.current_value) || 0,
-          startDate: investment.start_date,
-          investmentMaturityDate: investment.maturity_date,
-          productMaturityDate: product?.maturity_date,
-          annualRatePercent: product?.fixed_return_percent ?? product?.target_return ?? null,
-          status: investment.status,
-        });
-
-        return {
-          ...investment,
-          accrued_interest: valuation.accruedInterest,
-          computed_mark_to_market: valuation.displayCurrentValue,
-        };
-      });
+      const invData = invRes.data || [];
       setInvestments(invData);
 
       // Fetch commissions server-side filtered by investment IDs
@@ -768,27 +751,11 @@ export default function ProductDetail() {
                                 (async () => {
                                   setCommLoading(true);
                                   const [invRes, fxRes] = await Promise.all([
-                                    supabase.from('client_investments').select('id, user_id, investment_amount, current_value, invested_currency, start_date, maturity_date, status').eq('product_id', id!),
+                                    supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id!),
                                     supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
                                   ]);
                                   if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
-                                  const invData = (invRes.data || []).map((investment: any) => {
-                                    const valuation = computeInvestmentValuation({
-                                      investmentAmount: Number(investment.investment_amount) || 0,
-                                      currentValue: Number(investment.current_value) || 0,
-                                      startDate: investment.start_date,
-                                      investmentMaturityDate: investment.maturity_date,
-                                      productMaturityDate: product?.maturity_date,
-                                      annualRatePercent: product?.fixed_return_percent ?? product?.target_return ?? null,
-                                      status: investment.status,
-                                    });
-
-                                    return {
-                                      ...investment,
-                                      accrued_interest: valuation.accruedInterest,
-                                      computed_mark_to_market: valuation.displayCurrentValue,
-                                    };
-                                  });
+                                  const invData = invRes.data || [];
                                   setInvestments(invData);
                                   const invIds = invData.map((i: any) => i.id);
                                   let relevantComm: any[] = [];
@@ -818,11 +785,9 @@ export default function ProductDetail() {
                             </p>
                           ) : (
                             <>
-                              <div className="hidden items-center rounded-md border border-border bg-muted/30 px-3 py-2 text-[11px] font-medium text-muted-foreground sm:grid sm:grid-cols-[minmax(0,1.5fr)_auto_auto_auto_auto_auto] sm:gap-x-3">
+                              <div className="hidden items-center rounded-md border border-border bg-muted/30 px-3 py-2 text-[11px] font-medium text-muted-foreground sm:grid sm:grid-cols-[minmax(0,1.7fr)_auto_auto_auto] sm:gap-x-3">
                                 <span>{language === 'ko' ? '이름' : 'Name'}</span>
                                 <span>{language === 'ko' ? '금액' : 'Amount'}</span>
-                                <span>{language === 'ko' ? 'Accrued Interest' : 'Accrued Interest'}</span>
-                                <span>{language === 'ko' ? 'Computed MTM' : 'Computed MTM'}</span>
                                 <span>{language === 'ko' ? '투자일' : 'Start Date'}</span>
                                 <span>{language === 'ko' ? '상태' : 'Status'}</span>
                               </div>
@@ -837,7 +802,7 @@ export default function ProductDetail() {
                                 return (
                                   <AccordionItem key={inv.id} value={inv.id} className="rounded-lg border px-3">
                                     <AccordionTrigger className="min-h-12 py-3 hover:no-underline">
-                                      <div className="grid w-full gap-y-2 pr-3 text-left sm:grid-cols-[minmax(0,1.5fr)_auto_auto_auto_auto_auto] sm:items-center sm:gap-x-3 sm:gap-y-0">
+                                      <div className="grid w-full gap-y-2 pr-3 text-left sm:grid-cols-[minmax(0,1.7fr)_auto_auto_auto] sm:items-center sm:gap-x-3 sm:gap-y-0">
                                         <div className="flex min-w-0 items-center gap-2">
                                           <Link
                                             to={buildMemberDetailLink(inv.user_id, 'investments', inv.id)}
@@ -849,8 +814,6 @@ export default function ProductDetail() {
                                           <Badge variant={inv.status === 'active' ? 'default' : 'secondary'} className="text-[10px]">{inv.status}</Badge>
                                         </div>
                                         <span className="text-xs font-medium text-foreground whitespace-nowrap">{formatCurrency(Number(inv.investment_amount))} {inv.invested_currency || 'USD'}</span>
-                                        <span className="text-xs text-muted-foreground whitespace-nowrap">{formatCurrency(Number(inv.accrued_interest) || 0, inv.invested_currency || undefined)}</span>
-                                        <span className="text-xs text-muted-foreground whitespace-nowrap">{formatCurrency(Number(inv.computed_mark_to_market) || 0, inv.invested_currency || undefined)}</span>
                                         <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(inv.start_date)}</span>
                                         <span className="text-xs text-muted-foreground sm:hidden">{language === 'ko' ? '상태' : 'Status'}: {inv.status}</span>
                                       </div>
