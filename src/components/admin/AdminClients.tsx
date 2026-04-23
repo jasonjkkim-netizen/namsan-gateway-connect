@@ -60,6 +60,7 @@ interface Profile {
   deleted_by: string | null;
   parent_id: string | null;
   sales_role: string | null;
+  sales_level: number | null;
   admin_notes: string | null;
 }
 
@@ -86,6 +87,8 @@ export function AdminClients() {
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Profile | null>(null);
   const [showDeleted, setShowDeleted] = useState(false);
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
+  const [roleSort, setRoleSort] = useState<string>('created_desc');
+  const [gradeSort, setGradeSort] = useState<string>('none');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -410,29 +413,57 @@ export function AdminClients() {
   const activeProfiles = profiles.filter(p => !p.is_deleted);
   const deletedProfiles = profiles.filter(p => p.is_deleted);
 
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+  const matchesSearch = (profile: Profile) => {
+    if (!normalizedSearchTerm) return true;
+
+    const managerName = getManagerName(profile.parent_id)?.toLowerCase() || '';
+    const searchableValues = [
+      profile.email,
+      profile.full_name,
+      profile.full_name_ko || '',
+      profile.phone || '',
+      profile.address || '',
+      roleLabel(profile.sales_role).toLowerCase(),
+      profile.sales_level != null ? String(profile.sales_level) : '',
+      managerName,
+    ].map((value) => value.toLowerCase());
+
+    return searchableValues.some((value) => value.includes(normalizedSearchTerm));
+  };
+
   const filteredProfiles = activeProfiles.filter(
     (p) =>
-      (p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.full_name_ko && p.full_name_ko.includes(searchTerm))) &&
-      (managerFilter === '__all__' || 
-       (managerFilter === '__unassigned__' ? !p.parent_id : p.parent_id === managerFilter))
+      matchesSearch(p) &&
+      (managerFilter === '__all__' ||
+        (managerFilter === '__unassigned__' ? !p.parent_id : p.parent_id === managerFilter))
   );
 
-  const filteredDeleted = deletedProfiles.filter(
-    (p) =>
-      p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.full_name_ko && p.full_name_ko.includes(searchTerm))
-  );
+  const filteredDeleted = deletedProfiles.filter((p) => matchesSearch(p));
 
   const roleOrder: Record<string, number> = {
     webmaster: 0, district_manager: 1, deputy_district_manager: 2,
     principal_agent: 3, agent: 4, client: 5,
   };
 
-  // Sort profiles by created_at descending (most recent first)
   const sortedProfiles = [...filteredProfiles].sort((a, b) => {
+    if (roleSort !== 'created_desc') {
+      const roleA = roleOrder[a.sales_role || 'client'] ?? 999;
+      const roleB = roleOrder[b.sales_role || 'client'] ?? 999;
+      if (roleA !== roleB) {
+        return roleSort === 'role_asc' ? roleA - roleB : roleB - roleA;
+      }
+    }
+
+    if (gradeSort !== 'none') {
+      const levelA = a.sales_level ?? 999;
+      const levelB = b.sales_level ?? 999;
+      if (levelA !== levelB) {
+        return gradeSort === 'level_asc' ? levelA - levelB : levelB - levelA;
+      }
+    }
+
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
