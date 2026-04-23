@@ -117,6 +117,7 @@ const STATUS_COLORS: Record<string, string> = {
 const SALES_ROLES = ['district_manager', 'deputy_district_manager', 'principal_agent', 'agent'] as const;
 const ROLE_LEVELS: Record<string, number> = { district_manager: 1, deputy_district_manager: 2, principal_agent: 3, agent: 4 };
 const ROLE_SEQUENCE = COMMISSION_ROLES as readonly CommissionRole[];
+const EXCLUDED_COMMISSION_WEBMASTER_NAMES = new Set(['김종국', 'Kim Jong Kuk']);
 
 // Reports sub-component
 function AdminCommissionReports({
@@ -406,9 +407,17 @@ export function AdminCommissions() {
       supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
     ]);
 
-    if (distRes.data) setDistributions(distRes.data as Distribution[]);
     if (auditRes.data) setAuditLog(auditRes.data as AuditEntry[]);
     if (profilesRes.data) setProfiles(profilesRes.data as Profile[]);
+    if (distRes.data) {
+      const profileRows = (profilesRes.data as Profile[]) || profiles;
+      setDistributions((distRes.data as Distribution[]).filter((distribution) => {
+        const profile = profileRows.find((entry) => entry.user_id === distribution.to_user_id);
+        if (!profile?.sales_role) return false;
+        if (profile.sales_role !== 'webmaster') return true;
+        return !EXCLUDED_COMMISSION_WEBMASTER_NAMES.has(profile.full_name);
+      }));
+    }
     if (productsRes.data) {
       setProducts(productsRes.data as Product[]);
       if (!selectedProductId && productsRes.data.length > 0) setSelectedProductId(productsRes.data[0].id);
@@ -481,13 +490,20 @@ export function AdminCommissions() {
     const srcCurrency = currency || 'USD';
     if (displayCurrency === 'USD') {
       const usdAmount = srcCurrency === 'KRW' ? amount / usdKrwRate : amount;
-      return `$${usdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `$${usdAmount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
     if (displayCurrency === 'KRW') {
       const krwAmount = srcCurrency === 'USD' ? amount * usdKrwRate : amount;
-      return `₩${krwAmount.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `₩${krwAmount.toLocaleString('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
     return formatCurrency(amount);
+  };
+
+  const isCommissionEligibleRecipient = (userId: string) => {
+    const profile = profiles.find((entry) => entry.user_id === userId);
+    if (!profile?.sales_role) return false;
+    if (profile.sales_role !== 'webmaster') return true;
+    return !EXCLUDED_COMMISSION_WEBMASTER_NAMES.has(profile.full_name);
   };
 
   const getCommissionBreakdownItems = (upfront: number, performance: number) => {
