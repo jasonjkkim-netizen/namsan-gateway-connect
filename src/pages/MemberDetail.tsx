@@ -766,45 +766,69 @@ export default function MemberDetail() {
                       </div>
                     </div>
                   )}
-                  {showDeveloperDebugPanel && investments.length > 0 && (
-                    <div className="mb-4 rounded-md border border-dashed border-border bg-muted/30 p-3">
+                  {isAdmin && investments.length > 0 && (
+                    <div className="mb-4 rounded-md border border-border bg-muted/30 p-3">
                       <div className="mb-2 flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                         <p className="text-xs sm:text-sm font-medium text-foreground">
-                          {language === 'ko' ? '개발자 디버그 · 투자 평가 계산' : 'Developer Debug · Investment valuation'}
+                          {language === 'ko' ? '계산 감사 · 투자 평가 계산' : 'Calculation Audit · Investment valuation'}
                         </p>
                       </div>
                       <div className="space-y-2">
                         {investments.map((investment) => (
                           <div
                             key={`debug-${investment.id}`}
-                            className="grid gap-2 rounded-md border border-border bg-background px-3 py-2 text-[11px] sm:grid-cols-5 sm:text-xs"
+                            className="grid gap-2 rounded-md border border-border bg-background px-3 py-2 text-[11px] sm:grid-cols-4 lg:grid-cols-6 sm:text-xs"
                           >
-                            <div className="sm:col-span-5 font-medium text-foreground">
+                            <div className="sm:col-span-4 lg:col-span-6 font-medium text-foreground">
                               {language === 'ko' ? investment.product_name_ko : investment.product_name_en}
                             </div>
                             <div>
-                              <div className="text-muted-foreground">product_id</div>
-                              <div className="font-mono text-foreground break-all">{investment.product_id || '—'}</div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '원금' : 'Principal'}</div>
+                              <div className="font-mono text-foreground">{formatCurrency(Number(investment.valuation_audit?.principal) || 0, investment.invested_currency || undefined)}</div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">base rate</div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '기준 current value' : 'Base current value'}</div>
+                              <div className="font-mono text-foreground">{formatCurrency(Number(investment.valuation_audit?.cleanValue) || 0, investment.invested_currency || undefined)}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '연수익률' : 'Annual rate'}</div>
                               <div className="font-mono text-foreground">
-                                {investment.annual_rate_percent != null ? `${Number(investment.annual_rate_percent).toFixed(2)}%` : '—'}
+                                {investment.valuation_audit?.annualRatePercent != null ? `${Number(investment.valuation_audit.annualRatePercent).toFixed(2)}%` : '—'}
                               </div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">mapping</div>
-                              <div className="font-mono text-foreground">{investment.product_mapping_status || '—'}</div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '기준일' : 'As of date'}</div>
+                              <div className="font-mono text-foreground">{investment.valuation_audit?.asOfDate || '—'}</div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">accrued interest</div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '시작일' : 'Start date'}</div>
+                              <div className="font-mono text-foreground">{investment.valuation_audit?.startDate || '—'}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '적용 만기일' : 'Effective maturity'}</div>
+                              <div className="font-mono text-foreground">{investment.valuation_audit?.effectiveMaturityDate || '—'}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '이자 계산 종료일' : 'Accrual end'}</div>
+                              <div className="font-mono text-foreground">{investment.valuation_audit?.accrualEndDate || '—'}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '경과일수' : 'Elapsed days'}</div>
+                              <div className="font-mono text-foreground">{investment.valuation_audit?.elapsedDays ?? 0}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">{language === 'ko' ? '상태/매핑' : 'Status / mapping'}</div>
+                              <div className="font-mono text-foreground">{`${investment.status || '—'} / ${investment.product_mapping_status || '—'}`}</div>
+                            </div>
+                            <div>
+                              <div className="text-muted-foreground">Accrued Interest</div>
                               <div className="font-mono text-foreground">
                                 {formatCurrency(Number(investment.accrued_interest) || 0, investment.invested_currency || undefined)}
                               </div>
                             </div>
                             <div>
-                              <div className="text-muted-foreground">computed MTM</div>
+                              <div className="text-muted-foreground">Computed MTM</div>
                               <div className="font-mono text-foreground">
                                 {formatCurrency(Number(investment.computed_mark_to_market) || 0, investment.invested_currency || undefined)}
                               </div>
