@@ -24,6 +24,12 @@ const EXCLUDED_WEBMASTER_NAME_ALIASES = new Set([
   "jk",
 ]);
 
+const INCLUDED_WEBMASTER_NAME_ALIASES = new Set([
+  "성광주",
+  "sungjoshua",
+  "joshuasung",
+]);
+
 const normalizeName = (value: string | null | undefined) =>
   (value ?? "")
     .normalize("NFKC")
@@ -35,6 +41,12 @@ const isExcludedWebmasterName = (...values: Array<string | null | undefined>) =>
   values.some((value) => {
     const normalized = normalizeName(value);
     return normalized.length > 0 && EXCLUDED_WEBMASTER_NAME_ALIASES.has(normalized);
+  });
+
+const isIncludedWebmasterName = (...values: Array<string | null | undefined>) =>
+  values.some((value) => {
+    const normalized = normalizeName(value);
+    return normalized.length > 0 && INCLUDED_WEBMASTER_NAME_ALIASES.has(normalized);
   });
 
 Deno.serve(async (req) => {
@@ -168,7 +180,8 @@ Deno.serve(async (req) => {
       if (excludedWebmasterIds.has(ancestor.user_id)) return false;
       if (ancestor.sales_role !== "webmaster") return true;
 
-      return !isExcludedWebmasterName(ancestor.full_name);
+      if (isExcludedWebmasterName(ancestor.full_name)) return false;
+      return isIncludedWebmasterName(ancestor.full_name);
     });
 
     // 4. Determine the product_id for rate lookup
