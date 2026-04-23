@@ -482,24 +482,31 @@ export function AdminClients() {
       );
     }
 
-    return list.map((profile) => (
+    return list.map((profile) => {
+      const primaryName = profile.full_name_ko || profile.full_name || profile.email;
+      const secondaryName =
+        profile.full_name_ko && profile.full_name && profile.full_name_ko !== profile.full_name
+          ? profile.full_name
+          : null;
+
+      return (
       <TableRow key={profile.id}>
-        <TableCell className="font-medium max-w-[120px] sm:max-w-none truncate">
-          <MemberLink userId={profile.user_id} className="text-xs sm:text-sm">
-            {profile.email}
-          </MemberLink>
-        </TableCell>
         <TableCell>
           <div>
-            <MemberLink userId={profile.user_id} className="text-xs sm:text-sm">
-              {profile.full_name || profile.full_name_ko || profile.email}
+            <MemberLink userId={profile.user_id} className="text-xs sm:text-sm font-medium">
+              {primaryName}
             </MemberLink>
-            {profile.full_name && profile.full_name_ko && (
-              <MemberLink userId={profile.user_id} className="text-xs text-muted-foreground block">
-                {profile.full_name_ko}
+            {secondaryName && (
+              <MemberLink userId={profile.user_id} className="block text-[10px] sm:text-xs text-muted-foreground">
+                {secondaryName}
               </MemberLink>
             )}
           </div>
+        </TableCell>
+        <TableCell className="font-medium max-w-[140px] sm:max-w-none truncate">
+          <MemberLink userId={profile.user_id} className="text-xs text-muted-foreground sm:text-sm">
+            {profile.email}
+          </MemberLink>
         </TableCell>
         <TableCell className="hidden md:table-cell">{profile.phone || '-'}</TableCell>
         {!isDeletedSection && <TableCell className="hidden lg:table-cell max-w-[150px] truncate">{profile.address || '-'}</TableCell>}
@@ -570,14 +577,14 @@ export function AdminClients() {
           </div>
         </TableCell>
       </TableRow>
-    ));
+    )});
   };
 
   const renderTableHeader = (isDeletedSection: boolean) => (
     <TableHeader>
       <TableRow>
-        <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
         <TableHead className="whitespace-nowrap">{language === 'ko' ? '이름' : 'Name'}</TableHead>
+        <TableHead className="whitespace-nowrap">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
         <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '연락처' : 'Phone'}</TableHead>
         {!isDeletedSection && <TableHead className="whitespace-nowrap hidden lg:table-cell">{language === 'ko' ? '주소' : 'Address'}</TableHead>}
         <TableHead className="whitespace-nowrap hidden md:table-cell">{language === 'ko' ? '생년월일' : 'Birthday'}</TableHead>
