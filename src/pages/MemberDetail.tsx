@@ -23,7 +23,7 @@ import { MemberLink } from '@/components/MemberLink';
 import { InlineInvestmentForm } from '@/components/sales/InlineInvestmentForm';
 import { EditableCommissionRow } from '@/components/sales/EditableCommissionRow';
 import { EditableInvestmentRow } from '@/components/sales/EditableInvestmentRow';
-import { computeInvestmentValuation } from '@/lib/investment-valuation';
+import { computeInvestmentValuation, computeInvestmentValuationDetails, type InvestmentValuationAudit } from '@/lib/investment-valuation';
 import { formatCommissionAmount } from '@/lib/commission-format';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
@@ -72,6 +72,7 @@ interface InvestmentRow {
   accrued_interest?: number;
   product_mapping_status?: string;
   computed_mark_to_market?: number;
+  valuation_audit?: InvestmentValuationAudit;
 }
 
 interface CommissionRow {
@@ -379,7 +380,7 @@ export default function MemberDetail() {
       }
 
       const displayInvestments = mergedInvestments.map((row) => {
-        const valuation = computeInvestmentValuation({
+        const valuation = computeInvestmentValuationDetails({
           investmentAmount: row.investment_amount,
           currentValue: row.current_value,
           startDate: row.start_date,
@@ -409,6 +410,7 @@ export default function MemberDetail() {
           valuation_warning: valuationWarning,
           product_mapping_status: productMappingStatus,
           computed_mark_to_market: valuation.displayCurrentValue,
+          valuation_audit: valuation.audit,
         };
       });
 
@@ -491,7 +493,6 @@ export default function MemberDetail() {
   const totalInvested = investments.reduce((s, investment) => s + (Number(investment.investment_amount) || 0), 0);
   const totalCurrent = investments.reduce((s, investment) => s + (Number(investment.display_current_value) || 0), 0);
   const valuationWarnings = investments.filter((investment) => investment.valuation_warning);
-  const showDeveloperDebugPanel = import.meta.env.DEV;
   const earnedTotal = commissions
     .filter((c) => c.to_user_id === userId)
     .reduce((s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), 0);
