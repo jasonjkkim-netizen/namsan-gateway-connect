@@ -23,6 +23,8 @@ import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart
 import { ProductPrintSummary } from '@/components/products/ProductPrintSummary';
 import { ProductInlineInvestmentForm } from '@/components/products/ProductInlineInvestmentForm';
 import { formatCommissionAmount } from '@/lib/commission-format';
+import { computeInvestmentValuationDetails, type InvestmentValuationAudit } from '@/lib/investment-valuation';
+import { ValuationFormulaBlock } from '@/components/investments/ValuationFormulaBlock';
 
 interface Product {
   id: string;
@@ -98,6 +100,22 @@ export default function ProductDetail() {
   const [investorProfiles, setInvestorProfiles] = useState<Record<string, string>>({});
   const [commLoading, setCommLoading] = useState(false);
   const [usdKrwRate, setUsdKrwRate] = useState(1350);
+
+  type ProductInvestmentAuditRow = {
+    id: string;
+    user_id: string;
+    investment_amount: number;
+    invested_currency: string | null;
+    start_date: string;
+    status: string | null;
+    current_value?: number | null;
+    maturity_date?: string | null;
+    product_maturity_date?: string | null;
+    annual_rate_percent?: number | null;
+    accrued_interest?: number;
+    computed_mark_to_market?: number;
+    valuation_audit?: InvestmentValuationAudit;
+  };
 
   const salesTab = searchParams.get('salesTab') || 'pipeline';
   const fromSalesDashboard = searchParams.get('from') === 'sales-dashboard';
@@ -191,12 +209,34 @@ export default function ProductDetail() {
     if (!id || !canSeeCommissions) return;
     async function fetchCommData() {
       setCommLoading(true);
-      const [invRes, fxRes] = await Promise.all([
-        supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id),
+      const [invRes, fxRes, productRes] = await Promise.all([
+        supabase.from('client_investments').select('id, user_id, investment_amount, current_value, invested_currency, start_date, maturity_date, status').eq('product_id', id),
         supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
+        supabase.from('investment_products').select('id, fixed_return_percent, target_return, maturity_date').eq('id', id).maybeSingle(),
       ]);
       if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
-      const invData = invRes.data || [];
+      const productRate = productRes.data?.fixed_return_percent ?? productRes.data?.target_return ?? null;
+      const productMaturityDate = productRes.data?.maturity_date ?? null;
+      const invData = ((invRes.data || []) as ProductInvestmentAuditRow[]).map((inv) => {
+        const valuation = computeInvestmentValuationDetails({
+          investmentAmount: inv.investment_amount,
+          currentValue: Number(inv.current_value) || Number(inv.investment_amount) || 0,
+          startDate: inv.start_date,
+          investmentMaturityDate: inv.maturity_date,
+          productMaturityDate,
+          annualRatePercent: productRate,
+          status: inv.status,
+        });
+
+        return {
+          ...inv,
+          product_maturity_date: productMaturityDate,
+          annual_rate_percent: productRate,
+          accrued_interest: valuation.accruedInterest,
+          computed_mark_to_market: valuation.displayCurrentValue,
+          valuation_audit: valuation.audit,
+        };
+      });
       setInvestments(invData);
 
       // Fetch commissions server-side filtered by investment IDs
@@ -751,11 +791,33 @@ export default function ProductDetail() {
                                 (async () => {
                                   setCommLoading(true);
                                   const [invRes, fxRes] = await Promise.all([
-                                    supabase.from('client_investments').select('id, user_id, investment_amount, invested_currency, start_date, status').eq('product_id', id!),
+                                     supabase.from('client_investments').select('id, user_id, investment_amount, current_value, invested_currency, start_date, maturity_date, status').eq('product_id', id!),
                                     supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
+                                     supabase.from('investment_products').select('id, fixed_return_percent, target_return, maturity_date').eq('id', id!).maybeSingle(),
                                   ]);
                                   if (fxRes.data?.current_value) setUsdKrwRate(Number(fxRes.data.current_value));
-                                  const invData = invRes.data || [];
+                                   const productRate = productRes.data?.fixed_return_percent ?? productRes.data?.target_return ?? null;
+                                   const productMaturityDate = productRes.data?.maturity_date ?? null;
+                                   const invData = ((invRes.data || []) as ProductInvestmentAuditRow[]).map((inv) => {
+                                     const valuation = computeInvestmentValuationDetails({
+                                       investmentAmount: inv.investment_amount,
+                                       currentValue: Number(inv.current_value) || Number(inv.investment_amount) || 0,
+                                       startDate: inv.start_date,
+                                       investmentMaturityDate: inv.maturity_date,
+                                       productMaturityDate,
+                                       annualRatePercent: productRate,
+                                       status: inv.status,
+                                     });
+
+                                     return {
+                                       ...inv,
+                                       product_maturity_date: productMaturityDate,
+                                       annual_rate_percent: productRate,
+                                       accrued_interest: valuation.accruedInterest,
+                                       computed_mark_to_market: valuation.displayCurrentValue,
+                                       valuation_audit: valuation.audit,
+                                     };
+                                   });
                                   setInvestments(invData);
                                   const invIds = invData.map((i: any) => i.id);
                                   let relevantComm: any[] = [];
@@ -819,6 +881,12 @@ export default function ProductDetail() {
                                       </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="space-y-2 pb-4">
+                                      <ValuationFormulaBlock
+                                        audit={inv.valuation_audit}
+                                        accruedInterest={inv.accrued_interest}
+                                        computedMarkToMarket={inv.computed_mark_to_market}
+                                        currency={inv.invested_currency}
+                                      />
                                       {invCommissions.length > 0 ? (
                                         <div className="ml-1 space-y-1 border-l-2 border-primary/20 pl-2">
                                           <p className="text-[11px] text-muted-foreground">
