@@ -15,7 +15,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Pencil, Check, X, Loader2, Trash2, AlertTriangle } from 'lucide-react';
-import { computeInvestmentValuation } from '@/lib/investment-valuation';
+import { computeInvestmentValuationDetails, type InvestmentValuationAudit } from '@/lib/investment-valuation';
+import { ValuationFormulaBlock } from '@/components/investments/ValuationFormulaBlock';
 
 export interface InvestmentRowData {
   id: string;
@@ -33,6 +34,9 @@ export interface InvestmentRowData {
   display_current_value?: number;
   display_return_percent?: number;
   valuation_warning?: string | null;
+  accrued_interest?: number;
+  computed_mark_to_market?: number;
+  valuation_audit?: InvestmentValuationAudit;
 }
 
 interface Props {
@@ -56,7 +60,7 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
     String(inv.realized_return_amount ?? 0),
   );
 
-  const valuation = computeInvestmentValuation({
+  const valuation = computeInvestmentValuationDetails({
     investmentAmount: inv.investment_amount,
     currentValue: inv.current_value,
     startDate: inv.start_date,
@@ -67,6 +71,9 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
   });
   const displayCurrentValue = inv.display_current_value ?? valuation.displayCurrentValue;
   const ret = inv.display_return_percent ?? valuation.displayReturnPercent;
+  const accruedInterest = inv.accrued_interest ?? valuation.accruedInterest;
+  const computedMarkToMarket = inv.computed_mark_to_market ?? valuation.displayCurrentValue;
+  const valuationAudit = inv.valuation_audit ?? valuation.audit;
 
   const cancel = () => {
     setCurrentValue(String(inv.current_value ?? 0));
@@ -188,6 +195,14 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
               <span>{inv.valuation_warning}</span>
             </div>
           )}
+          <ValuationFormulaBlock
+            compact
+            className="mt-2"
+            audit={valuationAudit}
+            accruedInterest={accruedInterest}
+            computedMarkToMarket={computedMarkToMarket}
+            currency={inv.invested_currency}
+          />
         </TableCell>
         <TableCell className="text-right">{formatCurrency(inv.investment_amount)}</TableCell>
         <TableCell className="text-right">{formatCurrency(displayCurrentValue, inv.invested_currency || undefined)}</TableCell>
