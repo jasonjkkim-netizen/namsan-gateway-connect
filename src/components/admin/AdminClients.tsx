@@ -161,7 +161,7 @@ export function AdminClients() {
     const labels: Record<string, string> = {
       webmaster: language === 'ko' ? '웹마스터' : 'Webmaster',
       district_manager: language === 'ko' ? '총괄관리인' : 'District Manager',
-      deputy_district_manager: language === 'ko' ? '부총괄관리인' : 'Deputy DM',
+      deputy_district_manager: language === 'ko' ? '부총괄관리인' : 'Deputy District Manager',
       principal_agent: language === 'ko' ? '수석에이전트' : 'Principal Agent',
       agent: language === 'ko' ? '에이전트' : 'Agent',
       client: language === 'ko' ? '고객' : 'Client',
@@ -896,7 +896,7 @@ export function AdminClients() {
                     <SelectItem value="client">{language === 'ko' ? '고객' : 'Client'}</SelectItem>
                     <SelectItem value="agent">{language === 'ko' ? '에이전트' : 'Agent'}</SelectItem>
                     <SelectItem value="principal_agent">{language === 'ko' ? '수석에이전트' : 'Principal Agent'}</SelectItem>
-                    <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리인' : 'Deputy DM'}</SelectItem>
+                    <SelectItem value="deputy_district_manager">{language === 'ko' ? '부총괄관리인' : 'Deputy District Manager'}</SelectItem>
                     <SelectItem value="district_manager">{language === 'ko' ? '총괄관리인' : 'District Manager'}</SelectItem>
                     <SelectItem value="webmaster">{language === 'ko' ? '웹마스터' : 'Webmaster'}</SelectItem>
                   </SelectContent>
