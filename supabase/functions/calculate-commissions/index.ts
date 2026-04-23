@@ -159,13 +159,13 @@ Deno.serve(async (req) => {
       if (productData?.upfront_commission_percent) {
         const totalUpfront = Number(productData.upfront_commission_percent);
         const totalPerformance = Number(productData.performance_fee_percent) || 0;
-        // Default split: upper hierarchy favored
+        // Default split: closest sales role favored
         const defaultSplits: Record<string, number> = {
-          webmaster: 0.40,
-          district_manager: 0.40,
-          deputy_district_manager: 0.25,
-          principal_agent: 0.20,
-          agent: 0.15,
+          webmaster: 0.00,
+          district_manager: 0.15,
+          deputy_district_manager: 0.20,
+          principal_agent: 0.25,
+          agent: 0.40,
         };
         for (const [role, ratio] of Object.entries(defaultSplits)) {
           ratesByRole[role] = {

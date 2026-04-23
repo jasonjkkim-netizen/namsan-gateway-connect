@@ -9,11 +9,11 @@ import { describe, it, expect } from 'vitest';
 
 // ── Default split ratios from calculate-commissions edge function ──
 const DEFAULT_SPLITS: Record<string, number> = {
-  webmaster: 0.40,
-  district_manager: 0.40,
-  deputy_district_manager: 0.25,
-  principal_agent: 0.20,
-  agent: 0.15,
+  webmaster: 0.00,
+  district_manager: 0.15,
+  deputy_district_manager: 0.20,
+  principal_agent: 0.25,
+  agent: 0.40,
 };
 
 // ── Helpers ──
@@ -97,14 +97,14 @@ describe('Commission Flow — Default Rate Computation', () => {
   it('computes correct default rates for 3% upfront / 1% performance', () => {
     const rates = computeDefaultRates(3, 1);
 
-    expect(rates.webmaster.upfront_rate).toBe(1.2);     // 3 * 0.40
-    expect(rates.district_manager.upfront_rate).toBe(1.2);
-    expect(rates.deputy_district_manager.upfront_rate).toBe(0.75); // 3 * 0.25
-    expect(rates.principal_agent.upfront_rate).toBe(0.6); // 3 * 0.20
-    expect(rates.agent.upfront_rate).toBe(0.45);          // 3 * 0.15
+    expect(rates.webmaster.upfront_rate).toBe(0);
+    expect(rates.district_manager.upfront_rate).toBe(0.45); // 3 * 0.15
+    expect(rates.deputy_district_manager.upfront_rate).toBe(0.6); // 3 * 0.20
+    expect(rates.principal_agent.upfront_rate).toBe(0.75); // 3 * 0.25
+    expect(rates.agent.upfront_rate).toBe(1.2); // 3 * 0.40
 
-    expect(rates.webmaster.performance_rate).toBe(0.4);  // 1 * 0.40
-    expect(rates.agent.performance_rate).toBe(0.15);     // 1 * 0.15
+    expect(rates.webmaster.performance_rate).toBe(0);
+    expect(rates.agent.performance_rate).toBe(0.4); // 1 * 0.40
   });
 
   it('zero performance fee yields zero performance rates', () => {
@@ -131,38 +131,35 @@ describe('Commission Flow — Webmaster → Manager Chain', () => {
   const distributions = calculateDistributions(ancestors, investmentAmount, 0, rates);
 
   it('creates distributions for both webmaster and district_manager', () => {
-    expect(distributions).toHaveLength(2);
-    expect(distributions.map(d => d.to_user_id)).toContain(WEBMASTER_ID);
+    expect(distributions).toHaveLength(1);
     expect(distributions.map(d => d.to_user_id)).toContain(DM_ID);
   });
 
-  it('webmaster gets 40% of 3% upfront = 1.2% = ₩240,000', () => {
-    const wm = distributions.find(d => d.to_user_id === WEBMASTER_ID)!;
-    expect(wm.upfront_amount).toBe(240_000);
-    expect(wm.performance_amount).toBe(0);
+  it('webmaster row is omitted when the default commission is zero', () => {
+    const wm = distributions.find(d => d.to_user_id === WEBMASTER_ID);
+    expect(wm).toBeUndefined();
   });
 
-  it('district_manager gets 40% of 3% upfront = 1.2% = ₩240,000', () => {
+  it('district_manager gets 15% of 3% upfront = 0.45% = ₩90,000', () => {
     const dm = distributions.find(d => d.to_user_id === DM_ID)!;
-    expect(dm.upfront_amount).toBe(240_000);
+    expect(dm.upfront_amount).toBe(90_000);
   });
 
   it('admin summary shows correct per-person totals', () => {
     const summary = adminSummary(distributions);
-    expect(summary[WEBMASTER_ID].totalUpfront).toBe(240_000);
-    expect(summary[DM_ID].totalUpfront).toBe(240_000);
-    expect(summary[WEBMASTER_ID].count).toBe(1);
+    expect(summary[DM_ID].totalUpfront).toBe(90_000);
+    expect(summary[WEBMASTER_ID]).toBeUndefined();
   });
 
   it('admin grand total equals sum of all distributions', () => {
     const summary = adminSummary(distributions);
     const grandTotal = Object.values(summary).reduce((s, v) => s + v.totalUpfront + v.totalPerformance, 0);
-    expect(grandTotal).toBe(480_000); // 240k + 240k
+    expect(grandTotal).toBe(90_000);
   });
 
   it('client earned total is correct per member', () => {
-    expect(clientEarnedTotal(distributions, WEBMASTER_ID)).toBe(240_000);
-    expect(clientEarnedTotal(distributions, DM_ID)).toBe(240_000);
+    expect(clientEarnedTotal(distributions, WEBMASTER_ID)).toBe(0);
+    expect(clientEarnedTotal(distributions, DM_ID)).toBe(90_000);
     expect(clientEarnedTotal(distributions, CLIENT_ID)).toBe(0); // client gets nothing
   });
 });
@@ -187,27 +184,23 @@ describe('Commission Flow — Full 4-Level Chain', () => {
   const distributions = calculateDistributions(ancestors, amount, realized, rates);
 
   it('creates 4 distributions for the full chain', () => {
-    expect(distributions).toHaveLength(4);
+    expect(distributions).toHaveLength(3);
   });
 
-  it('webmaster upfront = 5% × 40% × 10M = 200,000', () => {
-    const wm = distributions.find(d => d.to_user_id === WM)!;
-    expect(wm.upfront_amount).toBe(200_000);
+  it('webmaster row is omitted when the default commission is zero', () => {
+    const wm = distributions.find(d => d.to_user_id === WM);
+    expect(wm).toBeUndefined();
   });
 
-  it('principal_agent upfront = 5% × 20% × 10M = 100,000', () => {
+  it('principal_agent upfront = 5% × 25% × 10M = 125,000', () => {
     const pa = distributions.find(d => d.to_user_id === PA)!;
-    expect(pa.upfront_amount).toBe(100_000);
+    expect(pa.upfront_amount).toBe(125_000);
   });
 
   it('performance amounts are based on realized return', () => {
-    const wm = distributions.find(d => d.to_user_id === WM)!;
-    // 500,000 × 0.8% = 4,000
-    expect(wm.performance_amount).toBe(4_000);
-
     const pa = distributions.find(d => d.to_user_id === PA)!;
-    // 500,000 × 0.4% = 2,000
-    expect(pa.performance_amount).toBe(2_000);
+    // 500,000 × 0.5% = 2,500
+    expect(pa.performance_amount).toBe(2_500);
   });
 
   it('admin grand total matches sum of all roles', () => {
@@ -215,11 +208,8 @@ describe('Commission Flow — Full 4-Level Chain', () => {
     const grandUpfront = Object.values(summary).reduce((s, v) => s + v.totalUpfront, 0);
     const grandPerf = Object.values(summary).reduce((s, v) => s + v.totalPerformance, 0);
 
-    // Upfront: 10M × (2% + 2% + 1.25% + 1%) = 10M × 6.25%... wait, let me compute
-    // WM: 5*0.40=2.0%, DM: 5*0.40=2.0%, DDM: 5*0.25=1.25%, PA: 5*0.20=1.0%
-    // Total upfront rate: 6.25% but each applied separately
-    expect(grandUpfront).toBe(200_000 + 200_000 + 125_000 + 100_000); // 625,000
-    expect(grandPerf).toBe(4_000 + 4_000 + 2_500 + 2_000); // 12,500
+    expect(grandUpfront).toBe(0 + 75_000 + 100_000 + 125_000); // 300,000
+    expect(grandPerf).toBe(0 + 1_500 + 2_000 + 2_500); // 6,000
   });
 });
 
@@ -243,8 +233,8 @@ describe('Commission Flow — User-Specific Overrides', () => {
   });
 
   it('non-overridden user keeps default rate', () => {
-    const wm = distributions.find(d => d.to_user_id === WM)!;
-    expect(wm.upfront_amount).toBe(120_000); // 10M × 1.2%
+    const wm = distributions.find(d => d.to_user_id === WM);
+    expect(wm).toBeUndefined();
   });
 });
 
@@ -288,21 +278,21 @@ describe('Commission Flow — Manual Rates (No Defaults)', () => {
 describe('Commission Flow — Multi-Investment Admin Summary', () => {
   it('aggregates distributions across multiple investments correctly', () => {
     const allDistributions: Distribution[] = [
-      { to_user_id: 'wm', upfront_amount: 240_000, performance_amount: 0, layer: 1 },
+      { to_user_id: 'wm', upfront_amount: 0, performance_amount: 0, layer: 1 },
       { to_user_id: 'wm', upfront_amount: 100_000, performance_amount: 5_000, layer: 1 },
-      { to_user_id: 'dm', upfront_amount: 240_000, performance_amount: 0, layer: 2 },
+      { to_user_id: 'dm', upfront_amount: 90_000, performance_amount: 0, layer: 2 },
     ];
 
     const summary = adminSummary(allDistributions);
-    expect(summary['wm'].totalUpfront).toBe(340_000);
+    expect(summary['wm'].totalUpfront).toBe(100_000);
     expect(summary['wm'].totalPerformance).toBe(5_000);
     expect(summary['wm'].count).toBe(2);
-    expect(summary['dm'].totalUpfront).toBe(240_000);
+    expect(summary['dm'].totalUpfront).toBe(90_000);
     expect(summary['dm'].count).toBe(1);
 
     // Grand total
     const grand = Object.values(summary).reduce((s, v) => s + v.totalUpfront + v.totalPerformance, 0);
-    expect(grand).toBe(585_000); // 340k + 5k + 240k
+    expect(grand).toBe(195_000); // 100k + 5k + 90k
   });
 });
 
@@ -460,12 +450,12 @@ describe('Commission Flow — Single Ancestor Full Rate', () => {
       PRODUCT_UPFRONT, PRODUCT_PERF, false,
     );
 
-    expect(distributions).toHaveLength(2);
-    // DM gets 40% of 3% = 1.2% = ₩240,000
+    expect(distributions).toHaveLength(1);
+    // DM gets 15% of 3% = 0.45% = ₩90,000
     const dmDist = distributions.find(d => d.to_user_id === 'dm')!;
-    expect(dmDist.upfront_amount).toBe(240_000);
-    // WM also gets 40% of 3% = 1.2% = ₩240,000
-    const wmDist = distributions.find(d => d.to_user_id === 'wm')!;
-    expect(wmDist.upfront_amount).toBe(240_000);
+    expect(dmDist.upfront_amount).toBe(90_000);
+    // WM defaults to 0% so no row is created
+    const wmDist = distributions.find(d => d.to_user_id === 'wm');
+    expect(wmDist).toBeUndefined();
   });
 });
