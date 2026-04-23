@@ -140,6 +140,31 @@ describe('Commission Flow — Default Rate Computation', () => {
     expect(preview[3].sharePercent).toBe(15);
     expect(preview[3].upfrontRate).toBe(0.45);
   });
+
+  it('preview totals add up to 100% share and full configured rates/amounts', () => {
+    const preview = computeCommissionPreview({
+      totalUpfrontRate: 3,
+      totalPerformanceRate: 1,
+      investmentAmount: 100_000_000,
+      realizedReturnAmount: 5_000_000,
+      ratios: DEFAULT_DIRECTION_PRESETS['agent-first'],
+    });
+
+    const totals = preview.reduce((acc, row) => {
+      acc.share += row.sharePercent;
+      acc.upfrontRate += row.upfrontRate;
+      acc.performanceRate += row.performanceRate;
+      acc.upfrontAmount += row.upfrontAmount;
+      acc.performanceAmount += row.performanceAmount;
+      return acc;
+    }, { share: 0, upfrontRate: 0, performanceRate: 0, upfrontAmount: 0, performanceAmount: 0 });
+
+    expect(totals.share).toBe(100);
+    expect(totals.upfrontRate).toBe(3);
+    expect(totals.performanceRate).toBe(1);
+    expect(totals.upfrontAmount).toBe(3_000_000);
+    expect(totals.performanceAmount).toBe(50_000);
+  });
 });
 
 describe('Commission Flow — Webmaster → Manager Chain', () => {

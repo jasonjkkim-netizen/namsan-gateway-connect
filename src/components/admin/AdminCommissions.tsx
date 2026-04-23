@@ -1486,28 +1486,40 @@ export function AdminCommissions() {
                     </div>
 
                     <div className="rounded-md border border-border overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
-                            <TableHead>{language === 'ko' ? '비중' : 'Share'}</TableHead>
-                            <TableHead>{language === 'ko' ? '선취 금액' : 'Upfront amount'}</TableHead>
-                            <TableHead>{language === 'ko' ? '성과 금액' : 'Performance amount'}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {previewRows.map((row) => (
-                            <TableRow key={row.role}>
-                              <TableCell>
-                                <Badge variant="outline">{ROLE_LABELS[language]?.[row.role] || row.role}</Badge>
-                              </TableCell>
-                              <TableCell>{row.sharePercent.toFixed(2)}%</TableCell>
-                              <TableCell className="font-medium">{formatCommAmount(row.upfrontAmount, selectedProduct.default_currency || 'USD')}</TableCell>
-                              <TableCell className="font-medium">{formatCommAmount(row.performanceAmount, selectedProduct.default_currency || 'USD')}</TableCell>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>{language === 'ko' ? '역할' : 'Role'}</TableHead>
+                              <TableHead>{language === 'ko' ? '비중' : 'Share'}</TableHead>
+                              <TableHead>{language === 'ko' ? '선취 요율' : 'Upfront rate'}</TableHead>
+                              <TableHead>{language === 'ko' ? '성과 요율' : 'Performance rate'}</TableHead>
+                              <TableHead>{language === 'ko' ? '선취 금액' : 'Upfront amount'}</TableHead>
+                              <TableHead>{language === 'ko' ? '성과 금액' : 'Performance amount'}</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {previewRows.map((row) => (
+                              <TableRow key={row.role}>
+                                <TableCell>
+                                  <Badge variant="outline">{ROLE_LABELS[language]?.[row.role] || row.role}</Badge>
+                                </TableCell>
+                                <TableCell>{row.sharePercent.toFixed(2)}%</TableCell>
+                                <TableCell>{row.upfrontRate.toFixed(2)}%</TableCell>
+                                <TableCell>{row.performanceRate.toFixed(2)}%</TableCell>
+                                <TableCell className="font-medium">{formatCommAmount(row.upfrontAmount, selectedProduct.default_currency || 'USD')}</TableCell>
+                                <TableCell className="font-medium">{formatCommAmount(row.performanceAmount, selectedProduct.default_currency || 'USD')}</TableCell>
+                              </TableRow>
+                            ))}
+                            <TableRow className="bg-muted/30 font-semibold">
+                              <TableCell>{language === 'ko' ? '합계' : 'Total'}</TableCell>
+                              <TableCell>{previewTotals.share.toFixed(2)}%</TableCell>
+                              <TableCell>{previewTotals.upfrontRate.toFixed(2)}%</TableCell>
+                              <TableCell>{previewTotals.performanceRate.toFixed(2)}%</TableCell>
+                              <TableCell>{formatCommAmount(previewTotals.upfrontAmount, selectedProduct.default_currency || 'USD')}</TableCell>
+                              <TableCell>{formatCommAmount(previewTotals.performanceAmount, selectedProduct.default_currency || 'USD')}</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
                     </div>
 
                     <div className="rounded-md border border-border bg-muted/20 p-3 text-sm space-y-1">
