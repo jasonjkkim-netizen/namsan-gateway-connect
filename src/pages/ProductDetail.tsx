@@ -266,6 +266,12 @@ export default function ProductDetail() {
     return language === 'ko' ? labels[status]?.ko || status : labels[status]?.en || status;
   };
 
+  const getCommissionExpectedAmount = (commission: any) =>
+    (Number(commission.upfront_amount) || 0) + (Number(commission.performance_amount) || 0);
+
+  const getCommissionPaidAmount = (commission: any) =>
+    commission.status === 'paid' ? getCommissionExpectedAmount(commission) : 0;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -833,11 +839,12 @@ export default function ProductDetail() {
                                           <Table className="table-fixed">
                                             <TableHeader>
                                               <TableRow>
-                                                <TableHead className="h-7 w-[34%] min-w-[150px] text-[11px]">{language === 'ko' ? '수취인' : 'Recipient'}</TableHead>
-                                                <TableHead className="h-7 w-[18%] whitespace-nowrap text-[11px]">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
-                                                <TableHead className="h-7 w-[18%] whitespace-nowrap text-[11px]">{language === 'ko' ? '성과' : 'Perf.'}</TableHead>
-                                                <TableHead className="h-7 w-[12%] whitespace-nowrap text-[11px]">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
-                                                <TableHead className="h-7 w-[18%] whitespace-nowrap text-[11px]">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                                                <TableHead className="h-7 w-[26%] min-w-[140px] text-[11px]">{language === 'ko' ? '수취인' : 'Recipient'}</TableHead>
+                                                <TableHead className="h-7 w-[14%] whitespace-nowrap text-[11px]">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                                                <TableHead className="h-7 w-[14%] whitespace-nowrap text-[11px]">{language === 'ko' ? '성과' : 'Perf.'}</TableHead>
+                                                <TableHead className="h-7 w-[22%] whitespace-nowrap text-[11px]">{language === 'ko' ? '예상 / 지급' : 'Expected / Paid'}</TableHead>
+                                                <TableHead className="h-7 w-[10%] whitespace-nowrap text-[11px]">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
+                                                <TableHead className="h-7 w-[14%] whitespace-nowrap text-[11px]">{language === 'ko' ? '상태' : 'Status'}</TableHead>
                                               </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -851,8 +858,19 @@ export default function ProductDetail() {
                                                       {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
                                                     </Link>
                                                   </TableCell>
-                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCurrency(Number(c.upfront_amount) || 0)}</TableCell>
-                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCurrency(Number(c.performance_amount) || 0)}</TableCell>
+                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCurrency(Number(c.upfront_amount) || 0, c.currency || undefined)}</TableCell>
+                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCurrency(Number(c.performance_amount) || 0, c.currency || undefined)}</TableCell>
+                                                  <TableCell className="py-1 text-xs whitespace-nowrap">
+                                                    <div className="flex flex-col leading-tight">
+                                                      <span className="font-medium text-foreground">
+                                                        {formatCurrency(getCommissionExpectedAmount(c), c.currency || undefined)}
+                                                      </span>
+                                                      <span className="text-[10px] text-muted-foreground">
+                                                        {language === 'ko' ? '지급 ' : 'Paid '}
+                                                        {formatCurrency(getCommissionPaidAmount(c), c.currency || undefined)}
+                                                      </span>
+                                                    </div>
+                                                  </TableCell>
                                                   <TableCell className="py-1 text-xs whitespace-nowrap">{c.rate_used != null ? `${c.rate_used}%` : '—'}</TableCell>
                                                   <TableCell className="py-1 whitespace-nowrap">
                                                     <Badge variant={c.status === 'available' ? 'default' : 'secondary'} className="text-[10px]">{c.status}</Badge>
