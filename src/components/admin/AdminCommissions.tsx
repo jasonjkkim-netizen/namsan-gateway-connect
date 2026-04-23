@@ -1869,7 +1869,10 @@ export function AdminCommissions() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredPersonAttribution.map(([userId, data]) => (
+                  filteredPersonAttribution.map(([userId, data]) => {
+                    const displayTotals = getAttributionDisplayTotals(data.sources);
+
+                    return (
                     <React.Fragment key={userId}>
                       <TableRow
                         className="cursor-pointer hover:bg-muted/50"
@@ -1884,9 +1887,9 @@ export function AdminCommissions() {
                         <TableCell>
                           {data.role ? <Badge variant="outline" className="text-xs">{data.role}</Badge> : '—'}
                         </TableCell>
-                        <TableCell className="text-success font-medium">{formatCommAmount(data.totalUpfront)}</TableCell>
-                        <TableCell className="text-success font-medium">{formatCommAmount(data.totalPerformance)}</TableCell>
-                        <TableCell className="font-semibold">{formatCommAmount(data.totalUpfront + data.totalPerformance)}</TableCell>
+                        <TableCell className="text-success font-medium">{formatCommAmount(displayTotals.upfront, displayCurrency)}</TableCell>
+                        <TableCell className="text-success font-medium">{formatCommAmount(displayTotals.performance, displayCurrency)}</TableCell>
+                        <TableCell className="font-semibold">{formatCommAmount(displayTotals.total, displayCurrency)}</TableCell>
                         <TableCell>{data.sources.length}</TableCell>
                       </TableRow>
                       {expandedPerson === userId && (
@@ -1954,7 +1957,7 @@ export function AdminCommissions() {
                         </TableRow>
                       )}
                     </React.Fragment>
-                  ))
+                  )})
                 )}
               </TableBody>
             </Table>
