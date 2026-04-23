@@ -89,6 +89,7 @@ export function AdminClients() {
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
   const [roleSort, setRoleSort] = useState<string>('created_desc');
   const [roleFilter, setRoleFilter] = useState<string>('__all__');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -599,68 +600,94 @@ export function AdminClients() {
     }).filter(Boolean).sort((a, b) => (a!.name).localeCompare(b!.name));
   }, [profiles, activeProfiles, language]);
 
+  const filterControls = (
+    <>
+      <Select value={roleSort} onValueChange={setRoleSort}>
+        <SelectTrigger className="h-8 text-xs w-full sm:w-[9.5rem]">
+          <SelectValue placeholder={language === 'ko' ? '역할 정렬' : 'Sort by role'} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="created_desc">{language === 'ko' ? '최신순' : 'Newest first'}</SelectItem>
+          <SelectItem value="role_asc">{language === 'ko' ? '역할 높은순' : 'Role high to low'}</SelectItem>
+          <SelectItem value="role_desc">{language === 'ko' ? '역할 낮은순' : 'Role low to high'}</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={roleFilter} onValueChange={setRoleFilter}>
+        <SelectTrigger className="h-8 text-xs w-full sm:w-[9rem]">
+          <SelectValue placeholder={language === 'ko' ? '역할 구분' : 'Filter by role'} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">{language === 'ko' ? '전체 역할' : 'All roles'}</SelectItem>
+          <SelectItem value="webmaster">{roleLabel('webmaster')}</SelectItem>
+          <SelectItem value="district_manager">{roleLabel('district_manager')}</SelectItem>
+          <SelectItem value="deputy_district_manager">{roleLabel('deputy_district_manager')}</SelectItem>
+          <SelectItem value="principal_agent">{roleLabel('principal_agent')}</SelectItem>
+          <SelectItem value="agent">{roleLabel('agent')}</SelectItem>
+          <SelectItem value="client">{roleLabel('client')}</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={managerFilter} onValueChange={setManagerFilter}>
+        <SelectTrigger className="h-8 text-xs w-full sm:w-[11rem]">
+          <SelectValue placeholder={language === 'ko' ? '담당자 필터' : 'Filter by manager'} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">{language === 'ko' ? '전체' : 'All'}</SelectItem>
+          <SelectItem value="__unassigned__">{language === 'ko' ? '미배정' : 'Unassigned'}</SelectItem>
+          {uniqueManagers.map(m => m && (
+            <SelectItem key={m.id} value={m.id}>
+              {m.name} {m.role ? `(${roleLabel(m.role)})` : ''}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="relative w-full sm:w-[12rem]">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder={language === 'ko' ? '이메일/이름/연락처/역할 검색' : 'Search email/name/phone/role'}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9 text-sm h-8"
+        />
+      </div>
+    </>
+  );
+
   return (
     <div className="space-y-6">
       {/* Active Clients */}
       <div className="card-elevated">
-        <div className="p-4 sm:p-6 border-b border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        <div className="p-4 sm:p-6 border-b border-border flex flex-col gap-3">
           <h2 className="text-base sm:text-xl font-serif font-semibold">
             {language === 'ko' ? '고객 목록' : 'Client List'}
             <span className="text-muted-foreground text-xs ml-2">({filteredProfiles.length})</span>
           </h2>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Select value={roleSort} onValueChange={setRoleSort}>
-              <SelectTrigger className="h-8 text-xs w-full sm:w-44">
-                <SelectValue placeholder={language === 'ko' ? '역할 정렬' : 'Sort by role'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_desc">{language === 'ko' ? '최신순' : 'Newest first'}</SelectItem>
-                <SelectItem value="role_asc">{language === 'ko' ? '역할 높은순' : 'Role high to low'}</SelectItem>
-                <SelectItem value="role_desc">{language === 'ko' ? '역할 낮은순' : 'Role low to high'}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="h-8 text-xs w-full sm:w-40">
-                <SelectValue placeholder={language === 'ko' ? '역할 구분' : 'Filter by role'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">{language === 'ko' ? '전체 역할' : 'All roles'}</SelectItem>
-                <SelectItem value="webmaster">{roleLabel('webmaster')}</SelectItem>
-                <SelectItem value="district_manager">{roleLabel('district_manager')}</SelectItem>
-                <SelectItem value="deputy_district_manager">{roleLabel('deputy_district_manager')}</SelectItem>
-                <SelectItem value="principal_agent">{roleLabel('principal_agent')}</SelectItem>
-                <SelectItem value="agent">{roleLabel('agent')}</SelectItem>
-                <SelectItem value="client">{roleLabel('client')}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={managerFilter} onValueChange={setManagerFilter}>
-              <SelectTrigger className="h-8 text-xs w-full sm:w-48">
-                <SelectValue placeholder={language === 'ko' ? '담당자 필터' : 'Filter by manager'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__all__">{language === 'ko' ? '전체' : 'All'}</SelectItem>
-                <SelectItem value="__unassigned__">{language === 'ko' ? '미배정' : 'Unassigned'}</SelectItem>
-                {uniqueManagers.map(m => m && (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.name} {m.role ? `(${roleLabel(m.role)})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="relative w-full sm:w-48">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={language === 'ko' ? '이메일/이름/연락처/역할 검색' : 'Search email/name/phone/role'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 text-sm h-8"
-              />
-            </div>
-            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1">
+          <div className="flex items-center justify-between gap-2 sm:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMobileFiltersOpen((prev) => !prev)}
+              className="h-8 gap-1 text-xs"
+            >
+              {mobileFiltersOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              {language === 'ko' ? '필터 열기' : 'Filters'}
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1 shrink-0">
               <UserPlus className="h-4 w-4" />
               {language === 'ko' ? '고객 추가' : 'Add Client'}
             </Button>
           </div>
+          <div className="hidden sm:flex sm:flex-nowrap sm:items-center sm:gap-2">
+            {filterControls}
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1 shrink-0 ml-auto">
+              <UserPlus className="h-4 w-4" />
+              {language === 'ko' ? '고객 추가' : 'Add Client'}
+            </Button>
+          </div>
+          {mobileFiltersOpen && (
+            <div className="grid gap-2 sm:hidden">
+              {filterControls}
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
