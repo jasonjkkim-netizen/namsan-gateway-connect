@@ -20,7 +20,7 @@ export const formatCommissionAmount = (
   const symbol = SYMBOL_MAP[normalizedCurrency] || `${normalizedCurrency} `;
 
   return `${symbol}${Number(amount || 0).toLocaleString(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   })}`;
 };
