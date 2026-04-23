@@ -1579,6 +1579,35 @@ export type Database = {
       }
     }
     Functions: {
+      get_manager_subtree_investment_summaries: {
+        Args: { _manager_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          invested_currency: string
+          maturity_date: string
+          product_id: string
+          product_name_en: string
+          product_name_ko: string
+          start_date: string
+          status: string
+          user_id: string
+        }[]
+      }
+      get_manager_subtree_profiles: {
+        Args: { _manager_id: string }
+        Returns: {
+          created_at: string
+          full_name: string
+          full_name_ko: string
+          is_approved: boolean
+          parent_id: string
+          sales_level: number
+          sales_role: string
+          sales_status: string
+          user_id: string
+        }[]
+      }
       get_sales_ancestors: {
         Args: { _user_id: string }
         Returns: {
