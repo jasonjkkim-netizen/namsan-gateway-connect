@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import { ProductFlagshipChart } from '@/components/flagship/ProductFlagshipChart';
 import { ProductPrintSummary } from '@/components/products/ProductPrintSummary';
 import { ProductInlineInvestmentForm } from '@/components/products/ProductInlineInvestmentForm';
+import { formatCommissionAmount } from '@/lib/commission-format';
 
 interface Product {
   id: string;
@@ -858,16 +859,16 @@ export default function ProductDetail() {
                                                       {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
                                                     </Link>
                                                   </TableCell>
-                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCurrency(Number(c.upfront_amount) || 0, c.currency || undefined)}</TableCell>
-                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCurrency(Number(c.performance_amount) || 0, c.currency || undefined)}</TableCell>
+                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCommissionAmount(Number(c.upfront_amount) || 0, language, c.currency)}</TableCell>
+                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCommissionAmount(Number(c.performance_amount) || 0, language, c.currency)}</TableCell>
                                                   <TableCell className="py-1 text-xs whitespace-nowrap">
                                                     <div className="flex flex-col leading-tight">
                                                       <span className="font-medium text-foreground">
-                                                        {formatCurrency(getCommissionExpectedAmount(c), c.currency || undefined)}
+                                                        {formatCommissionAmount(getCommissionExpectedAmount(c), language, c.currency)}
                                                       </span>
                                                       <span className="text-[10px] text-muted-foreground">
                                                         {language === 'ko' ? '지급 ' : 'Paid '}
-                                                        {formatCurrency(getCommissionPaidAmount(c), c.currency || undefined)}
+                                                        {formatCommissionAmount(getCommissionPaidAmount(c), language, c.currency)}
                                                       </span>
                                                     </div>
                                                   </TableCell>

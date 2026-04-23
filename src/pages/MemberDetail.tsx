@@ -24,6 +24,7 @@ import { InlineInvestmentForm } from '@/components/sales/InlineInvestmentForm';
 import { EditableCommissionRow } from '@/components/sales/EditableCommissionRow';
 import { EditableInvestmentRow } from '@/components/sales/EditableInvestmentRow';
 import { computeInvestmentValuation } from '@/lib/investment-valuation';
+import { formatCommissionAmount } from '@/lib/commission-format';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
   webmaster: { en: 'Webmaster', ko: '웹마스터' },
@@ -916,7 +917,7 @@ export default function MemberDetail() {
                   <div className="flex flex-wrap gap-3 mb-4">
                     <Stat
                       label={language === 'ko' ? '수령 합계' : 'Earned Total'}
-                      value={formatCurrency(earnedTotal)}
+                      value={formatCommissionAmount(earnedTotal, language)}
                       positive
                     />
                     <Stat label={language === 'ko' ? '건수' : 'Count'} value={String(commissions.length)} />
