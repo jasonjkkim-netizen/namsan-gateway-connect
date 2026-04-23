@@ -128,7 +128,7 @@ export default function MemberDetail() {
   const myRole = (myProfile as any)?.sales_role;
   const isDM = myRole === 'district_manager' || myRole === 'webmaster';
   const [savingProfile, setSavingProfile] = useState(false);
-  const canEditProfile = !!(isAdmin || isDM);
+  const canEditProfile = !!(isAdmin || user?.id === userId);
 
   const startEditProfile = () => {
     if (!profile) return;

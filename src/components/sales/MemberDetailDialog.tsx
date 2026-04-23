@@ -102,7 +102,7 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
   const [products, setProducts] = useState<ProductOption[]>([]);
 
   useEffect(() => {
-    if (!open || !userId) return;
+    if (!open || !userId || !user) return;
     setLoading(true);
     setInvFormMode('hidden');
 
@@ -694,17 +694,17 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
                 {/* Commission Summary */}
                 {commissions.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-2 text-center">
+                    <div className="rounded-lg bg-muted/40 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '지급완료' : 'Paid'}</p>
-                      <p className="text-sm font-semibold text-emerald-600">{formatCurrency(commSummary.paid)}</p>
+                      <p className="text-sm font-semibold text-success">{formatCurrency(commSummary.paid)}</p>
                     </div>
                     <div className="rounded-lg bg-primary/5 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '수령가능' : 'Available'}</p>
                       <p className="text-sm font-semibold text-primary">{formatCurrency(commSummary.available)}</p>
                     </div>
-                    <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-2 text-center">
+                    <div className="rounded-lg bg-muted/40 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '대기' : 'Pending'}</p>
-                      <p className="text-sm font-semibold text-amber-600">{formatCurrency(commSummary.pending)}</p>
+                      <p className="text-sm font-semibold text-muted-foreground">{formatCurrency(commSummary.pending)}</p>
                     </div>
                   </div>
                 )}
