@@ -16,7 +16,7 @@ import {
 import { toast } from 'sonner';
 import {
   ArrowLeft, Mail, Phone, MapPin, Calendar, User as UserIcon,
-  Users, Briefcase, Coins, Save, ChevronUp, ChevronDown, Pencil,
+  Users, Briefcase, Coins, Save, ChevronUp, ChevronDown, Pencil, AlertTriangle,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { MemberLink } from '@/components/MemberLink';
@@ -67,6 +67,7 @@ interface InvestmentRow {
   annual_rate_percent?: number | null;
   display_current_value?: number;
   display_return_percent?: number;
+  valuation_warning?: string | null;
 }
 
 interface CommissionRow {
@@ -352,10 +353,17 @@ export default function MemberDetail() {
           status: row.status,
         });
 
+        const valuationWarning = !row.product_id
+          ? (language === 'ko' ? '상품 연결 없음: 요율 매핑 확인 필요' : 'Missing product link: rate mapping required')
+          : row.annual_rate_percent == null
+            ? (language === 'ko' ? '예상 수익률 없음: 상품 요율 확인 필요' : 'Missing expected return: product rate required')
+            : null;
+
         return {
           ...row,
           display_current_value: valuation.displayCurrentValue,
           display_return_percent: valuation.displayReturnPercent,
+          valuation_warning: valuationWarning,
         };
       });
 
@@ -431,6 +439,7 @@ export default function MemberDetail() {
   // Aggregations
   const totalInvested = investments.reduce((s, investment) => s + (Number(investment.investment_amount) || 0), 0);
   const totalCurrent = investments.reduce((s, investment) => s + (Number(investment.display_current_value) || 0), 0);
+  const valuationWarnings = investments.filter((investment) => investment.valuation_warning);
   const earnedTotal = commissions
     .filter((c) => c.to_user_id === userId)
     .reduce((s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), 0);
@@ -679,6 +688,31 @@ export default function MemberDetail() {
                       />
                     )}
                   </div>
+                  {valuationWarnings.length > 0 && (
+                    <div className="mb-4 rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-foreground">
+                            {language === 'ko'
+                              ? '일부 투자 행에 예상 수익률 또는 상품 요율 매핑이 없습니다.'
+                              : 'Some investment rows are missing expected return or product rate mapping.'}
+                          </p>
+                          <ul className="mt-2 space-y-1 text-[11px] sm:text-xs text-muted-foreground">
+                            {valuationWarnings.map((investment) => (
+                              <li key={investment.id}>
+                                <span className="font-medium text-foreground">
+                                  {language === 'ko' ? investment.product_name_ko : investment.product_name_en}
+                                </span>
+                                {' — '}
+                                {investment.valuation_warning}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="overflow-x-auto">
                     <Table className="text-xs">
                       <TableHeader>
