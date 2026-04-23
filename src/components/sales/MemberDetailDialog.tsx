@@ -102,14 +102,17 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
   const [products, setProducts] = useState<ProductOption[]>([]);
 
   useEffect(() => {
-    if (!open || !userId) return;
+    if (!open || !userId || !user) return;
     setLoading(true);
     setInvFormMode('hidden');
 
     const fetchData = async () => {
+      const canSeePrivateFields = user?.id === userId || (myProfile as any)?.sales_role === 'webmaster';
       const [profileRes, investRes, downlineRes, commRes, prodRes] = await Promise.all([
         supabase.from('profiles_safe' as any).select('full_name, full_name_ko, email, sales_role, sales_status, sales_level, created_at').eq('user_id', userId).maybeSingle(),
-        supabase.from('client_investments').select('id, product_id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency').eq('user_id', userId).order('start_date', { ascending: false }),
+        canSeePrivateFields
+          ? supabase.from('client_investments').select('id, product_id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency').eq('user_id', userId).order('start_date', { ascending: false })
+          : supabase.rpc('get_manager_subtree_investment_summaries', { _manager_id: user.id }).then(({ data, error }) => ({ data: (data || []).filter((row: any) => row.user_id === userId), error })),
         supabase.rpc('get_sales_subtree', { _user_id: userId }),
         supabase.from('commission_distributions').select('id, upfront_amount, performance_amount, currency, status, created_at').eq('to_user_id', userId).order('created_at', { ascending: false }).limit(20),
         supabase.from('investment_products').select('id, name_en, name_ko, default_currency').eq('is_active', true).order('name_en'),
@@ -691,17 +694,17 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
                 {/* Commission Summary */}
                 {commissions.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 p-2 text-center">
+                    <div className="rounded-lg bg-muted/40 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '지급완료' : 'Paid'}</p>
-                      <p className="text-sm font-semibold text-emerald-600">{formatCurrency(commSummary.paid)}</p>
+                      <p className="text-sm font-semibold text-success">{formatCurrency(commSummary.paid)}</p>
                     </div>
                     <div className="rounded-lg bg-primary/5 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '수령가능' : 'Available'}</p>
                       <p className="text-sm font-semibold text-primary">{formatCurrency(commSummary.available)}</p>
                     </div>
-                    <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-2 text-center">
+                    <div className="rounded-lg bg-muted/40 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '대기' : 'Pending'}</p>
-                      <p className="text-sm font-semibold text-amber-600">{formatCurrency(commSummary.pending)}</p>
+                      <p className="text-sm font-semibold text-muted-foreground">{formatCurrency(commSummary.pending)}</p>
                     </div>
                   </div>
                 )}

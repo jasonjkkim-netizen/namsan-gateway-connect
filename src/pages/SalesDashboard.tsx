@@ -57,13 +57,16 @@ interface CommissionDist {
 interface Investment {
   id: string;
   user_id: string;
+  product_id?: string | null;
   product_name_en: string;
   product_name_ko: string;
-  investment_amount: number;
-  current_value: number;
+  investment_amount?: number;
+  current_value?: number;
   status: string | null;
   start_date: string;
+  maturity_date?: string | null;
   invested_currency: string | null;
+  created_at?: string;
 }
 
 interface Profile {
@@ -173,11 +176,10 @@ export default function SalesDashboard() {
 
     let downlineData: DownlineMember[];
 
-    if (isDMUser) {
-      // DM sees ALL sales members (not just subtree)
+    if (canSeeAll) {
       const { data: allProfiles } = await supabase
         .from('profiles')
-        .select('user_id, full_name, sales_role, sales_level, parent_id, depth:sales_level')
+        .select('user_id, full_name, sales_role, sales_level, parent_id')
         .not('sales_role', 'is', null)
         .neq('user_id', user.id)
         .or('is_deleted.is.null,is_deleted.eq.false')
@@ -191,6 +193,21 @@ export default function SalesDashboard() {
         parent_id: p.parent_id,
         depth: p.sales_level || 0,
       })) as DownlineMember[];
+    } else if (isDMUser) {
+      const { data: safeProfiles } = await supabase.rpc('get_manager_subtree_profiles', {
+        _manager_id: user.id,
+      });
+
+      downlineData = (safeProfiles || [])
+        .filter((p: any) => p.user_id !== user.id && p.sales_role)
+        .map((p: any) => ({
+          user_id: p.user_id,
+          full_name: p.full_name,
+          sales_role: p.sales_role,
+          sales_level: p.sales_level,
+          parent_id: p.parent_id,
+          depth: p.sales_level || 0,
+        })) as DownlineMember[];
     } else {
       // Normal: subtree only
       const { data: tree } = await supabase.rpc('get_sales_subtree', {
@@ -234,10 +251,9 @@ export default function SalesDashboard() {
     // Fetch investments from downline members
     const downlineIds = downlineData.map((d) => d.user_id);
     if (downlineIds.length > 0) {
-      // For DM, fetch all investments; for others, only subtree
-      const invQuery = isDMUser
+      const invQuery = canSeeAll
         ? supabase.from('client_investments').select('*').order('start_date', { ascending: false }).limit(100)
-        : supabase.from('client_investments').select('*').in('user_id', downlineIds).order('start_date', { ascending: false }).limit(50);
+        : supabase.rpc('get_manager_subtree_investment_summaries', { _manager_id: user.id });
 
       const { data: invData } = await invQuery;
       setDownlineInvestments((invData || []) as Investment[]);
@@ -245,18 +261,21 @@ export default function SalesDashboard() {
 
     // Fetch profiles for name resolution
     const allIds = [user.id, ...downlineIds];
-    if (isDMUser) {
-      // DM: fetch all profiles
+    if (canSeeAll) {
       const { data: profileData } = await supabase
         .from('profiles')
         .select('user_id, full_name, email, sales_role');
       setProfiles((profileData || []) as Profile[]);
     } else {
       const { data: profileData } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email, sales_role')
-        .in('user_id', allIds);
-      setProfiles((profileData || []) as Profile[]);
+        .rpc('get_manager_subtree_profiles', { _manager_id: user.id });
+      const safeProfiles = (profileData || []).filter((p: any) => allIds.includes(p.user_id));
+      setProfiles(safeProfiles.map((p: any) => ({
+        user_id: p.user_id,
+        full_name: p.full_name,
+        email: '',
+        sales_role: p.sales_role,
+      })) as Profile[]);
     }
 
     // Fetch display currency setting and exchange rate
@@ -401,7 +420,7 @@ export default function SalesDashboard() {
   );
 
   const totalDownlineInvested = downlineInvestments.reduce(
-    (s, inv) => s + Number(inv.investment_amount),
+    (s, inv) => s + (Number(inv.investment_amount) || 0),
     0
   );
 

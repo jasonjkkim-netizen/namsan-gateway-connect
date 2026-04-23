@@ -128,7 +128,7 @@ export default function MemberDetail() {
   const myRole = (myProfile as any)?.sales_role;
   const isDM = myRole === 'district_manager' || myRole === 'webmaster';
   const [savingProfile, setSavingProfile] = useState(false);
-  const canEditProfile = !!(isAdmin || isDM);
+  const canEditProfile = !!(isAdmin || user?.id === userId);
 
   const startEditProfile = () => {
     if (!profile) return;
@@ -216,12 +216,21 @@ export default function MemberDetail() {
         return;
       }
 
-      // 2) Fetch profile (use profiles table — RLS allows admin/DM/self/subtree)
-      const { data: prof, error: profErr } = await supabase
-        .from('profiles')
-        .select('user_id, email, full_name, full_name_ko, phone, address, birthday, sales_role, sales_status, sales_level, parent_id, admin_notes, created_at, is_approved')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // 2) Fetch profile
+      const profileQuery = isAdmin || user.id === userId
+        ? supabase
+            .from('profiles')
+            .select('user_id, email, full_name, full_name_ko, phone, address, birthday, sales_role, sales_status, sales_level, parent_id, admin_notes, created_at, is_approved')
+            .eq('user_id', userId)
+            .maybeSingle()
+        : supabase
+            .rpc('get_manager_subtree_profiles', { _manager_id: user.id })
+            .then(({ data, error }) => ({
+              data: (data || []).find((row: any) => row.user_id === userId) || null,
+              error,
+            }));
+
+      const { data: prof, error: profErr } = await profileQuery;
 
       if (profErr || !prof) {
         toast.error(language === 'ko' ? '프로필을 불러올 수 없습니다' : 'Cannot load profile');
@@ -234,12 +243,19 @@ export default function MemberDetail() {
 
       // 3) Parallel fetches
       const [invRes, commRes, ancRes, subRes] = await Promise.all([
-        supabase
-          .from('client_investments')
-          .select('id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency, realized_return_amount')
-          .eq('user_id', userId)
-          .neq('status', 'deleted')
-          .order('start_date', { ascending: false }),
+        isAdmin || user.id === userId
+          ? supabase
+              .from('client_investments')
+              .select('id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency, realized_return_amount')
+              .eq('user_id', userId)
+              .neq('status', 'deleted')
+              .order('start_date', { ascending: false })
+          : supabase
+              .rpc('get_manager_subtree_investment_summaries', { _manager_id: user.id })
+              .then(({ data, error }) => ({
+                data: (data || []).filter((row: any) => row.user_id === userId),
+                error,
+              })),
         supabase
           .from('commission_distributions')
           .select('*')

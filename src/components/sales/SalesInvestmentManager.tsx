@@ -135,10 +135,10 @@ export function SalesInvestmentManager({ downline, onDataChange }: Props) {
 
     // Fetch investments
     let invQuery;
-    if (canSeeAll || isDM) {
+    if (canSeeAll) {
       invQuery = supabase.from('client_investments').select('*').order('start_date', { ascending: false }).limit(200);
     } else {
-      invQuery = supabase.from('client_investments').select('*').in('user_id', managedIds).order('start_date', { ascending: false }).limit(200);
+      invQuery = supabase.rpc('get_manager_subtree_investment_summaries', { _manager_id: user.id });
     }
     const { data: invData } = await invQuery;
     const invs = (invData || []) as Investment[];
@@ -167,10 +167,13 @@ export function SalesInvestmentManager({ downline, onDataChange }: Props) {
     // Fetch profile names
     const allUserIds = [...new Set(invs.map((i) => i.user_id))];
     if (allUserIds.length > 0) {
-      const { data: pData } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .in('user_id', allUserIds);
+      const { data: pData } = canSeeAll
+        ? await supabase
+            .from('profiles')
+            .select('user_id, full_name')
+            .in('user_id', allUserIds)
+        : await supabase
+            .rpc('get_manager_subtree_profiles', { _manager_id: user.id });
       const map: Record<string, string> = {};
       (pData || []).forEach((p: any) => { map[p.user_id] = p.full_name; });
       setProfiles(map);
