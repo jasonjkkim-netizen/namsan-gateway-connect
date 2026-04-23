@@ -790,7 +790,7 @@ export default function ProductDetail() {
                               onCreated={() => {
                                 (async () => {
                                   setCommLoading(true);
-                                  const [invRes, fxRes] = await Promise.all([
+                                  const [invRes, fxRes, productRes] = await Promise.all([
                                      supabase.from('client_investments').select('id, user_id, investment_amount, current_value, invested_currency, start_date, maturity_date, status').eq('product_id', id!),
                                     supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
                                      supabase.from('investment_products').select('id, fixed_return_percent, target_return, maturity_date').eq('id', id!).maybeSingle(),
