@@ -424,13 +424,21 @@ export default function MemberDetail() {
   const roleLabel = profile?.sales_role
     ? ROLE_LABELS[profile.sales_role]?.[language === 'ko' ? 'ko' : 'en'] || profile.sales_role
     : '—';
+  const dirtyProfileFields = {
+    full_name: !!profile && profileDraft.full_name !== (profile.full_name || ''),
+    full_name_ko: !!profile && profileDraft.full_name_ko !== (profile.full_name_ko || ''),
+    email: !!profile && profileDraft.email !== (profile.email || ''),
+    phone: !!profile && profileDraft.phone !== (profile.phone || ''),
+    address: !!profile && profileDraft.address !== (profile.address || ''),
+    birthday: !!profile && profileDraft.birthday !== (profile.birthday || ''),
+  };
   const hasProfileChanges = !!profile && (
-    profileDraft.full_name !== (profile.full_name || '')
-    || profileDraft.full_name_ko !== (profile.full_name_ko || '')
-    || profileDraft.email !== (profile.email || '')
-    || profileDraft.phone !== (profile.phone || '')
-    || profileDraft.address !== (profile.address || '')
-    || profileDraft.birthday !== (profile.birthday || '')
+    dirtyProfileFields.full_name
+    || dirtyProfileFields.full_name_ko
+    || dirtyProfileFields.email
+    || dirtyProfileFields.phone
+    || dirtyProfileFields.address
+    || dirtyProfileFields.birthday
   );
 
   const handleSaveNotes = async () => {
@@ -611,12 +619,12 @@ export default function MemberDetail() {
 
                   {canEditProfile ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                      <EditField icon={UserIcon} label={language === 'ko' ? '영문 이름' : 'English Name'} value={profileDraft.full_name} onChange={(v) => setProfileDraft({ ...profileDraft, full_name: v })} />
-                      <EditField icon={UserIcon} label={language === 'ko' ? '한국어 이름' : 'Korean Name'} value={profileDraft.full_name_ko} onChange={(v) => setProfileDraft({ ...profileDraft, full_name_ko: v })} />
-                      <EditField icon={Mail} label={language === 'ko' ? '이메일' : 'Email'} value={profileDraft.email} onChange={(v) => setProfileDraft({ ...profileDraft, email: v })} type="email" />
-                      <EditField icon={Phone} label={language === 'ko' ? '연락처' : 'Phone'} value={profileDraft.phone} onChange={(v) => setProfileDraft({ ...profileDraft, phone: v })} type="tel" />
-                      <EditField icon={MapPin} label={language === 'ko' ? '주소' : 'Address'} value={profileDraft.address} onChange={(v) => setProfileDraft({ ...profileDraft, address: v })} />
-                      <EditField icon={Calendar} label={language === 'ko' ? '생년월일' : 'Birthday'} value={profileDraft.birthday} onChange={(v) => setProfileDraft({ ...profileDraft, birthday: v })} type="date" />
+                      <EditField icon={UserIcon} label={language === 'ko' ? '영문 이름' : 'English Name'} value={profileDraft.full_name} onChange={(v) => setProfileDraft({ ...profileDraft, full_name: v })} dirty={dirtyProfileFields.full_name} language={language} />
+                      <EditField icon={UserIcon} label={language === 'ko' ? '한국어 이름' : 'Korean Name'} value={profileDraft.full_name_ko} onChange={(v) => setProfileDraft({ ...profileDraft, full_name_ko: v })} dirty={dirtyProfileFields.full_name_ko} language={language} />
+                      <EditField icon={Mail} label={language === 'ko' ? '이메일' : 'Email'} value={profileDraft.email} onChange={(v) => setProfileDraft({ ...profileDraft, email: v })} type="email" dirty={dirtyProfileFields.email} language={language} />
+                      <EditField icon={Phone} label={language === 'ko' ? '연락처' : 'Phone'} value={profileDraft.phone} onChange={(v) => setProfileDraft({ ...profileDraft, phone: v })} type="tel" dirty={dirtyProfileFields.phone} language={language} />
+                      <EditField icon={MapPin} label={language === 'ko' ? '주소' : 'Address'} value={profileDraft.address} onChange={(v) => setProfileDraft({ ...profileDraft, address: v })} dirty={dirtyProfileFields.address} language={language} />
+                      <EditField icon={Calendar} label={language === 'ko' ? '생년월일' : 'Birthday'} value={profileDraft.birthday} onChange={(v) => setProfileDraft({ ...profileDraft, birthday: v })} type="date" dirty={dirtyProfileFields.birthday} language={language} />
                       <InfoRow icon={Calendar} label={language === 'ko' ? '가입일' : 'Joined'} value={formatDate(profile.created_at)} />
                       {profile.parent_id && (
                         <div className="flex items-start gap-2">
