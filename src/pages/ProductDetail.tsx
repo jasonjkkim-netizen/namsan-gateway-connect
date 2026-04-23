@@ -100,7 +100,28 @@ export default function ProductDetail() {
 
   const salesTab = searchParams.get('salesTab') || 'pipeline';
   const fromSalesDashboard = searchParams.get('from') === 'sales-dashboard';
-  const memberDetailSearch = `?from=sales-dashboard&salesTab=${encodeURIComponent(salesTab)}`;
+  const productSection = searchParams.get('productSection') || 'summary';
+  const productInvestment = searchParams.get('productInvestment');
+  const productAccordionDefaults = searchParams.get('productSection')
+    ? [productSection]
+    : ['summary', 'investors'];
+
+  const buildMemberDetailLink = (userId: string, tab: string, investmentId?: string) => {
+    const params = new URLSearchParams({
+      from: 'product-detail',
+      productId: id || '',
+      productSection: 'investors',
+      tab,
+    });
+
+    if (investmentId) params.set('productInvestment', investmentId);
+    if (fromSalesDashboard) {
+      params.set('productSource', 'sales-dashboard');
+      params.set('productSalesTab', salesTab);
+    }
+
+    return `/members/${userId}?${params.toString()}`;
+  };
 
   const handleBack = () => {
     if (fromSalesDashboard) {
@@ -668,7 +689,7 @@ export default function ProductDetail() {
                   </div>
                 ) : (
                   <>
-                    <Accordion type="multiple" className="w-full" defaultValue={["summary", "investors"]}>
+                    <Accordion type="multiple" className="w-full" defaultValue={productAccordionDefaults}>
                       <AccordionItem value="summary">
                         <AccordionTrigger className="py-3 text-sm font-semibold hover:no-underline">
                           <span className="flex items-center gap-2">
@@ -756,7 +777,7 @@ export default function ProductDetail() {
                               {language === 'ko' ? '투자 내역 없음' : 'No investments'}
                             </p>
                           ) : (
-                            <Accordion type="multiple" className="w-full">
+                            <Accordion type="multiple" className="w-full" defaultValue={productInvestment ? [productInvestment] : undefined}>
                               {investments.map((inv) => {
                                 const invCommissions = commissions
                                   .filter((c) => c.investment_id === inv.id)
@@ -770,7 +791,7 @@ export default function ProductDetail() {
                                       <div className="flex w-full flex-col items-start gap-2 pr-3 text-left sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-center gap-2">
                                           <Link
-                                            to={`/members/${inv.user_id}${memberDetailSearch}&tab=investments`}
+                                            to={buildMemberDetailLink(inv.user_id, 'investments', inv.id)}
                                             className="inline-flex min-h-8 items-center text-sm font-semibold text-primary hover:underline"
                                             onClick={(e) => e.stopPropagation()}
                                           >
@@ -818,7 +839,7 @@ export default function ProductDetail() {
                                                 <TableRow key={c.id}>
                                                   <TableCell className="py-1 text-xs">
                                                     <Link
-                                                      to={`/members/${c.to_user_id}${memberDetailSearch}&tab=commissions`}
+                                                      to={buildMemberDetailLink(c.to_user_id, 'commissions', inv.id)}
                                                       className="inline-flex min-h-8 items-center text-primary hover:underline"
                                                     >
                                                       {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
