@@ -491,7 +491,6 @@ export default function MemberDetail() {
   const totalInvested = investments.reduce((s, investment) => s + (Number(investment.investment_amount) || 0), 0);
   const totalCurrent = investments.reduce((s, investment) => s + (Number(investment.display_current_value) || 0), 0);
   const valuationWarnings = investments.filter((investment) => investment.valuation_warning);
-  const showDeveloperDebugPanel = import.meta.env.DEV;
   const earnedTotal = commissions
     .filter((c) => c.to_user_id === userId)
     .reduce((s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), 0);
@@ -762,54 +761,6 @@ export default function MemberDetail() {
                             ))}
                           </ul>
                         </div>
-                      </div>
-                    </div>
-                  )}
-                  {showDeveloperDebugPanel && investments.length > 0 && (
-                    <div className="mb-4 rounded-md border border-dashed border-border bg-muted/30 p-3">
-                      <div className="mb-2 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-xs sm:text-sm font-medium text-foreground">
-                          {language === 'ko' ? '개발자 디버그 · 투자 평가 계산' : 'Developer Debug · Investment valuation'}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        {investments.map((investment) => (
-                          <div
-                            key={`debug-${investment.id}`}
-                            className="grid gap-2 rounded-md border border-border bg-background px-3 py-2 text-[11px] sm:grid-cols-5 sm:text-xs"
-                          >
-                            <div className="sm:col-span-5 font-medium text-foreground">
-                              {language === 'ko' ? investment.product_name_ko : investment.product_name_en}
-                            </div>
-                            <div>
-                              <div className="text-muted-foreground">product_id</div>
-                              <div className="font-mono text-foreground break-all">{investment.product_id || '—'}</div>
-                            </div>
-                            <div>
-                              <div className="text-muted-foreground">base rate</div>
-                              <div className="font-mono text-foreground">
-                                {investment.annual_rate_percent != null ? `${Number(investment.annual_rate_percent).toFixed(2)}%` : '—'}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-muted-foreground">mapping</div>
-                              <div className="font-mono text-foreground">{investment.product_mapping_status || '—'}</div>
-                            </div>
-                            <div>
-                              <div className="text-muted-foreground">accrued interest</div>
-                              <div className="font-mono text-foreground">
-                                {formatCurrency(Number(investment.accrued_interest) || 0, investment.invested_currency || undefined)}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-muted-foreground">computed MTM</div>
-                              <div className="font-mono text-foreground">
-                                {formatCurrency(Number(investment.computed_mark_to_market) || 0, investment.invested_currency || undefined)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
                       </div>
                     </div>
                   )}
