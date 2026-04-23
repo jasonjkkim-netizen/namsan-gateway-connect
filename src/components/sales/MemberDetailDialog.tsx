@@ -107,9 +107,12 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
     setInvFormMode('hidden');
 
     const fetchData = async () => {
+      const canSeePrivateFields = user?.id === userId || (myProfile as any)?.sales_role === 'webmaster';
       const [profileRes, investRes, downlineRes, commRes, prodRes] = await Promise.all([
         supabase.from('profiles_safe' as any).select('full_name, full_name_ko, email, sales_role, sales_status, sales_level, created_at').eq('user_id', userId).maybeSingle(),
-        supabase.from('client_investments').select('id, product_id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency').eq('user_id', userId).order('start_date', { ascending: false }),
+        canSeePrivateFields
+          ? supabase.from('client_investments').select('id, product_id, product_name_en, product_name_ko, investment_amount, current_value, status, start_date, maturity_date, invested_currency').eq('user_id', userId).order('start_date', { ascending: false })
+          : supabase.rpc('get_manager_subtree_investment_summaries', { _manager_id: user.id }).then(({ data, error }) => ({ data: (data || []).filter((row: any) => row.user_id === userId), error })),
         supabase.rpc('get_sales_subtree', { _user_id: userId }),
         supabase.from('commission_distributions').select('id, upfront_amount, performance_amount, currency, status, created_at').eq('to_user_id', userId).order('created_at', { ascending: false }).limit(20),
         supabase.from('investment_products').select('id, name_en, name_ko, default_currency').eq('is_active', true).order('name_en'),
