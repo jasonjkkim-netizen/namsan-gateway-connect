@@ -354,6 +354,7 @@ export function AdminCommissions() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('distributions');
   const [displayCurrency, setDisplayCurrency] = useState<string>('KRW');
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [usdKrwRate, setUsdKrwRate] = useState<number>(1350);
@@ -888,6 +889,7 @@ export function AdminCommissions() {
   };
   const totalUpfront = distributions.reduce((s, d) => s + normalizeToDisplay(Number(d.upfront_amount) || 0, d.currency || 'USD'), 0);
   const totalPerformance = distributions.reduce((s, d) => s + normalizeToDisplay(Number(d.performance_amount) || 0, d.currency || 'USD'), 0);
+  const totalCommission = totalUpfront + totalPerformance;
   const pendingCount = distributions.filter(d => d.status === 'pending').length;
   const availableCount = distributions.filter(d => d.status === 'available').length;
 
@@ -1039,23 +1041,52 @@ export function AdminCommissions() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mt-4">
-          <div className="rounded-lg border border-border p-4">
+        <div className="grid gap-4 mt-4 sm:grid-cols-2 xl:grid-cols-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab('attribution')}
+            className="rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/40"
+          >
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 선취 커미션' : 'Total Upfront'}</p>
             <p className="text-2xl font-semibold">
               {displayCurrency === 'KRW'
                 ? `₩${Math.round(totalUpfront).toLocaleString('ko-KR')}`
                 : `$${totalUpfront.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </p>
-          </div>
-          <div className="rounded-lg border border-border p-4">
+            <p className="mt-2 text-xs text-muted-foreground">
+              {language === 'ko' ? '클릭하여 전체 귀속 breakdown 보기' : 'Click to view full attribution breakdown'}
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('attribution')}
+            className="rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/40"
+          >
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 성과 커미션' : 'Total Performance'}</p>
             <p className="text-2xl font-semibold">
               {displayCurrency === 'KRW'
                 ? `₩${Math.round(totalPerformance).toLocaleString('ko-KR')}`
                 : `$${totalPerformance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </p>
-          </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {language === 'ko' ? '클릭하여 전체 귀속 breakdown 보기' : 'Click to view full attribution breakdown'}
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('attribution')}
+            className="rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted/40"
+          >
+            <p className="text-sm text-muted-foreground">{language === 'ko' ? '총 커미션' : 'Total Commission'}</p>
+            <p className="text-2xl font-semibold">
+              {displayCurrency === 'KRW'
+                ? `₩${Math.round(totalCommission).toLocaleString('ko-KR')}`
+                : `$${totalCommission.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {language === 'ko' ? '클릭하여 수수료 전체 내역으로 이동' : 'Click to open the full commission breakdown'}
+            </p>
+          </button>
           <div className="rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">{language === 'ko' ? '대기중' : 'Pending'}</p>
             <p className="text-2xl font-semibold">{pendingCount}</p>
@@ -1063,7 +1094,7 @@ export function AdminCommissions() {
         </div>
       </div>
 
-      <Tabs defaultValue="distributions" className="p-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="p-6">
         <TabsList>
           <TabsTrigger value="distributions" className="flex items-center gap-2">
             <Coins className="h-4 w-4" />
