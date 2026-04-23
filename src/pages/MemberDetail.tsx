@@ -23,6 +23,7 @@ import { MemberLink } from '@/components/MemberLink';
 import { InlineInvestmentForm } from '@/components/sales/InlineInvestmentForm';
 import { EditableCommissionRow } from '@/components/sales/EditableCommissionRow';
 import { EditableInvestmentRow } from '@/components/sales/EditableInvestmentRow';
+import { computeInvestmentValuation } from '@/lib/investment-valuation';
 
 const ROLE_LABELS: Record<string, { en: string; ko: string }> = {
   webmaster: { en: 'Webmaster', ko: '웹마스터' },
@@ -61,6 +62,9 @@ interface InvestmentRow {
   maturity_date: string | null;
   invested_currency: string | null;
   realized_return_amount: number | null;
+  product_id?: string | null;
+  product_maturity_date?: string | null;
+  annual_rate_percent?: number | null;
 }
 
 interface CommissionRow {
@@ -314,7 +318,28 @@ export default function MemberDetail() {
         supabase.rpc('get_sales_subtree', { _user_id: userId }),
       ]);
 
-      setInvestments((invRes.data || []) as InvestmentRow[]);
+      const rawInvestments = (invRes.data || []) as InvestmentRow[];
+      const productIds = Array.from(new Set(rawInvestments.map((row) => row.product_id).filter(Boolean))) as string[];
+
+      let mergedInvestments = rawInvestments;
+      if (productIds.length > 0) {
+        const { data: products } = await supabase
+          .from('investment_products')
+          .select('id, fixed_return_percent, target_return, maturity_date')
+          .in('id', productIds);
+
+        const productMap = new Map((products || []).map((product: any) => [product.id, product]));
+        mergedInvestments = rawInvestments.map((row) => {
+          const product = row.product_id ? productMap.get(row.product_id) : null;
+          return {
+            ...row,
+            product_maturity_date: product?.maturity_date ?? null,
+            annual_rate_percent: product?.fixed_return_percent ?? product?.target_return ?? null,
+          };
+        });
+      }
+
+      setInvestments(mergedInvestments);
       setCommissions((commRes.data || []) as CommissionRow[]);
       setAncestors((ancRes.data || []) as AncestorRow[]);
       setDownline((subRes.data || []) as DownlineRow[]);
@@ -384,8 +409,20 @@ export default function MemberDetail() {
   };
 
   // Aggregations
-  const totalInvested = investments.reduce((s, i) => s + (Number(i.investment_amount) || 0), 0);
-  const totalCurrent = investments.reduce((s, i) => s + (Number(i.current_value) || 0), 0);
+  const investmentValuations = investments.map((investment) => ({
+    investment,
+    valuation: computeInvestmentValuation({
+      investmentAmount: investment.investment_amount,
+      currentValue: investment.current_value,
+      startDate: investment.start_date,
+      investmentMaturityDate: investment.maturity_date,
+      productMaturityDate: investment.product_maturity_date,
+      annualRatePercent: investment.annual_rate_percent,
+      status: investment.status,
+    }),
+  }));
+  const totalInvested = investmentValuations.reduce((s, { investment }) => s + (Number(investment.investment_amount) || 0), 0);
+  const totalCurrent = investmentValuations.reduce((s, { valuation }) => s + valuation.displayCurrentValue, 0);
   const earnedTotal = commissions
     .filter((c) => c.to_user_id === userId)
     .reduce((s, c) => s + (Number(c.upfront_amount) || 0) + (Number(c.performance_amount) || 0), 0);

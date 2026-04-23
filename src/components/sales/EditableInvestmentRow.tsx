@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Pencil, Check, X, Loader2, Trash2 } from 'lucide-react';
+import { computeInvestmentValuation } from '@/lib/investment-valuation';
 
 export interface InvestmentRowData {
   id: string;
@@ -27,6 +28,8 @@ export interface InvestmentRowData {
   maturity_date: string | null;
   invested_currency: string | null;
   realized_return_amount?: number | null;
+  product_maturity_date?: string | null;
+  annual_rate_percent?: number | null;
 }
 
 interface Props {
@@ -50,9 +53,16 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
     String(inv.realized_return_amount ?? 0),
   );
 
-  const ret = inv.investment_amount > 0
-    ? ((inv.current_value - inv.investment_amount) / inv.investment_amount) * 100
-    : 0;
+  const valuation = computeInvestmentValuation({
+    investmentAmount: inv.investment_amount,
+    currentValue: inv.current_value,
+    startDate: inv.start_date,
+    investmentMaturityDate: inv.maturity_date,
+    productMaturityDate: inv.product_maturity_date,
+    annualRatePercent: inv.annual_rate_percent,
+    status: inv.status,
+  });
+  const ret = valuation.displayReturnPercent;
 
   const cancel = () => {
     setCurrentValue(String(inv.current_value ?? 0));
@@ -170,7 +180,7 @@ export function EditableInvestmentRow({ inv, canEdit, onChanged }: Props) {
           {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
         </TableCell>
         <TableCell className="text-right">{formatCurrency(inv.investment_amount)}</TableCell>
-        <TableCell className="text-right">{formatCurrency(inv.current_value)}</TableCell>
+        <TableCell className="text-right">{formatCurrency(valuation.displayCurrentValue, inv.invested_currency || undefined)}</TableCell>
         <TableCell className={`text-right hidden sm:table-cell ${ret >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
           {ret >= 0 ? '+' : ''}{ret.toFixed(1)}%
         </TableCell>
