@@ -478,6 +478,9 @@ export default function MemberDetail() {
     || dirtyProfileFields.address
     || dirtyProfileFields.birthday
   );
+  const hasNotesChanges = !!profile && notesDraft !== (profile.admin_notes || '');
+  const hasAnyChanges = hasProfileChanges || hasNotesChanges;
+  const isSavingMemberDetails = savingProfile || savingNotes;
 
   const handleSaveNotes = async () => {
     await persistMemberDetails('notes');
@@ -625,7 +628,7 @@ export default function MemberDetail() {
                     </h2>
                     {canEditProfile && (
                       <div className="flex gap-1">
-                        <Button size="sm" onClick={() => persistMemberDetails('profile')} disabled={savingProfile || savingNotes || !hasProfileChanges} className="h-7 text-xs">
+                        <Button size="sm" onClick={() => persistMemberDetails('profile')} disabled={isSavingMemberDetails || !hasAnyChanges} className="h-7 text-xs">
                           <Save className="h-3 w-3 mr-1" />
                           {language === 'ko' ? '저장' : 'Save'}
                         </Button>
@@ -633,7 +636,7 @@ export default function MemberDetail() {
                           size="sm"
                           variant="ghost"
                           onClick={() => profile && syncProfileDraft(profile)}
-                          disabled={savingProfile || !hasProfileChanges}
+                          disabled={isSavingMemberDetails || !hasProfileChanges}
                           className="h-7 text-xs"
                         >
                           {language === 'ko' ? '되돌리기' : 'Reset'}
@@ -693,7 +696,7 @@ export default function MemberDetail() {
                       {language === 'ko' ? '관리자 메모' : 'Admin Notes'}
                     </h2>
                     {canEditNotes && (
-                       <Button size="sm" onClick={handleSaveNotes} disabled={savingProfile || savingNotes} className="h-7 text-xs">
+                       <Button size="sm" onClick={handleSaveNotes} disabled={isSavingMemberDetails || !hasAnyChanges} className="h-7 text-xs">
                         <Save className="h-3 w-3 mr-1" />
                         {language === 'ko' ? '저장' : 'Save'}
                       </Button>
