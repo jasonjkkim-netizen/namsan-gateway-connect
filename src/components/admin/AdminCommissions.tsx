@@ -365,6 +365,14 @@ export function AdminCommissions() {
   const [editingRate, setEditingRate] = useState<CommissionRate | null>(null);
   const [rateForm, setRateForm] = useState({ sales_role: 'district_manager', upfront_rate: '0', performance_rate: '0' });
   const [overrideForm, setOverrideForm] = useState({ override_user_id: '', upfront_rate: '0', performance_rate: '0' });
+  const [savingProductConfig, setSavingProductConfig] = useState(false);
+  const [productConfigs, setProductConfigs] = useState<Record<string, ProductCommissionConfig>>({});
+  const [draftConfig, setDraftConfig] = useState<ProductCommissionConfig | null>(null);
+  const [previewInput, setPreviewInput] = useState<CommissionPreviewInput>({
+    investmentAmount: '100000000',
+    realizedReturnAmount: '5000000',
+    notes: '',
+  });
 
   useEffect(() => { fetchAll(); }, []);
 
