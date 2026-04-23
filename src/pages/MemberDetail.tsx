@@ -114,6 +114,12 @@ export default function MemberDetail() {
 
   const salesTab = searchParams.get('salesTab') || 'downline';
   const fromSalesDashboard = searchParams.get('from') === 'sales-dashboard';
+  const fromProductDetail = searchParams.get('from') === 'product-detail';
+  const productId = searchParams.get('productId');
+  const productSection = searchParams.get('productSection') || 'investors';
+  const productInvestment = searchParams.get('productInvestment');
+  const productSource = searchParams.get('productSource');
+  const productSalesTab = searchParams.get('productSalesTab');
 
   const openMemberTab = (tab: string) => {
     setActiveTab(tab);
@@ -125,6 +131,21 @@ export default function MemberDetail() {
   };
 
   const handleBack = () => {
+    if (fromProductDetail && productId) {
+      const params = new URLSearchParams({
+        productSection,
+      });
+
+      if (productInvestment) params.set('productInvestment', productInvestment);
+      if (productSource === 'sales-dashboard') {
+        params.set('from', 'sales-dashboard');
+        params.set('salesTab', productSalesTab || 'downline');
+      }
+
+      navigate(`/products/${productId}?${params.toString()}`);
+      return;
+    }
+
     if (fromSalesDashboard) {
       navigate(`/sales-dashboard?tab=${encodeURIComponent(salesTab)}`);
       return;
