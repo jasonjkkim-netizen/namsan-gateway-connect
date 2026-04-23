@@ -4,7 +4,33 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import MemberDetail from '@/pages/MemberDetail';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 
-const mockUseAuth = vi.fn();
+const { mockUseAuth, authSignOutMock, supabaseMock } = vi.hoisted(() => {
+  const authSignOutMock = vi.fn();
+  const supabaseMock = {
+    auth: {
+      signOut: authSignOutMock,
+    },
+    channel: vi.fn(() => ({
+      on: vi.fn().mockReturnThis(),
+      subscribe: vi.fn(() => ({ id: 'channel-1' })),
+    })),
+    removeChannel: vi.fn(),
+    rpc: vi.fn((fn: string) => {
+      if (fn === 'get_sales_ancestors' || fn === 'get_sales_subtree') {
+        return Promise.resolve({ data: [], error: null });
+      }
+
+      return Promise.resolve({ data: null, error: null });
+    }),
+    from: vi.fn((table: string) => createQueryBuilder(table)),
+  };
+
+  return {
+    mockUseAuth: vi.fn(),
+    authSignOutMock,
+    supabaseMock,
+  };
+});
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
@@ -17,26 +43,6 @@ vi.mock('@/components/NotificationBell', () => ({
 vi.mock('@/components/ConsultationButton', () => ({
   ConsultationButton: () => <button type="button">Consultation</button>,
 }));
-
-const authSignOutMock = vi.fn();
-const supabaseMock = {
-  auth: {
-    signOut: authSignOutMock,
-  },
-  channel: vi.fn(() => ({
-    on: vi.fn().mockReturnThis(),
-    subscribe: vi.fn(() => ({ id: 'channel-1' })),
-  })),
-  removeChannel: vi.fn(),
-  rpc: vi.fn((fn: string) => {
-    if (fn === 'get_sales_ancestors' || fn === 'get_sales_subtree') {
-      return Promise.resolve({ data: [], error: null });
-    }
-
-    return Promise.resolve({ data: null, error: null });
-  }),
-  from: vi.fn((table: string) => createQueryBuilder(table)),
-};
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: supabaseMock,
