@@ -824,14 +824,14 @@ export default function ProductDetail() {
                                             )}
                                           </p>
 
-                                          <Table>
+                                          <Table className="table-fixed">
                                             <TableHeader>
                                               <TableRow>
-                                                <TableHead className="h-7 text-[11px]">{language === 'ko' ? '수취인' : 'Recipient'}</TableHead>
-                                                <TableHead className="h-7 text-[11px]">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
-                                                <TableHead className="h-7 text-[11px]">{language === 'ko' ? '성과' : 'Perf.'}</TableHead>
-                                                <TableHead className="h-7 text-[11px]">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
-                                                <TableHead className="h-7 text-[11px]">{language === 'ko' ? '상태' : 'Status'}</TableHead>
+                                                <TableHead className="h-7 w-[34%] min-w-[150px] text-[11px]">{language === 'ko' ? '수취인' : 'Recipient'}</TableHead>
+                                                <TableHead className="h-7 w-[18%] whitespace-nowrap text-[11px]">{language === 'ko' ? '선취' : 'Upfront'}</TableHead>
+                                                <TableHead className="h-7 w-[18%] whitespace-nowrap text-[11px]">{language === 'ko' ? '성과' : 'Perf.'}</TableHead>
+                                                <TableHead className="h-7 w-[12%] whitespace-nowrap text-[11px]">{language === 'ko' ? '요율' : 'Rate'}</TableHead>
+                                                <TableHead className="h-7 w-[18%] whitespace-nowrap text-[11px]">{language === 'ko' ? '상태' : 'Status'}</TableHead>
                                               </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -840,15 +840,15 @@ export default function ProductDetail() {
                                                   <TableCell className="py-1 text-xs">
                                                     <Link
                                                       to={buildMemberDetailLink(c.to_user_id, 'commissions', inv.id)}
-                                                      className="inline-flex min-h-8 items-center text-primary hover:underline"
+                                                      className="inline-flex min-h-8 max-w-full items-center truncate text-primary hover:underline"
                                                     >
                                                       {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
                                                     </Link>
                                                   </TableCell>
-                                                  <TableCell className="py-1 text-xs text-success">{formatCurrency(Number(c.upfront_amount) || 0)}</TableCell>
-                                                  <TableCell className="py-1 text-xs text-success">{formatCurrency(Number(c.performance_amount) || 0)}</TableCell>
-                                                  <TableCell className="py-1 text-xs">{c.rate_used != null ? `${c.rate_used}%` : '—'}</TableCell>
-                                                  <TableCell className="py-1">
+                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCurrency(Number(c.upfront_amount) || 0)}</TableCell>
+                                                  <TableCell className="py-1 text-xs whitespace-nowrap text-success">{formatCurrency(Number(c.performance_amount) || 0)}</TableCell>
+                                                  <TableCell className="py-1 text-xs whitespace-nowrap">{c.rate_used != null ? `${c.rate_used}%` : '—'}</TableCell>
+                                                  <TableCell className="py-1 whitespace-nowrap">
                                                     <Badge variant={c.status === 'available' ? 'default' : 'secondary'} className="text-[10px]">{c.status}</Badge>
                                                   </TableCell>
                                                 </TableRow>
