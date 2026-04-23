@@ -6,16 +6,36 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const EXCLUDED_WEBMASTER_NAMES = new Set([
+const EXCLUDED_WEBMASTER_NAME_ALIASES = new Set([
   "김종국",
+  "종국",
+  "김종구k",
   "kimjongguk",
-  "kim jong guk",
-  "kim jongguk",
-  "jongguk kim",
+  "kimjongkook",
+  "kimjongkuk",
+  "kimjonggook",
+  "kimjonggug",
+  "jonggukkim",
+  "jongkookkim",
+  "jongkukkim",
+  "jonggookkim",
+  "gukkim",
+  "jkkim",
+  "jk",
 ]);
 
 const normalizeName = (value: string | null | undefined) =>
-  (value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+  (value ?? "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\s\-_.()]+/g, "")
+    .replace(/[^\p{L}\p{N}]/gu, "");
+
+const isExcludedWebmasterName = (...values: Array<string | null | undefined>) =>
+  values.some((value) => {
+    const normalized = normalizeName(value);
+    return normalized.length > 0 && EXCLUDED_WEBMASTER_NAME_ALIASES.has(normalized);
+  });
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -136,18 +156,19 @@ Deno.serve(async (req) => {
     const { data: excludedWebmasterProfiles } = await supabase
       .from("profiles")
       .select("user_id, full_name, full_name_ko")
-      .eq("sales_role", "webmaster")
-      .or("full_name.eq.김종국,full_name_ko.eq.김종국");
+      .eq("sales_role", "webmaster");
 
     const excludedWebmasterIds = new Set(
-      (excludedWebmasterProfiles || []).map((profile: any) => profile.user_id),
+      (excludedWebmasterProfiles || [])
+        .filter((profile: any) => isExcludedWebmasterName(profile.full_name, profile.full_name_ko))
+        .map((profile: any) => profile.user_id),
     );
 
     const filteredAncestors = (ancestors || []).filter((ancestor: any) => {
       if (excludedWebmasterIds.has(ancestor.user_id)) return false;
       if (ancestor.sales_role !== "webmaster") return true;
 
-      return !EXCLUDED_WEBMASTER_NAMES.has(normalizeName(ancestor.full_name));
+      return !isExcludedWebmasterName(ancestor.full_name);
     });
 
     // 4. Determine the product_id for rate lookup
