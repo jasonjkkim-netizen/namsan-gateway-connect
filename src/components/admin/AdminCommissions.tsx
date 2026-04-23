@@ -19,13 +19,24 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight, Save, X, Loader2 } from 'lucide-react';
+import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, UserCog, Download, CalendarIcon, FileSpreadsheet, CheckSquare, Users, ChevronRight, Save, X, Loader2, ArrowDownUp, Eye } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
+import {
+  COMMISSION_ROLES,
+  CommissionDirection,
+  CommissionRole,
+  ProductCommissionConfig,
+  buildProductCommissionConfig,
+  computeCommissionPreview,
+  DEFAULT_DIRECTION_PRESETS,
+  deriveRatiosFromAbsoluteRates,
+} from '@/lib/commission-defaults';
 
 interface Distribution {
   id: string;
