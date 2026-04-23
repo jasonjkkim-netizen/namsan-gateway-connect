@@ -1918,19 +1918,21 @@ export function AdminCommissions() {
                                     <TableRow key={idx}>
                                       <TableCell className="text-sm">{src.investorName}</TableCell>
                                       <TableCell className="min-w-[280px]">
-                                        <div className="space-y-2 rounded-md border border-border bg-background p-2">
-                                          {getCommissionBreakdownItems(src.upfront, src.performance).map((item) => (
-                                            <div key={item.key} className="space-y-1">
-                                              <div className="flex items-center justify-between gap-3 text-[11px]">
-                                                <span className="text-muted-foreground">{item.label}</span>
-                                                <div className="flex items-center gap-2 text-right">
-                                                  <span className="font-medium text-foreground">{formatCommAmount(item.amount, src.currency)}</span>
+                                        <div className="rounded-md border border-border bg-background p-2">
+                                          <div className="grid gap-2 md:grid-cols-3">
+                                            {getCommissionBreakdownItems(src.upfront, src.performance).map((item) => (
+                                              <div key={item.key} className="rounded-sm border border-border/70 bg-muted/20 p-2">
+                                                <div className="mb-1 flex items-center justify-between gap-2 text-[11px]">
+                                                  <span className="font-medium text-foreground">{item.label}</span>
                                                   <span className="tabular-nums text-muted-foreground">{item.ratio.toFixed(2)}%</span>
                                                 </div>
+                                                <div className="truncate text-[11px] font-medium text-foreground">
+                                                  {formatCommAmount(item.amount, src.currency)}
+                                                </div>
+                                                <Progress value={item.ratio} className="mt-2 h-1.5" />
                                               </div>
-                                              <Progress value={item.ratio} className="h-1.5" />
-                                            </div>
-                                          ))}
+                                            ))}
+                                          </div>
                                           <div className="flex items-center justify-between border-t border-border pt-2 text-[11px] font-medium">
                                             <span>{language === 'ko' ? '총합' : 'Total'}</span>
                                             <span>{formatCommAmount(src.upfront + src.performance, src.currency)}</span>
