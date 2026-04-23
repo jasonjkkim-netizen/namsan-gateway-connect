@@ -203,7 +203,7 @@ describe('Commission Flow — Full 4-Level Chain', () => {
   it('performance amounts are based on realized return', () => {
     const wm = distributions.find(d => d.to_user_id === WM)!;
     // 500,000 × 0% = 0
-    expect(wm.performance_amount).toBe(4_000);
+    expect(wm.performance_amount).toBe(0);
 
     const pa = distributions.find(d => d.to_user_id === PA)!;
     // 500,000 × 0.5% = 2,500
@@ -215,11 +215,8 @@ describe('Commission Flow — Full 4-Level Chain', () => {
     const grandUpfront = Object.values(summary).reduce((s, v) => s + v.totalUpfront, 0);
     const grandPerf = Object.values(summary).reduce((s, v) => s + v.totalPerformance, 0);
 
-    // Upfront: 10M × (2% + 2% + 1.25% + 1%) = 10M × 6.25%... wait, let me compute
-    // WM: 5*0.40=2.0%, DM: 5*0.40=2.0%, DDM: 5*0.25=1.25%, PA: 5*0.20=1.0%
-    // Total upfront rate: 6.25% but each applied separately
-    expect(grandUpfront).toBe(200_000 + 200_000 + 125_000 + 100_000); // 625,000
-    expect(grandPerf).toBe(4_000 + 4_000 + 2_500 + 2_000); // 12,500
+    expect(grandUpfront).toBe(0 + 75_000 + 100_000 + 125_000); // 300,000
+    expect(grandPerf).toBe(0 + 1_500 + 2_000 + 2_500); // 6,000
   });
 });
 
@@ -244,7 +241,7 @@ describe('Commission Flow — User-Specific Overrides', () => {
 
   it('non-overridden user keeps default rate', () => {
     const wm = distributions.find(d => d.to_user_id === WM)!;
-    expect(wm.upfront_amount).toBe(120_000); // 10M × 1.2%
+    expect(wm.upfront_amount).toBe(0);
   });
 });
 
@@ -288,21 +285,21 @@ describe('Commission Flow — Manual Rates (No Defaults)', () => {
 describe('Commission Flow — Multi-Investment Admin Summary', () => {
   it('aggregates distributions across multiple investments correctly', () => {
     const allDistributions: Distribution[] = [
-      { to_user_id: 'wm', upfront_amount: 240_000, performance_amount: 0, layer: 1 },
+      { to_user_id: 'wm', upfront_amount: 0, performance_amount: 0, layer: 1 },
       { to_user_id: 'wm', upfront_amount: 100_000, performance_amount: 5_000, layer: 1 },
-      { to_user_id: 'dm', upfront_amount: 240_000, performance_amount: 0, layer: 2 },
+      { to_user_id: 'dm', upfront_amount: 90_000, performance_amount: 0, layer: 2 },
     ];
 
     const summary = adminSummary(allDistributions);
-    expect(summary['wm'].totalUpfront).toBe(340_000);
+    expect(summary['wm'].totalUpfront).toBe(100_000);
     expect(summary['wm'].totalPerformance).toBe(5_000);
     expect(summary['wm'].count).toBe(2);
-    expect(summary['dm'].totalUpfront).toBe(240_000);
+    expect(summary['dm'].totalUpfront).toBe(90_000);
     expect(summary['dm'].count).toBe(1);
 
     // Grand total
     const grand = Object.values(summary).reduce((s, v) => s + v.totalUpfront + v.totalPerformance, 0);
-    expect(grand).toBe(585_000); // 340k + 5k + 240k
+    expect(grand).toBe(195_000); // 100k + 5k + 90k
   });
 });
 
@@ -461,11 +458,11 @@ describe('Commission Flow — Single Ancestor Full Rate', () => {
     );
 
     expect(distributions).toHaveLength(2);
-    // DM gets 40% of 3% = 1.2% = ₩240,000
+    // DM gets 15% of 3% = 0.45% = ₩90,000
     const dmDist = distributions.find(d => d.to_user_id === 'dm')!;
-    expect(dmDist.upfront_amount).toBe(240_000);
-    // WM also gets 40% of 3% = 1.2% = ₩240,000
+    expect(dmDist.upfront_amount).toBe(90_000);
+    // WM defaults to 0%
     const wmDist = distributions.find(d => d.to_user_id === 'wm')!;
-    expect(wmDist.upfront_amount).toBe(240_000);
+    expect(wmDist.upfront_amount).toBe(0);
   });
 });
