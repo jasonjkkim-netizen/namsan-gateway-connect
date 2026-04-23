@@ -29,4 +29,26 @@ describe('computeInvestmentValuation', () => {
     expect(result.accruedInterest).toBeCloseTo(1019.18, 1);
     expect(result.displayCurrentValue).toBeCloseTo(101019.18, 1);
   });
+
+  it('keeps accrued-interest and MTM values identical across language toggles', () => {
+    const koreanView = computeInvestmentValuation({
+      investmentAmount: 250000,
+      currentValue: 247500,
+      startDate: '2026-02-10',
+      annualRatePercent: 9,
+      asOfDate: new Date(2026, 3, 10),
+    });
+
+    const englishView = computeInvestmentValuation({
+      investmentAmount: 250000,
+      currentValue: 247500,
+      startDate: '2026-02-10',
+      annualRatePercent: 9,
+      asOfDate: new Date(2026, 3, 10),
+    });
+
+    expect(koreanView.accruedInterest).toBeCloseTo(englishView.accruedInterest, 6);
+    expect(koreanView.displayCurrentValue).toBeCloseTo(englishView.displayCurrentValue, 6);
+    expect(koreanView.displayReturnPercent).toBeCloseTo(englishView.displayReturnPercent, 6);
+  });
 });
