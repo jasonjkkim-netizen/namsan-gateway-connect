@@ -193,28 +193,66 @@ export default function MemberDetail() {
     });
   };
 
-  const saveProfile = async () => {
+  const persistMemberDetails = async (source: 'profile' | 'notes') => {
     if (!profile) return;
-    setSavingProfile(true);
+
+    const shouldSaveProfile = canEditProfile;
+    const shouldSaveNotes = canEditNotes;
+    const payload: Record<string, string | null> = {};
+
+    if (shouldSaveProfile) {
+      payload.full_name = profileDraft.full_name.trim() || profile.full_name;
+      payload.full_name_ko = profileDraft.full_name_ko.trim() || null;
+      payload.email = profileDraft.email.trim() || profile.email;
+      payload.phone = profileDraft.phone.trim() || null;
+      payload.address = profileDraft.address.trim() || null;
+      payload.birthday = profileDraft.birthday || null;
+    }
+
+    if (shouldSaveNotes) {
+      payload.admin_notes = (notesDraft || '').slice(0, 5000) || null;
+    }
+
+    if (Object.keys(payload).length === 0) return;
+
+    if (shouldSaveProfile) setSavingProfile(true);
+    if (shouldSaveNotes) setSavingNotes(true);
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        full_name: profileDraft.full_name.trim() || profile.full_name,
-        full_name_ko: profileDraft.full_name_ko.trim() || null,
-        email: profileDraft.email.trim() || profile.email,
-        phone: profileDraft.phone.trim() || null,
-        address: profileDraft.address.trim() || null,
-        birthday: profileDraft.birthday || null,
-      })
+      .update(payload)
       .eq('user_id', profile.user_id);
-    setSavingProfile(false);
+
+    if (shouldSaveProfile) setSavingProfile(false);
+    if (shouldSaveNotes) setSavingNotes(false);
+
     if (error) {
-      console.error('Profile save error:', error);
-      toast.error(language === 'ko' ? '프로필 저장 실패' : 'Failed to save profile');
-    } else {
-      toast.success(language === 'ko' ? '프로필 저장 완료' : 'Profile saved');
-      loadAll();
+      console.error('Member detail save error:', error);
+      toast.error(
+        source === 'notes'
+          ? (language === 'ko' ? '메모 저장 실패' : 'Failed to save notes')
+          : (language === 'ko' ? '프로필 저장 실패' : 'Failed to save profile')
+      );
+      return;
     }
+
+    toast.success(
+      source === 'notes'
+        ? (language === 'ko' ? '메모와 프로필 저장 완료' : 'Notes and profile saved')
+        : (language === 'ko' ? '프로필과 메모 저장 완료' : 'Profile and notes saved')
+    );
+
+    setProfile((prev) => prev ? {
+      ...prev,
+      full_name: (payload.full_name ?? prev.full_name) as string,
+      full_name_ko: (payload.full_name_ko ?? null) as string | null,
+      email: (payload.email ?? prev.email) as string,
+      phone: (payload.phone ?? null) as string | null,
+      address: (payload.address ?? null) as string | null,
+      birthday: (payload.birthday ?? null) as string | null,
+      admin_notes: (payload.admin_notes ?? prev.admin_notes ?? null) as string | null,
+    } : prev);
+    loadAll();
   };
 
   useEffect(() => {
@@ -442,20 +480,7 @@ export default function MemberDetail() {
   );
 
   const handleSaveNotes = async () => {
-    if (!profile) return;
-    setSavingNotes(true);
-    const cleanNotes = (notesDraft || '').slice(0, 5000) || null;
-    const { error } = await supabase
-      .from('profiles')
-      .update({ admin_notes: cleanNotes })
-      .eq('user_id', profile.user_id);
-    setSavingNotes(false);
-    if (error) {
-      toast.error(language === 'ko' ? '메모 저장 실패' : 'Failed to save notes');
-    } else {
-      toast.success(language === 'ko' ? '메모 저장 완료' : 'Notes saved');
-      setProfile({ ...profile, admin_notes: cleanNotes });
-    }
+    await persistMemberDetails('notes');
   };
 
   // Aggregations
@@ -600,7 +625,7 @@ export default function MemberDetail() {
                     </h2>
                     {canEditProfile && (
                       <div className="flex gap-1">
-                        <Button size="sm" onClick={saveProfile} disabled={savingProfile || !hasProfileChanges} className="h-7 text-xs">
+                        <Button size="sm" onClick={() => persistMemberDetails('profile')} disabled={savingProfile || savingNotes || !hasProfileChanges} className="h-7 text-xs">
                           <Save className="h-3 w-3 mr-1" />
                           {language === 'ko' ? '저장' : 'Save'}
                         </Button>
@@ -668,7 +693,7 @@ export default function MemberDetail() {
                       {language === 'ko' ? '관리자 메모' : 'Admin Notes'}
                     </h2>
                     {canEditNotes && (
-                      <Button size="sm" onClick={handleSaveNotes} disabled={savingNotes} className="h-7 text-xs">
+                       <Button size="sm" onClick={handleSaveNotes} disabled={savingProfile || savingNotes} className="h-7 text-xs">
                         <Save className="h-3 w-3 mr-1" />
                         {language === 'ko' ? '저장' : 'Save'}
                       </Button>
