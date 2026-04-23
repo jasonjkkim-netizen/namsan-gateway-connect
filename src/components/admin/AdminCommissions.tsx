@@ -519,6 +519,12 @@ export function AdminCommissions() {
     }));
   };
 
+  const getBreakdownSortRatio = (
+    source: { upfront: number; performance: number },
+    sortKey: 'upfront' | 'performance' | 'other'
+  ) => getCommissionBreakdownItems(source.upfront, source.performance)
+    .find((item) => item.key === sortKey)?.ratio ?? 0;
+
   // Per-person attribution
   const personAttribution = useMemo(() => {
     const map: Record<string, {
@@ -561,6 +567,7 @@ export function AdminCommissions() {
   const [attributionStatus, setAttributionStatus] = useState('all');
   const [attributionDateFrom, setAttributionDateFrom] = useState<Date | undefined>(undefined);
   const [attributionDateTo, setAttributionDateTo] = useState<Date | undefined>(undefined);
+  const [attributionBreakdownSort, setAttributionBreakdownSort] = useState<'upfront' | 'performance' | 'other'>('upfront');
 
   const filteredPersonAttribution = useMemo(() => {
     const query = attributionSearchTerm.trim().toLowerCase();
