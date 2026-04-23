@@ -519,6 +519,12 @@ export function AdminCommissions() {
     }));
   };
 
+  const getBreakdownSortRatio = (
+    source: { upfront: number; performance: number },
+    sortKey: 'upfront' | 'performance' | 'other'
+  ) => getCommissionBreakdownItems(source.upfront, source.performance)
+    .find((item) => item.key === sortKey)?.ratio ?? 0;
+
   // Per-person attribution
   const personAttribution = useMemo(() => {
     const map: Record<string, {
@@ -561,6 +567,7 @@ export function AdminCommissions() {
   const [attributionStatus, setAttributionStatus] = useState('all');
   const [attributionDateFrom, setAttributionDateFrom] = useState<Date | undefined>(undefined);
   const [attributionDateTo, setAttributionDateTo] = useState<Date | undefined>(undefined);
+  const [attributionBreakdownSort, setAttributionBreakdownSort] = useState<'upfront' | 'performance' | 'other'>('upfront');
 
   const filteredPersonAttribution = useMemo(() => {
     const query = attributionSearchTerm.trim().toLowerCase();
@@ -1829,6 +1836,14 @@ export function AdminCommissions() {
                     <SelectItem value="available">{language === 'ko' ? '확정' : 'Confirmed'}</SelectItem>
                   </SelectContent>
                 </Select>
+                <Select value={attributionBreakdownSort} onValueChange={(value: 'upfront' | 'performance' | 'other') => setAttributionBreakdownSort(value)}>
+                  <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="upfront">{language === 'ko' ? '선취 비중순' : 'Sort by Upfront %'}</SelectItem>
+                    <SelectItem value="performance">{language === 'ko' ? '성과 비중순' : 'Sort by Performance %'}</SelectItem>
+                    <SelectItem value="other">{language === 'ko' ? '기타 비중순' : 'Sort by Other %'}</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn('w-full justify-start text-left font-normal sm:w-[160px]', !attributionDateFrom && 'text-muted-foreground')}>
@@ -1930,7 +1945,9 @@ export function AdminCommissions() {
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  {data.sources.map((src, idx) => (
+                                  {[...data.sources]
+                                    .sort((a, b) => getBreakdownSortRatio(b, attributionBreakdownSort) - getBreakdownSortRatio(a, attributionBreakdownSort))
+                                    .map((src, idx) => (
                                     <TableRow key={idx}>
                                       <TableCell className="text-sm">{src.investorName}</TableCell>
                                       <TableCell className="min-w-[280px]">
