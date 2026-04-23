@@ -881,8 +881,8 @@ export default function SalesDashboard() {
 
                       <Accordion type="multiple" className="rounded-lg border border-border">
                         {ROLE_ORDER_LIST.filter((r) => byRole[r]?.length).map((role) => (
-                          <AccordionItem key={role} value={role} className="border-border px-3 sm:px-4">
-                            <AccordionTrigger className="py-3 hover:no-underline">
+                          <AccordionItem key={role} value={role} className="border-border px-2 sm:px-4">
+                            <AccordionTrigger className="min-h-11 py-2.5 pr-1 hover:no-underline">
                               <div className="flex items-center gap-2 min-w-0">
                                 <Badge variant={(ROLE_COLORS[role] as any) || 'secondary'} className={`text-[8px] sm:text-[10px] whitespace-nowrap ${ROLE_EXTRA_CLASS[role] || ''}`}>
                                   {getRoleLabel(role)}
@@ -894,12 +894,15 @@ export default function SalesDashboard() {
                               <Table>
                                 <TableBody>
                                   {byRole[role].map((m) => (
-                                    <TableRow key={m.user_id} className="h-8 sm:h-9">
-                                      <TableCell
-                                        className="text-[10px] sm:text-xs py-1 px-2 cursor-pointer hover:text-primary truncate max-w-[160px] sm:max-w-none"
-                                        onClick={() => navigate(`/members/${m.user_id}`)}
-                                      >
-                                        {m.full_name}
+                                    <TableRow key={m.user_id} className="h-9 sm:h-9">
+                                      <TableCell className="py-1 px-2 max-w-[160px] sm:max-w-none">
+                                        <Link
+                                          to={buildSalesDetailLink(`/members/${m.user_id}`, 'profile')}
+                                          className="inline-flex min-h-8 max-w-full items-center py-1 text-[10px] sm:text-xs text-primary hover:underline"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <span className="truncate">{m.full_name}</span>
+                                        </Link>
                                       </TableCell>
                                       <TableCell className="text-right py-1 px-1 w-[130px] sm:w-[180px]">
                                         <div className="flex items-center justify-end gap-1">

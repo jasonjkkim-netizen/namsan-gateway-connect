@@ -437,13 +437,13 @@ export function SalesInvestmentManager({ downline, activeTab = 'pipeline', onDat
                   return (
                     <TableRow key={inv.id}>
                       <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
-                        <Link to={buildSalesDetailLink(`/members/${inv.user_id}`, 'investments')} className="text-primary hover:underline">
+                        <Link to={buildSalesDetailLink(`/members/${inv.user_id}`, 'investments')} className="inline-flex min-h-8 items-center text-primary hover:underline">
                           {getName(inv.user_id)}
                         </Link>
                       </TableCell>
                       <TableCell className="text-[10px] sm:text-sm max-w-[80px] sm:max-w-none truncate">
                         {inv.product_id ? (
-                          <Link to={buildSalesDetailLink(`/products/${inv.product_id}`)} className="text-primary hover:underline">
+                          <Link to={buildSalesDetailLink(`/products/${inv.product_id}`)} className="inline-flex min-h-8 items-center text-primary hover:underline">
                             {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
                           </Link>
                         ) : (language === 'ko' ? inv.product_name_ko : inv.product_name_en)}
