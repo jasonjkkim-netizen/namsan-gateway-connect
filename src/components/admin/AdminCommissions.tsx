@@ -88,6 +88,7 @@ interface Product {
   id: string;
   name_en: string;
   name_ko: string;
+  default_currency?: string | null;
   upfront_commission_percent?: number | null;
   performance_fee_percent?: number | null;
 }
@@ -395,7 +396,7 @@ export function AdminCommissions() {
       supabase.from('commission_distributions').select('*').order('created_at', { ascending: false }).limit(200),
       supabase.from('commission_audit_log').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('profiles').select('user_id, full_name, email, sales_role'),
-      supabase.from('investment_products').select('id, name_en, name_ko, upfront_commission_percent, performance_fee_percent').eq('is_active', true),
+      supabase.from('investment_products').select('id, name_en, name_ko, default_currency, upfront_commission_percent, performance_fee_percent').eq('is_active', true),
       supabase.from('commission_rates').select('*').order('sales_level', { ascending: true }),
       supabase.from('app_settings').select('*').eq('key', 'commission_display_currency').maybeSingle(),
       supabase.from('market_indices').select('current_value').eq('symbol', 'USDKRW=X').maybeSingle(),
