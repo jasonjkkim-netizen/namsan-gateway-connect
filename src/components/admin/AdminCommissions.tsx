@@ -26,6 +26,7 @@ import { Search, Coins, History, RefreshCw, Settings, Plus, Pencil, Trash2, User
 import { MemberLink } from '@/components/MemberLink';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
@@ -557,11 +558,19 @@ export function AdminCommissions() {
     const otherDisplay = formatCommAmount(otherAmount, source.currency);
 
     if (language === 'ko') {
+      if (!showDetailedBreakdownTooltip) {
+        return `${item.label} 비중 = ${baseAmount} ÷ ${totalAmount} × 100 · 현재 ${item.ratio.toFixed(2)}%`;
+      }
+
       return [
         `${item.label} 비중 = ${baseAmount} ÷ ${totalAmount} × 100`,
         `총합 기준: 선취 ${upfrontDisplay} + 성과 ${performanceDisplay} + 기타 ${otherDisplay} = ${totalAmount}`,
         `현재 ${item.label} 비중: ${item.ratio.toFixed(2)}%`,
       ].join(' ');
+    }
+
+    if (!showDetailedBreakdownTooltip) {
+      return `${item.label} % = ${baseAmount} ÷ ${totalAmount} × 100 · ${item.ratio.toFixed(2)}%`;
     }
 
     return [
@@ -614,6 +623,7 @@ export function AdminCommissions() {
   const [attributionDateFrom, setAttributionDateFrom] = useState<Date | undefined>(undefined);
   const [attributionDateTo, setAttributionDateTo] = useState<Date | undefined>(undefined);
   const [attributionBreakdownSort, setAttributionBreakdownSort] = useState<'upfront' | 'performance' | 'other'>('upfront');
+  const [showDetailedBreakdownTooltip, setShowDetailedBreakdownTooltip] = useState(false);
 
   const filteredPersonAttribution = useMemo(() => {
     const query = attributionSearchTerm.trim().toLowerCase();
@@ -1973,9 +1983,20 @@ export function AdminCommissions() {
                         <TableRow>
                           <TableCell colSpan={7} className="bg-muted/20 p-0">
                             <div className="px-8 py-3">
-                              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">
-                                {language === 'ko' ? '출처별 상세 내역' : 'Breakdown by Source'}
-                              </p>
+                              <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                  {language === 'ko' ? '출처별 상세 내역' : 'Breakdown by Source'}
+                                </p>
+                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                  <span>{language === 'ko' ? '짧게' : 'Short'}</span>
+                                  <Switch
+                                    checked={showDetailedBreakdownTooltip}
+                                    onCheckedChange={setShowDetailedBreakdownTooltip}
+                                    aria-label={language === 'ko' ? '툴팁 상세 설명 전환' : 'Toggle detailed tooltip explanation'}
+                                  />
+                                  <span>{language === 'ko' ? '상세' : 'Full'}</span>
+                                </div>
+                              </div>
                               <Table>
                                 <TableHeader>
                                   <TableRow>
