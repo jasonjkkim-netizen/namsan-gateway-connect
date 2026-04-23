@@ -526,6 +526,55 @@ export function AdminCommissions() {
   }, [distributions, profiles]);
 
   const [expandedPerson, setExpandedPerson] = useState<string | null>(null);
+  const [attributionSearchTerm, setAttributionSearchTerm] = useState('');
+  const [attributionStatus, setAttributionStatus] = useState('all');
+  const [attributionDateFrom, setAttributionDateFrom] = useState<Date | undefined>(undefined);
+  const [attributionDateTo, setAttributionDateTo] = useState<Date | undefined>(undefined);
+
+  const filteredPersonAttribution = useMemo(() => {
+    const query = attributionSearchTerm.trim().toLowerCase();
+
+    return personAttribution
+      .map(([userId, data]) => {
+        const filteredSources = data.sources.filter((src) => {
+          if (attributionStatus !== 'all' && src.status !== attributionStatus) return false;
+
+          const sourceDate = new Date(src.date);
+          if (attributionDateFrom && sourceDate < attributionDateFrom) return false;
+          if (attributionDateTo) {
+            const end = new Date(attributionDateTo);
+            end.setHours(23, 59, 59, 999);
+            if (sourceDate > end) return false;
+          }
+
+          if (!query) return true;
+
+          const haystack = [
+            data.name,
+            data.role || '',
+            src.investorName,
+            src.investmentId,
+            src.currency,
+            src.status,
+          ]
+            .join(' ')
+            .toLowerCase();
+
+          return haystack.includes(query);
+        });
+
+        if (filteredSources.length === 0) return null;
+
+        return [userId, {
+          ...data,
+          totalUpfront: filteredSources.reduce((sum, src) => sum + src.upfront, 0),
+          totalPerformance: filteredSources.reduce((sum, src) => sum + src.performance, 0),
+          sources: filteredSources,
+        }] as const;
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+      .sort((a, b) => (b[1].totalUpfront + b[1].totalPerformance) - (a[1].totalUpfront + a[1].totalPerformance));
+  }, [personAttribution, attributionSearchTerm, attributionStatus, attributionDateFrom, attributionDateTo]);
 
   const exportAttribution = async () => {
     const toDisplay = (amount: number, srcCurrency: string) => {
@@ -550,7 +599,7 @@ export function AdminCommissions() {
     ];
     summarySheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     summarySheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
-    personAttribution.forEach(([, data]) => {
+    filteredPersonAttribution.forEach(([, data]) => {
       // Sum converted amounts per source
       let convUp = 0, convPerf = 0;
       data.sources.forEach((src) => {
@@ -584,7 +633,7 @@ export function AdminCommissions() {
     ];
     detailSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
     detailSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
-    personAttribution.forEach(([, data]) => {
+    filteredPersonAttribution.forEach(([, data]) => {
       data.sources.forEach((src) => {
         const convUp = toDisplay(src.upfront, src.currency);
         const convPerf = toDisplay(src.performance, src.currency);
