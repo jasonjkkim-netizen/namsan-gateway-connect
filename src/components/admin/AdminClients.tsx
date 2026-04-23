@@ -600,6 +600,15 @@ export function AdminClients() {
     }).filter(Boolean).sort((a, b) => (a!.name).localeCompare(b!.name));
   }, [profiles, activeProfiles, language]);
 
+  const hasActiveFilters = roleSort !== 'created_desc' || roleFilter !== '__all__' || managerFilter !== '__all__' || searchTerm.trim().length > 0;
+
+  const resetListControls = () => {
+    setRoleSort('created_desc');
+    setRoleFilter('__all__');
+    setManagerFilter('__all__');
+    setSearchTerm('');
+  };
+
   const filterControls = (
     <>
       <Select value={roleSort} onValueChange={setRoleSort}>
@@ -662,15 +671,27 @@ export function AdminClients() {
             <span className="text-muted-foreground text-xs ml-2">({filteredProfiles.length})</span>
           </h2>
           <div className="flex items-center justify-between gap-2 sm:hidden">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMobileFiltersOpen((prev) => !prev)}
-              className="h-8 gap-1 text-xs"
-            >
-              {mobileFiltersOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-              {language === 'ko' ? '필터 열기' : 'Filters'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMobileFiltersOpen((prev) => !prev)}
+                className="h-8 gap-1 text-xs"
+              >
+                {mobileFiltersOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                {language === 'ko' ? '필터 열기' : 'Filters'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetListControls}
+                disabled={!hasActiveFilters}
+                className="h-8 gap-1 text-xs"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                {language === 'ko' ? '초기화' : 'Reset'}
+              </Button>
+            </div>
             <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1 shrink-0">
               <UserPlus className="h-4 w-4" />
               {language === 'ko' ? '고객 추가' : 'Add Client'}
@@ -678,6 +699,16 @@ export function AdminClients() {
           </div>
           <div className="hidden sm:flex sm:flex-nowrap sm:items-center sm:gap-2">
             {filterControls}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetListControls}
+              disabled={!hasActiveFilters}
+              className="h-8 gap-1 shrink-0 text-xs"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              {language === 'ko' ? '초기화' : 'Reset'}
+            </Button>
             <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1 shrink-0 ml-auto">
               <UserPlus className="h-4 w-4" />
               {language === 'ko' ? '고객 추가' : 'Add Client'}
