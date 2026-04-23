@@ -546,22 +546,29 @@ export function AdminCommissions() {
     item: { key: string; label: string; amount: number; ratio: number },
     source: { upfront: number; performance: number; currency: string }
   ) => {
-    const total = (Number(source.upfront) || 0) + (Number(source.performance) || 0);
+    const upfrontAmount = Number(source.upfront) || 0;
+    const performanceAmount = Number(source.performance) || 0;
+    const otherAmount = Math.max(0, upfrontAmount + performanceAmount - upfrontAmount - performanceAmount);
+    const total = upfrontAmount + performanceAmount + otherAmount;
     const baseAmount = formatCommAmount(item.amount, source.currency);
     const totalAmount = formatCommAmount(total, source.currency);
+    const upfrontDisplay = formatCommAmount(upfrontAmount, source.currency);
+    const performanceDisplay = formatCommAmount(performanceAmount, source.currency);
+    const otherDisplay = formatCommAmount(otherAmount, source.currency);
 
     if (language === 'ko') {
-      if (item.key === 'other') {
-        return `기타 비중 = 기타 금액 ${baseAmount} ÷ 총합 ${totalAmount}. 현재 총합은 선취 + 성과 기준이라 기타는 0원(0.00%)입니다.`;
-      }
-      return `${item.label} 비중 = ${item.label} 금액 ${baseAmount} ÷ 총합 ${totalAmount}. 총합은 해당 행의 선취 + 성과 금액입니다.`;
+      return [
+        `${item.label} 비중 = ${baseAmount} ÷ ${totalAmount} × 100`,
+        `총합 기준: 선취 ${upfrontDisplay} + 성과 ${performanceDisplay} + 기타 ${otherDisplay} = ${totalAmount}`,
+        `현재 ${item.label} 비중: ${item.ratio.toFixed(2)}%`,
+      ].join(' ');
     }
 
-    if (item.key === 'other') {
-      return `Other % = Other amount ${baseAmount} ÷ total ${totalAmount}. The current total uses upfront + performance for this row, so other is 0.00%.`;
-    }
-
-    return `${item.label} % = ${item.label} amount ${baseAmount} ÷ total ${totalAmount}. The total for this row is upfront + performance.`;
+    return [
+      `${item.label} % = ${baseAmount} ÷ ${totalAmount} × 100.`,
+      `Row total used: upfront ${upfrontDisplay} + performance ${performanceDisplay} + other ${otherDisplay} = ${totalAmount}.`,
+      `Current ${item.label} share: ${item.ratio.toFixed(2)}%.`,
+    ].join(' ');
   };
 
   // Per-person attribution
@@ -2007,7 +2014,7 @@ export function AdminCommissions() {
                                                           {item.ratio.toFixed(2)}%
                                                         </button>
                                                       </TooltipTrigger>
-                                                      <TooltipContent className="max-w-[280px] text-[11px] leading-relaxed">
+                                                      <TooltipContent className="max-w-[320px] text-[11px] leading-relaxed">
                                                         {getBreakdownTooltipText(item, {
                                                           upfront: src.upfront,
                                                           performance: src.performance,
