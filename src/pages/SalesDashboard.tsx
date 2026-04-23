@@ -57,13 +57,16 @@ interface CommissionDist {
 interface Investment {
   id: string;
   user_id: string;
+  product_id?: string | null;
   product_name_en: string;
   product_name_ko: string;
-  investment_amount: number;
-  current_value: number;
+  investment_amount?: number;
+  current_value?: number;
   status: string | null;
   start_date: string;
+  maturity_date?: string | null;
   invested_currency: string | null;
+  created_at?: string;
 }
 
 interface Profile {
@@ -417,7 +420,7 @@ export default function SalesDashboard() {
   );
 
   const totalDownlineInvested = downlineInvestments.reduce(
-    (s, inv) => s + Number(inv.investment_amount),
+    (s, inv) => s + (Number(inv.investment_amount) || 0),
     0
   );
 
