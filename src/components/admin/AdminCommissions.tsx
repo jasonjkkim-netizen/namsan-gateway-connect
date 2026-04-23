@@ -88,6 +88,14 @@ interface Product {
   id: string;
   name_en: string;
   name_ko: string;
+  upfront_commission_percent?: number | null;
+  performance_fee_percent?: number | null;
+}
+
+interface CommissionPreviewInput {
+  investmentAmount: string;
+  realizedReturnAmount: string;
+  notes: string;
 }
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
@@ -104,6 +112,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const SALES_ROLES = ['district_manager', 'deputy_district_manager', 'principal_agent', 'agent'] as const;
 const ROLE_LEVELS: Record<string, number> = { district_manager: 1, deputy_district_manager: 2, principal_agent: 3, agent: 4 };
+const ROLE_SEQUENCE = COMMISSION_ROLES as readonly CommissionRole[];
 
 // Reports sub-component
 function AdminCommissionReports({
