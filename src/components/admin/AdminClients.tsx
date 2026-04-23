@@ -488,10 +488,116 @@ export function AdminClients() {
         profile.full_name_ko && profile.full_name && profile.full_name_ko !== profile.full_name
           ? profile.full_name
           : null;
+      const managerName = getManagerName(profile.parent_id);
 
       return (
-      <TableRow key={profile.id}>
-        <TableCell className="min-w-[180px] sm:min-w-[220px] whitespace-nowrap align-top">
+      <TableRow
+        key={profile.id}
+        className="block rounded-md border border-border bg-background px-3 py-2.5 sm:table-row sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:py-0"
+      >
+        <TableCell className="block border-0 px-0 py-0 sm:hidden" colSpan={isDeletedSection ? 10 : 12}>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <MemberLink userId={profile.user_id} className="text-sm font-medium leading-tight">
+                {primaryName}
+              </MemberLink>
+              {secondaryName && (
+                <MemberLink userId={profile.user_id} className="block text-xs leading-tight text-muted-foreground">
+                  {secondaryName}
+                </MemberLink>
+              )}
+              <MemberLink userId={profile.user_id} className="block text-xs leading-tight text-muted-foreground break-all">
+                {profile.email}
+              </MemberLink>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[11px]">
+              <div className="space-y-0.5">
+                <div className="text-[10px] text-muted-foreground">{language === 'ko' ? '역할' : 'Role'}</div>
+                <div className="font-medium">{roleLabel(profile.sales_role) || '-'}</div>
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-[10px] text-muted-foreground">{language === 'ko' ? '등급' : 'Level'}</div>
+                <div className="font-medium">{profile.sales_level ?? '-'}</div>
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-[10px] text-muted-foreground">{language === 'ko' ? '연락처' : 'Phone'}</div>
+                <div className="font-medium">{profile.phone || '-'}</div>
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-[10px] text-muted-foreground">
+                  {isDeletedSection ? (language === 'ko' ? '삭제일' : 'Deleted') : (language === 'ko' ? '가입일' : 'Joined')}
+                </div>
+                <div className="font-medium">{isDeletedSection && profile.deleted_at ? formatDate(profile.deleted_at) : formatDate(profile.created_at)}</div>
+              </div>
+            </div>
+
+            {!isDeletedSection && (
+              <div className="grid gap-3 border-t border-border pt-3">
+                <div className="space-y-1">
+                  <div className="text-[10px] text-muted-foreground">{language === 'ko' ? '담당자' : 'Manager'}</div>
+                  <Select
+                    value={profile.parent_id || '__none__'}
+                    onValueChange={(val) => handleManagerChange(profile.user_id, val)}
+                    disabled={updatingManager === profile.user_id}
+                  >
+                    <SelectTrigger className="h-8 w-full text-xs">
+                      <SelectValue placeholder={managerName || (language === 'ko' ? '선택' : 'Select')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">
+                        {language === 'ko' ? '없음' : 'None'}
+                      </SelectItem>
+                      {salesMembers
+                        .filter(m => m.user_id !== profile.user_id)
+                        .map(m => (
+                          <SelectItem key={m.user_id} value={m.user_id}>
+                            <span className="flex items-center gap-1 whitespace-nowrap">
+                              {language === 'ko' && m.full_name_ko ? m.full_name_ko : m.full_name}
+                              <span className="text-[10px] text-muted-foreground">
+                                ({roleLabel(m.sales_role)})
+                              </span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">{language === 'ko' ? '관리자 권한' : 'Admin access'}</span>
+                    <Switch
+                      checked={adminUserIds.has(profile.user_id)}
+                      onCheckedChange={() => handleToggleAdmin(profile)}
+                      disabled={togglingAdmin === profile.user_id}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(profile)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(profile)} className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isDeletedSection && (
+              <div className="flex items-center justify-end gap-1 border-t border-border pt-3">
+                <Button variant="ghost" size="sm" onClick={() => handleRestore(profile)} title={language === 'ko' ? '복원' : 'Restore'}>
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setPermanentDeleteTarget(profile)} className="text-destructive hover:text-destructive" title={language === 'ko' ? '영구 삭제' : 'Permanently Delete'}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="hidden min-w-[180px] whitespace-nowrap align-top sm:table-cell sm:min-w-[220px]">
           <div className="flex flex-col gap-0.5">
             <MemberLink userId={profile.user_id} className="text-xs sm:text-sm font-medium leading-tight whitespace-nowrap">
               {primaryName}
@@ -503,7 +609,7 @@ export function AdminClients() {
             )}
           </div>
         </TableCell>
-        <TableCell className="min-w-[220px] sm:min-w-[260px] whitespace-nowrap align-top">
+        <TableCell className="hidden min-w-[220px] whitespace-nowrap align-top sm:table-cell sm:min-w-[260px]">
           <MemberLink userId={profile.user_id} className="text-xs text-muted-foreground sm:text-sm whitespace-nowrap">
             {profile.email}
           </MemberLink>
@@ -515,7 +621,7 @@ export function AdminClients() {
         <TableCell className="hidden sm:table-cell whitespace-nowrap">{profile.sales_level ?? '-'}</TableCell>
         <TableCell className="hidden sm:table-cell whitespace-nowrap">{isDeletedSection && profile.deleted_at ? formatDate(profile.deleted_at) : formatDate(profile.created_at)}</TableCell>
         {!isDeletedSection && (
-          <TableCell className="min-w-[90px] sm:min-w-[160px] max-w-[120px] sm:max-w-none">
+          <TableCell className="hidden min-w-[90px] max-w-[120px] sm:table-cell sm:min-w-[160px] sm:max-w-none">
             <Select
               value={profile.parent_id || '__none__'}
               onValueChange={(val) => handleManagerChange(profile.user_id, val)}
@@ -545,7 +651,7 @@ export function AdminClients() {
           </TableCell>
         )}
         {!isDeletedSection && (
-          <TableCell className="text-center">
+          <TableCell className="hidden text-center sm:table-cell">
             <Switch
               checked={adminUserIds.has(profile.user_id)}
               onCheckedChange={() => handleToggleAdmin(profile)}
@@ -553,7 +659,7 @@ export function AdminClients() {
             />
           </TableCell>
         )}
-        <TableCell>
+        <TableCell className="hidden sm:table-cell">
           <div className="flex items-center gap-1">
             {isDeletedSection ? (
               <>
@@ -581,7 +687,7 @@ export function AdminClients() {
   };
 
   const renderTableHeader = (isDeletedSection: boolean) => (
-    <TableHeader>
+    <TableHeader className="hidden sm:table-header-group">
       <TableRow>
         <TableHead className="whitespace-nowrap min-w-[180px] sm:min-w-[220px]">{language === 'ko' ? '이름' : 'Name'}</TableHead>
         <TableHead className="whitespace-nowrap min-w-[220px] sm:min-w-[260px]">{language === 'ko' ? '이메일' : 'Email'}</TableHead>
