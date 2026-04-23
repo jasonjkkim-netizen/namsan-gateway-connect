@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,7 @@ const DOC_SECTIONS = [
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { language, formatCurrency, formatPercent, formatDate } = useLanguage();
   const [product, setProduct] = useState<Product | null>(null);
   const [documents, setDocuments] = useState<ProductDocument[]>([]);
@@ -95,6 +96,19 @@ export default function ProductDetail() {
   const [investorProfiles, setInvestorProfiles] = useState<Record<string, string>>({});
   const [commLoading, setCommLoading] = useState(false);
   const [usdKrwRate, setUsdKrwRate] = useState(1350);
+
+  const salesTab = searchParams.get('salesTab') || 'pipeline';
+  const fromSalesDashboard = searchParams.get('from') === 'sales-dashboard';
+  const memberDetailSearch = `?from=sales-dashboard&salesTab=${encodeURIComponent(salesTab)}`;
+
+  const handleBack = () => {
+    if (fromSalesDashboard) {
+      navigate(`/sales-dashboard?tab=${encodeURIComponent(salesTab)}`);
+      return;
+    }
+
+    navigate('/products');
+  };
 
   const handlePrint = () => {
     window.print();
@@ -270,7 +284,7 @@ export default function ProductDetail() {
         <div className="flex items-center justify-between mb-6">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/products')}
+            onClick={handleBack}
             className="-ml-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -744,7 +758,7 @@ export default function ProductDetail() {
                                  {/* Investor header row */}
                                  <div className="flex flex-wrap items-center justify-between gap-2">
                                    <div className="flex items-center gap-2">
-                                     <Link to={`/members/${inv.user_id}`} className="text-sm font-semibold text-primary hover:underline">
+                                      <Link to={`/members/${inv.user_id}${memberDetailSearch}&tab=investments`} className="text-sm font-semibold text-primary hover:underline">
                                        {investorName}
                                      </Link>
                                      <Badge variant={inv.status === 'active' ? 'default' : 'secondary'} className="text-[10px]">{inv.status}</Badge>
@@ -790,7 +804,7 @@ export default function ProductDetail() {
                                          {invCommissions.map((c) => (
                                            <TableRow key={c.id}>
                                              <TableCell className="text-xs py-1">
-                                               <Link to={`/members/${c.to_user_id}`} className="text-primary hover:underline">
+                                                <Link to={`/members/${c.to_user_id}${memberDetailSearch}&tab=commissions`} className="text-primary hover:underline">
                                                  {investorProfiles[c.to_user_id] || c.to_user_id.slice(0, 8)}
                                                </Link>
                                              </TableCell>

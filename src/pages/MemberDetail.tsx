@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,6 +97,7 @@ interface DownlineRow {
 export default function MemberDetail() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { language, formatCurrency, formatDate } = useLanguage();
   const { user, isAdmin, profile: myProfile } = useAuth();
 
@@ -109,6 +110,28 @@ export default function MemberDetail() {
   const [downline, setDownline] = useState<DownlineRow[]>([]);
   const [parentName, setParentName] = useState<string>('');
   const [downlineNames, setDownlineNames] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
+
+  const salesTab = searchParams.get('salesTab') || 'downline';
+  const fromSalesDashboard = searchParams.get('from') === 'sales-dashboard';
+
+  const openMemberTab = (tab: string) => {
+    setActiveTab(tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    });
+  };
+
+  const handleBack = () => {
+    if (fromSalesDashboard) {
+      navigate(`/sales-dashboard?tab=${encodeURIComponent(salesTab)}`);
+      return;
+    }
+
+    navigate(-1);
+  };
 
   // Memo (admin notes)
   const [notesDraft, setNotesDraft] = useState('');
@@ -174,6 +197,10 @@ export default function MemberDetail() {
     if (!user || !userId) return;
     loadAll();
   }, [user, userId]);
+
+  useEffect(() => {
+    setActiveTab(searchParams.get('tab') || 'profile');
+  }, [searchParams]);
 
   // Realtime subscription for commission_distributions changes
   useEffect(() => {
@@ -361,7 +388,7 @@ export default function MemberDetail() {
               ? '이 멤버 정보를 볼 수 있는 권한이 없습니다.'
               : 'You do not have permission to view this member.'}
           </p>
-          <Button variant="outline" onClick={() => navigate(-1)}>
+          <Button variant="outline" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             {language === 'ko' ? '뒤로' : 'Back'}
           </Button>
@@ -375,7 +402,7 @@ export default function MemberDetail() {
       <Header />
       <div className="container py-4 sm:py-6 space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="h-8 px-2">
+          <Button variant="ghost" size="sm" onClick={handleBack} className="h-8 px-2">
             <ArrowLeft className="h-4 w-4 mr-1" />
             <span className="text-xs sm:text-sm">{language === 'ko' ? '뒤로' : 'Back'}</span>
           </Button>
@@ -397,7 +424,7 @@ export default function MemberDetail() {
                 ? '해당 멤버 정보가 존재하지 않거나 삭제되었습니다.'
                 : 'This member does not exist or has been removed.'}
             </p>
-            <Button variant="outline" onClick={() => navigate(-1)}>
+            <Button variant="outline" onClick={handleBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               {language === 'ko' ? '뒤로 가기' : 'Go Back'}
             </Button>
@@ -450,7 +477,7 @@ export default function MemberDetail() {
               </div>
             </Card>
 
-            <Tabs defaultValue="profile" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={openMemberTab} className="space-y-4">
               <TabsList className="w-full justify-start overflow-x-auto">
                 <TabsTrigger value="profile" className="text-xs sm:text-sm">
                   {language === 'ko' ? '프로필' : 'Profile'}

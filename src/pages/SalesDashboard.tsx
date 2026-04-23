@@ -384,6 +384,17 @@ export default function SalesDashboard() {
     });
   };
 
+  const buildSalesDetailLink = (pathname: string, detailTab?: string) => {
+    const params = new URLSearchParams({
+      from: 'sales-dashboard',
+      salesTab: activeTab,
+    });
+
+    if (detailTab) params.set('tab', detailTab);
+
+    return `${pathname}?${params.toString()}`;
+  };
+
   useEffect(() => {
     const tab = searchParams.get('tab') || 'downline';
     setActiveTab(tab);
@@ -943,7 +954,7 @@ export default function SalesDashboard() {
             </div>
 
             {/* Investment & Commission Manager below org tree */}
-            <SalesInvestmentManager downline={downline} onDataChange={fetchAll} />
+            <SalesInvestmentManager downline={downline} activeTab={activeTab} onDataChange={fetchAll} />
           </TabsContent>
 
           {/* Commissions Tab */}
@@ -1207,14 +1218,14 @@ export default function SalesDashboard() {
                         return (
                           <TableRow key={c.id} className={isSelf ? 'bg-primary/5' : ''}>
                             <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
-                              <Link to={`/members/${c.to_user_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                              <Link to={buildSalesDetailLink(`/members/${c.to_user_id}`, 'commissions')} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                                 {getName(c.to_user_id)}
                               </Link>
                               {isSelf && <span className="text-[8px] sm:text-xs text-primary ml-1">★</span>}
                             </TableCell>
                             <TableCell className="text-[10px] sm:text-sm whitespace-nowrap">
                               {c.from_user_id ? (
-                                <Link to={`/members/${c.from_user_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                                 <Link to={buildSalesDetailLink(`/members/${c.from_user_id}`, 'commissions')} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                                   {getName(c.from_user_id)}
                                 </Link>
                               ) : '—'}
@@ -1225,7 +1236,7 @@ export default function SalesDashboard() {
                                 if (!inv) return '—';
                                 const label = language === 'ko' ? inv.product_name_ko : inv.product_name_en;
                                 return inv.product_id ? (
-                                  <Link to={`/products/${inv.product_id}`} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                                   <Link to={buildSalesDetailLink(`/products/${inv.product_id}`)} className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
                                     {label}
                                   </Link>
                                 ) : label;
@@ -1337,13 +1348,13 @@ export default function SalesDashboard() {
                       downlineInvestments.map((inv) => (
                         <TableRow key={inv.id}>
                           <TableCell className="font-medium text-[10px] sm:text-sm whitespace-nowrap">
-                              <Link to={`/members/${inv.user_id}`} className="text-primary hover:underline">
+                              <Link to={buildSalesDetailLink(`/members/${inv.user_id}`, 'investments')} className="text-primary hover:underline">
                                 {getName(inv.user_id)}
                               </Link>
                           </TableCell>
                           <TableCell className="text-[10px] sm:text-sm max-w-[80px] sm:max-w-none truncate">
                               {inv.product_id ? (
-                                <Link to={`/products/${inv.product_id}`} className="text-primary hover:underline">
+                                 <Link to={buildSalesDetailLink(`/products/${inv.product_id}`)} className="text-primary hover:underline">
                                   {language === 'ko' ? inv.product_name_ko : inv.product_name_en}
                                 </Link>
                               ) : (language === 'ko' ? inv.product_name_ko : inv.product_name_en)}
