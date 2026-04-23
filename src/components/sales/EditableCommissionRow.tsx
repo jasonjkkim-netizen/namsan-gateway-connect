@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { MemberLink } from '@/components/MemberLink';
 import { Pencil, Save, X, Loader2 } from 'lucide-react';
+import { formatCommissionAmount } from '@/lib/commission-format';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -155,10 +156,10 @@ export function EditableCommissionRow({
         <MemberLink userId={counterpartId} className="text-xs">{counterpartName}</MemberLink>
       </TableCell>
       <TableCell className="text-right">
-        {row.upfront_amount ? formatCurrency(Number(row.upfront_amount)) : '—'}
+        {row.upfront_amount ? formatCommissionAmount(Number(row.upfront_amount), language, row.currency) : '—'}
       </TableCell>
       <TableCell className="text-right">
-        {row.performance_amount ? formatCurrency(Number(row.performance_amount)) : '—'}
+        {row.performance_amount ? formatCommissionAmount(Number(row.performance_amount), language, row.currency) : '—'}
       </TableCell>
       <TableCell className="hidden sm:table-cell">{row.layer}</TableCell>
       <TableCell>
