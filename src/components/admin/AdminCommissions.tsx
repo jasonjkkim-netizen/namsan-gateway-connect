@@ -1740,16 +1740,72 @@ export function AdminCommissions() {
         {/* Per-Person Attribution Tab */}
         <TabsContent value="attribution">
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <p className="text-sm text-muted-foreground">
                 {language === 'ko'
                   ? '개인별 커미션 귀속 내역입니다. 각 영업사원을 클릭하면 출처별 상세 내역을 확인할 수 있습니다.'
                   : 'Per-person commission attribution. Click on each salesperson to see detailed breakdown by source.'}
               </p>
-              <Button size="sm" onClick={exportAttribution} disabled={personAttribution.length === 0}>
+              <Button size="sm" onClick={exportAttribution} disabled={filteredPersonAttribution.length === 0}>
                 <Download className="h-4 w-4 mr-1" />
                 {language === 'ko' ? 'Excel 다운로드' : 'Export Excel'}
               </Button>
+            </div>
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+              <div className="relative w-full xl:max-w-xs">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder={language === 'ko' ? '영업사원/투자자/투자 ID 검색' : 'Search salesperson / investor / investment ID'}
+                  value={attributionSearchTerm}
+                  onChange={(e) => setAttributionSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap xl:flex-nowrap">
+                <Select value={attributionStatus} onValueChange={setAttributionStatus}>
+                  <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{language === 'ko' ? '전체 상태' : 'All Status'}</SelectItem>
+                    <SelectItem value="pending">{language === 'ko' ? '대기중' : 'Pending'}</SelectItem>
+                    <SelectItem value="available">{language === 'ko' ? '확정' : 'Confirmed'}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal sm:w-[160px]', !attributionDateFrom && 'text-muted-foreground')}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {attributionDateFrom ? format(attributionDateFrom, 'yyyy-MM-dd') : (language === 'ko' ? '시작일' : 'From')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={attributionDateFrom} onSelect={setAttributionDateFrom} className={cn('p-3 pointer-events-auto')} />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal sm:w-[160px]', !attributionDateTo && 'text-muted-foreground')}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {attributionDateTo ? format(attributionDateTo, 'yyyy-MM-dd') : (language === 'ko' ? '종료일' : 'To')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={attributionDateTo} onSelect={setAttributionDateTo} className={cn('p-3 pointer-events-auto')} />
+                  </PopoverContent>
+                </Popover>
+                {(attributionSearchTerm || attributionStatus !== 'all' || attributionDateFrom || attributionDateTo) && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setAttributionSearchTerm('');
+                      setAttributionStatus('all');
+                      setAttributionDateFrom(undefined);
+                      setAttributionDateTo(undefined);
+                    }}
+                  >
+                    {language === 'ko' ? '초기화' : 'Clear'}
+                  </Button>
+                )}
+              </div>
             </div>
             <Table>
               <TableHeader>
@@ -1763,14 +1819,14 @@ export function AdminCommissions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {personAttribution.length === 0 ? (
+                {filteredPersonAttribution.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      {language === 'ko' ? '귀속 내역이 없습니다' : 'No attribution data'}
+                      {language === 'ko' ? '조건에 맞는 귀속 내역이 없습니다' : 'No attribution data matches the current filters'}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  personAttribution.map(([userId, data]) => (
+                  filteredPersonAttribution.map(([userId, data]) => (
                     <React.Fragment key={userId}>
                       <TableRow
                         className="cursor-pointer hover:bg-muted/50"
