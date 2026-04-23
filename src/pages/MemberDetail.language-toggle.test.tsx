@@ -182,7 +182,8 @@ describe('MemberDetail language toggle valuation consistency', () => {
       </MemoryRouter>
     );
 
-    const koreanProduct = await screen.findByText('테스트 채권');
+    const table = await screen.findByRole('table');
+    const koreanProduct = within(table).getByText('테스트 채권');
     const koreanRow = koreanProduct.closest('tr');
     expect(koreanRow).not.toBeNull();
 
@@ -194,7 +195,7 @@ describe('MemberDetail language toggle valuation consistency', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /EN/i }));
 
-    const englishProduct = await screen.findByText('Test Bond');
+    const englishProduct = within(table).getByText('Test Bond');
     const englishRow = englishProduct.closest('tr');
     expect(englishRow).not.toBeNull();
 
