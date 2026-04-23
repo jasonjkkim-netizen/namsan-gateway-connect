@@ -88,7 +88,7 @@ export function AdminClients() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
   const [roleSort, setRoleSort] = useState<string>('created_desc');
-  const [gradeSort, setGradeSort] = useState<string>('none');
+  const [roleFilter, setRoleFilter] = useState<string>('__all__');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -436,6 +436,7 @@ export function AdminClients() {
   const filteredProfiles = activeProfiles.filter(
     (p) =>
       matchesSearch(p) &&
+      (roleFilter === '__all__' || (p.sales_role || 'client') === roleFilter) &&
       (managerFilter === '__all__' ||
         (managerFilter === '__unassigned__' ? !p.parent_id : p.parent_id === managerFilter))
   );
@@ -453,14 +454,6 @@ export function AdminClients() {
       const roleB = roleOrder[b.sales_role || 'client'] ?? 999;
       if (roleA !== roleB) {
         return roleSort === 'role_asc' ? roleA - roleB : roleB - roleA;
-      }
-    }
-
-    if (gradeSort !== 'none') {
-      const levelA = a.sales_level ?? 999;
-      const levelB = b.sales_level ?? 999;
-      if (levelA !== levelB) {
-        return gradeSort === 'level_asc' ? levelA - levelB : levelB - levelA;
       }
     }
 
@@ -626,14 +619,18 @@ export function AdminClients() {
                 <SelectItem value="role_desc">{language === 'ko' ? '역할 낮은순' : 'Role low to high'}</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={gradeSort} onValueChange={setGradeSort}>
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="h-8 text-xs w-full sm:w-40">
-                <SelectValue placeholder={language === 'ko' ? '등급 정렬' : 'Sort by level'} />
+                <SelectValue placeholder={language === 'ko' ? '역할 구분' : 'Filter by role'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">{language === 'ko' ? '등급 정렬 안함' : 'No level sort'}</SelectItem>
-                <SelectItem value="level_asc">{language === 'ko' ? '등급 낮은순' : 'Level low to high'}</SelectItem>
-                <SelectItem value="level_desc">{language === 'ko' ? '등급 높은순' : 'Level high to low'}</SelectItem>
+                <SelectItem value="__all__">{language === 'ko' ? '전체 역할' : 'All roles'}</SelectItem>
+                <SelectItem value="webmaster">{roleLabel('webmaster')}</SelectItem>
+                <SelectItem value="district_manager">{roleLabel('district_manager')}</SelectItem>
+                <SelectItem value="deputy_district_manager">{roleLabel('deputy_district_manager')}</SelectItem>
+                <SelectItem value="principal_agent">{roleLabel('principal_agent')}</SelectItem>
+                <SelectItem value="agent">{roleLabel('agent')}</SelectItem>
+                <SelectItem value="client">{roleLabel('client')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={managerFilter} onValueChange={setManagerFilter}>
@@ -653,7 +650,7 @@ export function AdminClients() {
             <div className="relative w-full sm:w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={language === 'ko' ? '이메일/이름/연락처/역할/등급 검색' : 'Search email/name/phone/role/level'}
+                placeholder={language === 'ko' ? '이메일/이름/연락처/역할 검색' : 'Search email/name/phone/role'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 text-sm h-8"
