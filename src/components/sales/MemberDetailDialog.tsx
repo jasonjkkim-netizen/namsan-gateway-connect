@@ -12,6 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Mail, Phone, MapPin, Calendar, Users, DollarSign, CheckCircle, Clock, Wallet, Briefcase, LinkIcon, Loader2, Plus, Pencil, X, Save } from 'lucide-react';
+import { formatCommissionAmount } from '@/lib/commission-format';
 
 const ROLE_LABELS: Record<string, Record<string, string>> = {
   ko: { webmaster: '웹마스터', district_manager: '총괄관리', deputy_district_manager: '부총괄관리', principal_agent: '수석 에이전트', agent: '에이전트', client: '고객' },
@@ -696,15 +697,15 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-lg bg-muted/40 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '지급완료' : 'Paid'}</p>
-                      <p className="text-sm font-semibold text-success">{formatCurrency(commSummary.paid)}</p>
+                      <p className="text-sm font-semibold text-success">{formatCommissionAmount(commSummary.paid, language)}</p>
                     </div>
                     <div className="rounded-lg bg-primary/5 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '수령가능' : 'Available'}</p>
-                      <p className="text-sm font-semibold text-primary">{formatCurrency(commSummary.available)}</p>
+                      <p className="text-sm font-semibold text-primary">{formatCommissionAmount(commSummary.available, language)}</p>
                     </div>
                     <div className="rounded-lg bg-muted/40 p-2 text-center">
                       <p className="text-[10px] text-muted-foreground">{language === 'ko' ? '대기' : 'Pending'}</p>
-                      <p className="text-sm font-semibold text-muted-foreground">{formatCurrency(commSummary.pending)}</p>
+                      <p className="text-sm font-semibold text-muted-foreground">{formatCommissionAmount(commSummary.pending, language)}</p>
                     </div>
                   </div>
                 )}
@@ -725,11 +726,11 @@ export function MemberDetailDialog({ open, onOpenChange, userId }: MemberDetailD
                           <div className="flex items-center gap-2">
                             <StatusIcon className={`h-3.5 w-3.5 ${config.color.split(' ')[0]}`} />
                             <div>
-                              <p className="font-medium">{formatCurrency(total)}</p>
+                              <p className="font-medium">{formatCommissionAmount(total, language, c.currency)}</p>
                               <p className="text-[10px] text-muted-foreground">
-                                {Number(c.upfront_amount) > 0 && `U: ${formatCurrency(Number(c.upfront_amount))}`}
+                                {Number(c.upfront_amount) > 0 && `U: ${formatCommissionAmount(Number(c.upfront_amount), language, c.currency)}`}
                                 {Number(c.upfront_amount) > 0 && Number(c.performance_amount) > 0 && ' / '}
-                                {Number(c.performance_amount) > 0 && `P: ${formatCurrency(Number(c.performance_amount))}`}
+                                {Number(c.performance_amount) > 0 && `P: ${formatCommissionAmount(Number(c.performance_amount), language, c.currency)}`}
                               </p>
                             </div>
                           </div>

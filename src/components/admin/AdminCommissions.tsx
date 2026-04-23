@@ -37,6 +37,7 @@ import {
   DEFAULT_DIRECTION_PRESETS,
   deriveRatiosFromAbsoluteRates,
 } from '@/lib/commission-defaults';
+import { formatCommissionAmount } from '@/lib/commission-format';
 
 interface Distribution {
   id: string;
@@ -323,18 +324,18 @@ function AdminCommissionReports({
                     <TableCell className="font-medium">{s.name}</TableCell>
                     <TableCell>{s.role ? <Badge variant="outline" className="text-xs">{s.role}</Badge> : '—'}</TableCell>
                     <TableCell>{s.count}</TableCell>
-                    <TableCell className="text-success font-medium">{formatCurrency(s.upfront)}</TableCell>
-                    <TableCell className="text-success font-medium">{formatCurrency(s.performance)}</TableCell>
-                    <TableCell className="font-semibold">{formatCurrency(s.upfront + s.performance)}</TableCell>
+                    <TableCell className="text-success font-medium">{formatCommissionAmount(s.upfront, language as 'ko' | 'en')}</TableCell>
+                    <TableCell className="text-success font-medium">{formatCommissionAmount(s.performance, language as 'ko' | 'en')}</TableCell>
+                    <TableCell className="font-semibold">{formatCommissionAmount(s.upfront + s.performance, language as 'ko' | 'en')}</TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="bg-muted/30 font-semibold">
                   <TableCell>{language === 'ko' ? '합계' : 'TOTAL'}</TableCell>
                   <TableCell />
                   <TableCell>{filtered.length}</TableCell>
-                  <TableCell className="text-success">{formatCurrency(grandTotalUpfront)}</TableCell>
-                  <TableCell className="text-success">{formatCurrency(grandTotalPerf)}</TableCell>
-                  <TableCell>{formatCurrency(grandTotalUpfront + grandTotalPerf)}</TableCell>
+                  <TableCell className="text-success">{formatCommissionAmount(grandTotalUpfront, language as 'ko' | 'en')}</TableCell>
+                  <TableCell className="text-success">{formatCommissionAmount(grandTotalPerf, language as 'ko' | 'en')}</TableCell>
+                  <TableCell>{formatCommissionAmount(grandTotalUpfront + grandTotalPerf, language as 'ko' | 'en')}</TableCell>
                 </TableRow>
               </>
             )}
@@ -481,7 +482,7 @@ export function AdminCommissions() {
     }
     if (displayCurrency === 'KRW') {
       const krwAmount = srcCurrency === 'USD' ? amount * usdKrwRate : amount;
-      return `₩${Math.round(krwAmount).toLocaleString('ko-KR')}`;
+      return `₩${krwAmount.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return formatCurrency(amount);
   };

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Plus, Pencil, Loader2, Briefcase, Save } from 'lucide-react';
+import { formatCommissionAmount } from '@/lib/commission-format';
 
 interface DownlineMember {
   user_id: string;
@@ -511,12 +512,12 @@ export function SalesInvestmentManager({ downline, activeTab = 'pipeline', onDat
                         <>
                           <TableCell className="text-right font-mono text-[10px] sm:text-sm">
                             {myComm?.upfront_amount != null ? (
-                              <span className="text-success whitespace-nowrap">+{Number(myComm.upfront_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                              <span className="text-success whitespace-nowrap">+{formatCommissionAmount(Number(myComm.upfront_amount), language, myComm.currency).replace(/^[^\d-]+\s?/, '')}</span>
                             ) : '—'}
                           </TableCell>
                           <TableCell className="text-right font-mono text-[10px] sm:text-sm">
                             {myComm?.performance_amount != null ? (
-                              <span className="text-success whitespace-nowrap">+{Number(myComm.performance_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                              <span className="text-success whitespace-nowrap">+{formatCommissionAmount(Number(myComm.performance_amount), language, myComm.currency).replace(/^[^\d-]+\s?/, '')}</span>
                             ) : '—'}
                           </TableCell>
                           <TableCell>
