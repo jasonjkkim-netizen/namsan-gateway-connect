@@ -749,6 +749,15 @@ export function AdminCommissions() {
     fetchAll();
   };
 
+  const openAttributionForDistribution = (distribution: Distribution) => {
+    setActiveTab('attribution');
+    setAttributionSearchTerm(distribution.investment_id);
+    setAttributionStatus('all');
+    setAttributionDateFrom(undefined);
+    setAttributionDateTo(undefined);
+    setExpandedPerson(distribution.to_user_id);
+  };
+
   const handleStatusChange = async (id: string, toUserId: string, newStatus: string) => {
     const { error } = await supabase.from('commission_distributions').update({ status: newStatus }).eq('id', id);
     if (error) {
@@ -1384,7 +1393,14 @@ export function AdminCommissions() {
                         {editingDistId === d.id ? (
                           <Input type="number" step="0.01" min="0" value={editForm.upfront} onChange={(e) => setEditForm(f => ({ ...f, upfront: e.target.value }))} className="h-7 text-xs w-24" />
                         ) : d.upfront_amount ? (
-                          <span className="text-success font-medium">{formatCommAmount(Number(d.upfront_amount), d.currency)}</span>
+                          <button
+                            type="button"
+                            onClick={() => openAttributionForDistribution(d)}
+                            className="font-medium text-success underline-offset-4 transition-colors hover:text-foreground hover:underline"
+                            title={language === 'ko' ? '귀속 상세 보기' : 'Open attribution detail'}
+                          >
+                            {formatCommAmount(Number(d.upfront_amount), d.currency)}
+                          </button>
                         ) : '—'}
                       </TableCell>
                       <TableCell>
