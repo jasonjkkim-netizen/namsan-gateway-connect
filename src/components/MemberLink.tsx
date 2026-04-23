@@ -30,7 +30,7 @@ export function MemberLink({ userId, children, className, title }: MemberLinkPro
         pathname: `/members/${userId}`,
         search: nextParams.toString() ? `?${nextParams.toString()}` : '',
       }}
-      className={cn('text-primary hover:underline underline-offset-2', className)}
+      className={cn('inline-flex min-h-8 items-center text-primary hover:underline underline-offset-2', className)}
       title={title}
       onClick={(e) => e.stopPropagation()}
     >
