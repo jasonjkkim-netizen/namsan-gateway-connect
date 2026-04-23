@@ -6,6 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const EXCLUDED_WEBMASTER_NAMES = new Set([
+  "김종국",
+  "kimjongguk",
+  "kim jong guk",
+  "kim jongguk",
+  "jongguk kim",
+]);
+
+const normalizeName = (value: string | null | undefined) =>
+  (value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -122,6 +133,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    const { data: excludedWebmasterProfiles } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, full_name_ko")
+      .eq("sales_role", "webmaster")
+      .or("full_name.eq.김종국,full_name_ko.eq.김종국");
+
+    const excludedWebmasterIds = new Set(
+      (excludedWebmasterProfiles || []).map((profile: any) => profile.user_id),
+    );
+
+    const filteredAncestors = (ancestors || []).filter((ancestor: any) => {
+      if (excludedWebmasterIds.has(ancestor.user_id)) return false;
+      if (ancestor.sales_role !== "webmaster") return true;
+
+      return !EXCLUDED_WEBMASTER_NAMES.has(normalizeName(ancestor.full_name));
+    });
+
     // 4. Determine the product_id for rate lookup
     const productId = investment.product_id;
     if (!productId) {
@@ -178,7 +206,7 @@ Deno.serve(async (req) => {
     }
 
     // 6. Check for user-specific overrides
-    const ancestorIds = (ancestors || []).map((a: any) => a.user_id);
+    const ancestorIds = filteredAncestors.map((a: any) => a.user_id);
     const { data: overrides } = await supabase
       .from("commission_rates")
       .select("*")
@@ -214,7 +242,7 @@ Deno.serve(async (req) => {
     const realizedReturn = Number(investment.realized_return_amount) || 0;
     const distributions: any[] = [];
 
-    const sortedAncestors = (ancestors || []).sort((a: any, b: any) => a.depth - b.depth);
+    const sortedAncestors = filteredAncestors.sort((a: any, b: any) => a.depth - b.depth);
     const validAncestorIds = new Set(sortedAncestors.map((ancestor: any) => ancestor.user_id));
 
     for (const ancestor of sortedAncestors) {
