@@ -777,7 +777,14 @@ export default function ProductDetail() {
                               {language === 'ko' ? '투자 내역 없음' : 'No investments'}
                             </p>
                           ) : (
-                            <Accordion type="multiple" className="w-full" defaultValue={productInvestment ? [productInvestment] : undefined}>
+                            <>
+                              <div className="hidden items-center rounded-md border border-border bg-muted/30 px-3 py-2 text-[11px] font-medium text-muted-foreground sm:grid sm:grid-cols-[minmax(0,1.7fr)_auto_auto_auto] sm:gap-x-3">
+                                <span>{language === 'ko' ? '이름' : 'Name'}</span>
+                                <span>{language === 'ko' ? '금액' : 'Amount'}</span>
+                                <span>{language === 'ko' ? '투자일' : 'Start Date'}</span>
+                                <span>{language === 'ko' ? '상태' : 'Status'}</span>
+                              </div>
+                              <Accordion type="multiple" className="w-full" defaultValue={productInvestment ? [productInvestment] : undefined}>
                               {investments.map((inv) => {
                                 const invCommissions = commissions
                                   .filter((c) => c.investment_id === inv.id)
@@ -788,21 +795,20 @@ export default function ProductDetail() {
                                 return (
                                   <AccordionItem key={inv.id} value={inv.id} className="rounded-lg border px-3">
                                     <AccordionTrigger className="min-h-12 py-3 hover:no-underline">
-                                      <div className="flex w-full flex-col items-start gap-2 pr-3 text-left sm:flex-row sm:items-center sm:justify-between">
-                                        <div className="flex items-center gap-2">
+                                      <div className="grid w-full gap-y-2 pr-3 text-left sm:grid-cols-[minmax(0,1.7fr)_auto_auto_auto] sm:items-center sm:gap-x-3 sm:gap-y-0">
+                                        <div className="flex min-w-0 items-center gap-2">
                                           <Link
                                             to={buildMemberDetailLink(inv.user_id, 'investments', inv.id)}
-                                            className="inline-flex min-h-8 items-center text-sm font-semibold text-primary hover:underline"
+                                            className="inline-flex min-h-8 min-w-0 items-center truncate text-sm font-semibold text-primary hover:underline"
                                             onClick={(e) => e.stopPropagation()}
                                           >
                                             {investorName}
                                           </Link>
                                           <Badge variant={inv.status === 'active' ? 'default' : 'secondary'} className="text-[10px]">{inv.status}</Badge>
                                         </div>
-                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                          <span className="font-medium text-foreground">{formatCurrency(Number(inv.investment_amount))} {inv.invested_currency || 'USD'}</span>
-                                          <span>{formatDate(inv.start_date)}</span>
-                                        </div>
+                                        <span className="text-xs font-medium text-foreground whitespace-nowrap">{formatCurrency(Number(inv.investment_amount))} {inv.invested_currency || 'USD'}</span>
+                                        <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(inv.start_date)}</span>
+                                        <span className="text-xs text-muted-foreground sm:hidden">{language === 'ko' ? '상태' : 'Status'}: {inv.status}</span>
                                       </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="space-y-2 pb-4">
@@ -866,6 +872,7 @@ export default function ProductDetail() {
                                 );
                               })}
                             </Accordion>
+                            </>
                           )}
                         </AccordionContent>
                       </AccordionItem>
