@@ -1056,6 +1056,33 @@ export function AdminClients() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Export Confirmation */}
+      <AlertDialog open={exportConfirmOpen} onOpenChange={setExportConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'ko' ? '고객 정보 다운로드' : 'Download Client Data'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === 'ko'
+                ? `전체 ${profiles.length}명의 고객 정보를 엑셀 파일로 내보냅니다. 계속하시겠습니까? 파일에는 개인 정보가 포함되므로 안전하게 관리해 주세요.`
+                : `This will export all ${profiles.length} client records to an Excel file. Continue? The file contains personal information — handle it securely.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{language === 'ko' ? '취소' : 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setExportConfirmOpen(false);
+                handleExport();
+              }}
+            >
+              {language === 'ko' ? '다운로드' : 'Download'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Create Client Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-lg">
