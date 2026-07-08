@@ -1060,6 +1060,7 @@ export function AdminClients() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
+
             <DialogTitle>
               {language === 'ko' ? '신규 고객 추가' : 'Add New Client'}
             </DialogTitle>
