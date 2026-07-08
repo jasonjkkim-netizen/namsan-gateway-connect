@@ -1036,6 +1036,8 @@ export function AdminClients() {
 
       {/* Permanent Delete Confirmation */}
       <AlertDialog open={!!permanentDeleteTarget} onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}>
+
+      </AlertDialog>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
