@@ -41,8 +41,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp, UserPlus } from 'lucide-react';
+import { Edit, Search, Trash2, RotateCcw, ChevronDown, ChevronUp, UserPlus, Download } from 'lucide-react';
 import { MemberLink } from '@/components/MemberLink';
+import ExcelJS from 'exceljs';
 
 interface Profile {
   id: string;
