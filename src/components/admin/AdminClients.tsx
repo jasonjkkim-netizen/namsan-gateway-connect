@@ -415,6 +415,78 @@ export function AdminClients() {
   const activeProfiles = profiles.filter(p => !p.is_deleted);
   const deletedProfiles = profiles.filter(p => p.is_deleted);
 
+  const handleExport = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet(language === 'ko' ? '고객' : 'Clients');
+      const headers = [
+        'ID', 'Email',
+        language === 'ko' ? '이름(영문)' : 'Full Name',
+        language === 'ko' ? '이름(한글)' : 'Full Name (KO)',
+        language === 'ko' ? '연락처' : 'Phone',
+        language === 'ko' ? '주소' : 'Address',
+        language === 'ko' ? '생년월일' : 'Birthday',
+        language === 'ko' ? '선호언어' : 'Language',
+        language === 'ko' ? '역할' : 'Role',
+        language === 'ko' ? '레벨' : 'Level',
+        language === 'ko' ? '상위관리자' : 'Manager',
+        language === 'ko' ? '관리자여부' : 'Is Admin',
+        language === 'ko' ? '삭제여부' : 'Deleted',
+        language === 'ko' ? '삭제일' : 'Deleted At',
+        language === 'ko' ? '가입일' : 'Created At',
+        language === 'ko' ? '관리자메모' : 'Admin Notes',
+      ];
+      sheet.addRow(headers);
+      sheet.getRow(1).font = { bold: true };
+
+      profiles.forEach((p) => {
+        sheet.addRow([
+          p.id,
+          p.email,
+          p.full_name || '',
+          p.full_name_ko || '',
+          p.phone || '',
+          p.address || '',
+          p.birthday || '',
+          p.preferred_language || '',
+          roleLabel(p.sales_role),
+          p.sales_level ?? '',
+          getManagerName(p.parent_id) || '',
+          adminUserIds.has(p.user_id) ? 'Y' : 'N',
+          p.is_deleted ? 'Y' : 'N',
+          p.deleted_at || '',
+          p.created_at || '',
+          p.admin_notes || '',
+        ]);
+      });
+
+      sheet.columns.forEach((col) => {
+        let max = 10;
+        col.eachCell?.({ includeEmpty: true }, (cell) => {
+          const len = String(cell.value ?? '').length;
+          if (len > max) max = len;
+        });
+        col.width = Math.min(max + 2, 50);
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const stamp = new Date().toISOString().slice(0, 10);
+      link.download = `clients_${stamp}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(language === 'ko' ? '다운로드 완료' : 'Download complete');
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error(language === 'ko' ? '다운로드 실패' : 'Download failed');
+    }
+  };
+
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
   const matchesSearch = (profile: Profile) => {
