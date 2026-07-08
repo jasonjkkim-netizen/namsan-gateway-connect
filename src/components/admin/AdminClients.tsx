@@ -878,6 +878,15 @@ export function AdminClients() {
                 {language === 'ko' ? '초기화' : 'Reset'}
               </Button>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="h-8 gap-1 shrink-0"
+            >
+              <Download className="h-4 w-4" />
+              {language === 'ko' ? '다운로드' : 'Download'}
+            </Button>
             <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1 shrink-0">
               <UserPlus className="h-4 w-4" />
               {language === 'ko' ? '고객 추가' : 'Add Client'}
@@ -895,7 +904,16 @@ export function AdminClients() {
               <RotateCcw className="h-3.5 w-3.5" />
               {language === 'ko' ? '초기화' : 'Reset'}
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1 shrink-0 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="h-8 gap-1 shrink-0 ml-auto"
+            >
+              <Download className="h-4 w-4" />
+              {language === 'ko' ? '다운로드' : 'Download'}
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="btn-gold h-8 gap-1 shrink-0">
               <UserPlus className="h-4 w-4" />
               {language === 'ko' ? '고객 추가' : 'Add Client'}
             </Button>
