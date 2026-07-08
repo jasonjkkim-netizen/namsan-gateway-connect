@@ -86,6 +86,7 @@ export function AdminClients() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Profile | null>(null);
+  const [exportConfirmOpen, setExportConfirmOpen] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
   const [roleSort, setRoleSort] = useState<string>('created_desc');
@@ -881,7 +882,7 @@ export function AdminClients() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExport}
+              onClick={() => setExportConfirmOpen(true)}
               className="h-8 gap-1 shrink-0"
             >
               <Download className="h-4 w-4" />
@@ -907,7 +908,7 @@ export function AdminClients() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExport}
+              onClick={() => setExportConfirmOpen(true)}
               className="h-8 gap-1 shrink-0 ml-auto"
             >
               <Download className="h-4 w-4" />
