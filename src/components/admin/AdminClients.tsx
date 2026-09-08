@@ -91,6 +91,9 @@ export function AdminClients() {
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
   const [roleSort, setRoleSort] = useState<string>('created_desc');
   const [roleFilter, setRoleFilter] = useState<string>('__all__');
+  const [productFilter, setProductFilter] = useState<string>('__all__');
+  const [productOptions, setProductOptions] = useState<{ key: string; label: string }[]>([]);
+  const [productsByUser, setProductsByUser] = useState<Record<string, string[]>>({});
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -124,7 +127,7 @@ export function AdminClients() {
   }, []);
 
   async function fetchData() {
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, investmentsRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('*')
@@ -132,8 +135,31 @@ export function AdminClients() {
       supabase
         .from('user_roles')
         .select('user_id, role')
-        .eq('role', 'admin')
+        .eq('role', 'admin'),
+      supabase
+        .from('client_investments')
+        .select('user_id, product_id, product_name_ko, product_name_en')
     ]);
+
+    if (!investmentsRes.error && investmentsRes.data) {
+      const byUser: Record<string, string[]> = {};
+      const optionMap = new Map<string, string>();
+      for (const inv of investmentsRes.data as any[]) {
+        const key = inv.product_id || `name:${inv.product_name_ko || inv.product_name_en}`;
+        const label = (language === 'ko'
+          ? inv.product_name_ko || inv.product_name_en
+          : inv.product_name_en || inv.product_name_ko) || key;
+        optionMap.set(key, label);
+        if (!byUser[inv.user_id]) byUser[inv.user_id] = [];
+        if (!byUser[inv.user_id].includes(key)) byUser[inv.user_id].push(key);
+      }
+      setProductsByUser(byUser);
+      setProductOptions(
+        Array.from(optionMap.entries())
+          .map(([key, label]) => ({ key, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+      );
+    }
 
     if (profilesRes.error) {
       toast.error(language === 'ko' ? '고객 목록 조회 실패' : 'Failed to fetch clients');
@@ -513,7 +539,11 @@ export function AdminClients() {
       matchesSearch(p) &&
       (roleFilter === '__all__' || (p.sales_role || 'client') === roleFilter) &&
       (managerFilter === '__all__' ||
-        (managerFilter === '__unassigned__' ? !p.parent_id : p.parent_id === managerFilter))
+        (managerFilter === '__unassigned__' ? !p.parent_id : p.parent_id === managerFilter)) &&
+      (productFilter === '__all__' ||
+        (productFilter === '__none__'
+          ? !(productsByUser[p.user_id]?.length)
+          : (productsByUser[p.user_id] || []).includes(productFilter)))
   );
 
   const filteredDeleted = deletedProfiles.filter((p) => matchesSearch(p));
@@ -787,12 +817,13 @@ export function AdminClients() {
     }).filter(Boolean).sort((a, b) => (a!.name).localeCompare(b!.name));
   }, [profiles, activeProfiles, language]);
 
-  const hasActiveFilters = roleSort !== 'created_desc' || roleFilter !== '__all__' || managerFilter !== '__all__' || searchTerm.trim().length > 0;
+  const hasActiveFilters = roleSort !== 'created_desc' || roleFilter !== '__all__' || managerFilter !== '__all__' || productFilter !== '__all__' || searchTerm.trim().length > 0;
 
   const resetListControls = () => {
     setRoleSort('created_desc');
     setRoleFilter('__all__');
     setManagerFilter('__all__');
+    setProductFilter('__all__');
     setSearchTerm('');
   };
 
@@ -833,6 +864,18 @@ export function AdminClients() {
             <SelectItem key={m.id} value={m.id}>
               {m.name} {m.role ? `(${roleLabel(m.role)})` : ''}
             </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={productFilter} onValueChange={setProductFilter}>
+        <SelectTrigger className="h-8 text-xs w-full sm:w-[12rem]">
+          <SelectValue placeholder={language === 'ko' ? '상품 목록' : 'Filter by product'} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">{language === 'ko' ? '전체 상품' : 'All products'}</SelectItem>
+          <SelectItem value="__none__">{language === 'ko' ? '투자 없음' : 'No investment'}</SelectItem>
+          {productOptions.map(p => (
+            <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
           ))}
         </SelectContent>
       </Select>
