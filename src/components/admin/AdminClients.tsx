@@ -817,12 +817,13 @@ export function AdminClients() {
     }).filter(Boolean).sort((a, b) => (a!.name).localeCompare(b!.name));
   }, [profiles, activeProfiles, language]);
 
-  const hasActiveFilters = roleSort !== 'created_desc' || roleFilter !== '__all__' || managerFilter !== '__all__' || searchTerm.trim().length > 0;
+  const hasActiveFilters = roleSort !== 'created_desc' || roleFilter !== '__all__' || managerFilter !== '__all__' || productFilter !== '__all__' || searchTerm.trim().length > 0;
 
   const resetListControls = () => {
     setRoleSort('created_desc');
     setRoleFilter('__all__');
     setManagerFilter('__all__');
+    setProductFilter('__all__');
     setSearchTerm('');
   };
 
