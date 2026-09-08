@@ -539,7 +539,11 @@ export function AdminClients() {
       matchesSearch(p) &&
       (roleFilter === '__all__' || (p.sales_role || 'client') === roleFilter) &&
       (managerFilter === '__all__' ||
-        (managerFilter === '__unassigned__' ? !p.parent_id : p.parent_id === managerFilter))
+        (managerFilter === '__unassigned__' ? !p.parent_id : p.parent_id === managerFilter)) &&
+      (productFilter === '__all__' ||
+        (productFilter === '__none__'
+          ? !(productsByUser[p.user_id]?.length)
+          : (productsByUser[p.user_id] || []).includes(productFilter)))
   );
 
   const filteredDeleted = deletedProfiles.filter((p) => matchesSearch(p));
