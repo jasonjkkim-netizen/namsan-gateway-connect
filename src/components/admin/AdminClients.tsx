@@ -867,6 +867,18 @@ export function AdminClients() {
           ))}
         </SelectContent>
       </Select>
+      <Select value={productFilter} onValueChange={setProductFilter}>
+        <SelectTrigger className="h-8 text-xs w-full sm:w-[12rem]">
+          <SelectValue placeholder={language === 'ko' ? '상품 목록' : 'Filter by product'} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="__all__">{language === 'ko' ? '전체 상품' : 'All products'}</SelectItem>
+          <SelectItem value="__none__">{language === 'ko' ? '투자 없음' : 'No investment'}</SelectItem>
+          {productOptions.map(p => (
+            <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <div className="relative w-full sm:w-[12rem]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
