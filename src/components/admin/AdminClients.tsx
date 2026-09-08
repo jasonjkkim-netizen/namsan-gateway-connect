@@ -91,6 +91,9 @@ export function AdminClients() {
   const [managerFilter, setManagerFilter] = useState<string>('__all__');
   const [roleSort, setRoleSort] = useState<string>('created_desc');
   const [roleFilter, setRoleFilter] = useState<string>('__all__');
+  const [productFilter, setProductFilter] = useState<string>('__all__');
+  const [productOptions, setProductOptions] = useState<{ key: string; label: string }[]>([]);
+  const [productsByUser, setProductsByUser] = useState<Record<string, string[]>>({});
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
