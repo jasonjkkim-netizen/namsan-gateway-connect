@@ -127,7 +127,7 @@ export function AdminClients() {
   }, []);
 
   async function fetchData() {
-    const [profilesRes, rolesRes] = await Promise.all([
+    const [profilesRes, rolesRes, investmentsRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('*')
@@ -135,8 +135,31 @@ export function AdminClients() {
       supabase
         .from('user_roles')
         .select('user_id, role')
-        .eq('role', 'admin')
+        .eq('role', 'admin'),
+      supabase
+        .from('client_investments')
+        .select('user_id, product_id, product_name_ko, product_name_en')
     ]);
+
+    if (!investmentsRes.error && investmentsRes.data) {
+      const byUser: Record<string, string[]> = {};
+      const optionMap = new Map<string, string>();
+      for (const inv of investmentsRes.data as any[]) {
+        const key = inv.product_id || `name:${inv.product_name_ko || inv.product_name_en}`;
+        const label = (language === 'ko'
+          ? inv.product_name_ko || inv.product_name_en
+          : inv.product_name_en || inv.product_name_ko) || key;
+        optionMap.set(key, label);
+        if (!byUser[inv.user_id]) byUser[inv.user_id] = [];
+        if (!byUser[inv.user_id].includes(key)) byUser[inv.user_id].push(key);
+      }
+      setProductsByUser(byUser);
+      setProductOptions(
+        Array.from(optionMap.entries())
+          .map(([key, label]) => ({ key, label }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+      );
+    }
 
     if (profilesRes.error) {
       toast.error(language === 'ko' ? '고객 목록 조회 실패' : 'Failed to fetch clients');
