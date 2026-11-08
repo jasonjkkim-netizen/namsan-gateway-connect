@@ -111,6 +111,26 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Webmasters may only act on client accounts inside their own organization
+    if (!isAdmin) {
+      if (targetProfile.sales_role && targetProfile.sales_role !== "client") {
+        return new Response(
+          JSON.stringify({ error: "Only client accounts can be linked" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const { data: inSubtree } = await adminClient.rpc("is_in_subtree", {
+        _ancestor_id: callerId,
+        _descendant_id: target_user_id,
+      });
+      if (!inSubtree) {
+        return new Response(
+          JSON.stringify({ error: "This client is not in your organization" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     if (!targetProfile.email.endsWith("@placeholder.local")) {
       return new Response(
         JSON.stringify({ error: "This user already has a real email" }),

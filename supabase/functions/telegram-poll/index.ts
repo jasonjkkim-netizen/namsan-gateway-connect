@@ -26,14 +26,22 @@ Deno.serve(async (req) => {
   let totalProcessed = 0;
 
   try {
-    // Read initial offset
+    // Read initial offset and the scheduler-only poll secret
     const { data: state, error: stateErr } = await supabase
       .from('telegram_bot_state')
-      .select('update_offset')
+      .select('update_offset, poll_secret')
       .eq('id', 1)
       .single();
 
     if (stateErr) return errorResponse(stateErr.message);
+
+    const providedSecret = req.headers.get('x-poll-secret');
+    if (!providedSecret || !state.poll_secret || providedSecret !== state.poll_secret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     let currentOffset = state.update_offset;
 

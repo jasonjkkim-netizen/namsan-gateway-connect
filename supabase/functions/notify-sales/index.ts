@@ -220,7 +220,7 @@ Deno.serve(async (req) => {
 
     // Restrict admin-only notification types for non-internal calls
     if (!isInternalCall) {
-      const adminOnlyTypes = ['bulk_role_notification', 'role_approved', 'role_changed', 'commission_rate_changed'];
+      const adminOnlyTypes = ['bulk_role_notification', 'role_approved', 'role_changed', 'commission_rate_changed', 'commission_status_changed'];
       if (adminOnlyTypes.includes(payload.type)) {
         // Re-check: caller must be admin for these types
         const authHeader = req.headers.get("Authorization");

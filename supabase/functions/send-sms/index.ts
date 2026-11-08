@@ -88,13 +88,8 @@ Deno.serve(async (req) => {
         .eq("role", "admin")
         .maybeSingle();
 
-      const { data: profile } = await serviceClient
-        .from("profiles")
-        .select("sales_role")
-        .eq("user_id", userId)
-        .single();
-
-      if (!adminRole && !profile?.sales_role) {
+      // Free-form SMS to arbitrary numbers is admin-only
+      if (!adminRole) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

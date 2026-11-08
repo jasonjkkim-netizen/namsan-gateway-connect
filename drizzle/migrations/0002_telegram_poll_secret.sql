@@ -1,0 +1,2 @@
+ALTER TABLE public.telegram_bot_state ADD COLUMN IF NOT EXISTS poll_secret text NOT NULL DEFAULT encode(extensions.gen_random_bytes(32), 'hex');
+REVOKE ALL ON public.telegram_bot_state FROM anon, authenticated;

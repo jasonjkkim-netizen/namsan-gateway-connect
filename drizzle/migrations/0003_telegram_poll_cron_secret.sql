@@ -1,0 +1,3 @@
+-- lovable-cron-fallback-reviewed: replaces existing every-minute Telegram poll job with same cadence, only adds auth header
+SELECT cron.unschedule('poll-telegram-updates');
+SELECT cron.schedule('poll-telegram-updates', '* * * * *', $$SELECT net.http_post(url:='https://xjeballtxihphcahksuh.supabase.co/functions/v1/telegram-poll', headers:=jsonb_build_object('Content-Type','application/json','x-poll-secret',(select poll_secret from public.telegram_bot_state where id=1)), body:='{}'::jsonb) AS request_id;$$);

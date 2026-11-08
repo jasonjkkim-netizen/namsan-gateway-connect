@@ -15,6 +15,20 @@
       "when": 1794144362445,
       "tag": "0001_lock_commission_payout_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794144463096,
+      "tag": "0002_telegram_poll_secret",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794144479256,
+      "tag": "0003_telegram_poll_cron_secret",
+      "breakpoints": true
     }
   ]
 }
