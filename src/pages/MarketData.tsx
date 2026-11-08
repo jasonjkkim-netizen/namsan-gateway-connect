@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ interface MarketIndex {
 
 export default function MarketData() {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -142,13 +144,13 @@ export default function MarketData() {
         </div>
 
         {/* Product Showcase - first section */}
-        <ProductShowcaseSection language={language} />
+        {user && <ProductShowcaseSection language={language} />}
 
         {/* Flagship Charts (pie + line side by side) */}
-        <FlagshipPortfolio chartsOnly />
+        {user && <FlagshipPortfolio chartsOnly />}
 
         {/* Interest News */}
-        <InterestNewsSection language={language} />
+        {user && <InterestNewsSection language={language} />}
 
         {/* Namsan View Point */}
         <div id="namsan-viewpoint">
@@ -164,7 +166,7 @@ export default function MarketData() {
           <MarketNewsSection language={language} />
 
           {/* Stock Pick News */}
-          <StockPickNewsSection language={language} />
+          {user && <StockPickNewsSection language={language} />}
         </div>
 
         {/* Main Index Cards */}
@@ -172,7 +174,7 @@ export default function MarketData() {
           <h2 className="font-serif font-medium text-sm">
             {language === 'ko' ? '주요 지수' : 'Major Indices'}
           </h2>
-          <Button
+          {user && <Button
             variant="outline"
             size="sm"
             onClick={handleUpdateIndices}
@@ -181,7 +183,7 @@ export default function MarketData() {
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isUpdating ? 'animate-spin' : ''}`} />
             {language === 'ko' ? '업데이트' : 'Update'}
-          </Button>
+          </Button>}
         </div>
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
           {isLoading ? (
@@ -259,7 +261,7 @@ export default function MarketData() {
         <MarketOverviewSection language={language} />
 
         {/* Risk-Return Matrix */}
-        <RiskReturnMatrix />
+        {user && <RiskReturnMatrix />}
       </main>
     </div>
   );

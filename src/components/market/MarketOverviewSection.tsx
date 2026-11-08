@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ExternalLink, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react';
@@ -62,6 +63,7 @@ interface MarketOverviewSectionProps {
 }
 
 export function MarketOverviewSection({ language }: MarketOverviewSectionProps) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [updating, setUpdating] = useState(false);
 
@@ -79,6 +81,7 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
   });
 
   async function handleUpdatePrices() {
+    if (!user) return;
     setUpdating(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-market-indices', {
@@ -150,7 +153,7 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
             )}
           </p>
         </div>
-        <Button
+        {user && <Button
           variant="outline"
           size="sm"
           onClick={handleUpdatePrices}
@@ -159,7 +162,7 @@ export function MarketOverviewSection({ language }: MarketOverviewSectionProps) 
         >
           <RefreshCw className={`h-3.5 w-3.5 ${updating ? 'animate-spin' : ''}`} />
           {language === 'ko' ? '업데이트' : 'Update'}
-        </Button>
+        </Button>}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

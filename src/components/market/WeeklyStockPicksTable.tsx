@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { StockDetailDialog } from './StockDetailDialog';
@@ -29,6 +30,7 @@ function StockTable({
   stocks: StockPick[]; language: string; market: 'KR' | 'US'; title: string;
   onStockClick: (stock: StockPick) => void; onUpdatePrices: (market: 'KR' | 'US') => void; updatingPrices: boolean;
 }) {
+  const { user } = useAuth();
   if (stocks.length === 0) return null;
   const isKR = market === 'KR';
   const currencySymbol = isKR ? '원' : '$';
@@ -73,10 +75,10 @@ function StockTable({
     <div className="mb-8 card-elevated overflow-hidden animate-fade-in">
       <div className="p-3 border-b border-border flex items-center justify-between">
         <h3 className="font-serif font-medium text-sm">{title}</h3>
-        <Button variant="ghost" size="sm" onClick={() => onUpdatePrices(market)} disabled={updatingPrices} className="h-7 px-2">
+        {user && <Button variant="ghost" size="sm" onClick={() => onUpdatePrices(market)} disabled={updatingPrices} className="h-7 px-2">
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${updatingPrices ? 'animate-spin' : ''}`} />
           <span className="text-xs">{language === 'ko' ? '업데이트' : 'Update'}</span>
-        </Button>
+        </Button>}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
@@ -180,6 +182,7 @@ function StockTable({
 }
 
 export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [updatingPrices, setUpdatingPrices] = useState(false);
   const [selectedStock, setSelectedStock] = useState<StockPick | null>(null);
@@ -200,6 +203,7 @@ export function WeeklyStockPicksTable({ language }: WeeklyStockPicksTableProps) 
   });
 
   async function handleUpdatePrices(market: 'KR' | 'US') {
+    if (!user) return;
     setUpdatingPrices(true);
     toast.info(language === 'ko' ? '현재가 업데이트 중...' : 'Updating prices...');
     try {
