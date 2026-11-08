@@ -11,6 +11,8 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ProductPopup } from "@/components/ProductPopup";
 import { useAuthLanguageSync } from "@/hooks/useAuthLanguageSync";
 import Home from "./pages/Home";
+import Gateway from "./pages/Gateway";
+import NamsanAI from "./pages/NamsanAI";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -62,7 +64,9 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Gateway />} />
+                <Route path="/family-office" element={<Home />} />
+                <Route path="/ai" element={<NamsanAI />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/join" element={<SalesSignUp />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
