@@ -135,7 +135,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (authenticatedEmail && userEmail.toLowerCase() !== authenticatedEmail.toLowerCase()) {
-      console.warn(`Email mismatch: authenticated=${authenticatedEmail}, requested=${userEmail}`);
+      console.warn('Signup notification rejected: email mismatch');
       return new Response(
         JSON.stringify({ success: false, error: "Email mismatch - unauthorized" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -167,7 +167,7 @@ const handler = async (req: Request): Promise<Response> => {
       ? webmasterProfiles.map(p => p.phone).filter(Boolean) as string[]
       : [];
 
-    console.log(`Sending signup notification to ${recipientEmails.length} webmaster(s):`, recipientEmails);
+    console.log(`Sending signup notification to ${recipientEmails.length} webmaster(s)`);
 
     const emailHtml = `
       <!DOCTYPE html>

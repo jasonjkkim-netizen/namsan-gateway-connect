@@ -101,10 +101,10 @@ serve(async (req: Request) => {
               </div>
             `,
           });
-          console.log(`Resend response for ${email}:`, JSON.stringify(result));
+          console.log('Newsletter email sent', result?.data?.id ?? '');
           sentCount++;
         } catch (emailError) {
-          console.error(`Failed to send to ${email}:`, JSON.stringify(emailError));
+          console.error('Newsletter email failed:', (emailError as Error)?.message ?? 'unknown error');
         }
       }
     }

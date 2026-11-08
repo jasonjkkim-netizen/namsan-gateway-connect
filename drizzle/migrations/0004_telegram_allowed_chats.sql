@@ -1,0 +1,2 @@
+ALTER TABLE public.telegram_bot_state ADD COLUMN IF NOT EXISTS allowed_chat_ids bigint[] NOT NULL DEFAULT '{}';
+UPDATE public.telegram_bot_state SET allowed_chat_ids = ARRAY[34928365]::bigint[] WHERE id = 1;

@@ -167,6 +167,8 @@ Deno.serve(async (req) => {
     const internalSecret = Deno.env.get("INTERNAL_SERVICE_SECRET");
     const internalHeader = req.headers.get("x-internal-secret");
     const isInternalCall = internalSecret && internalHeader && internalHeader === internalSecret;
+    let verifiedCallerId: string | null = null;
+    let verifiedCallerIsAdmin = false;
 
     if (!isInternalCall) {
       // Validate user JWT and enforce role authorization
@@ -193,6 +195,7 @@ Deno.serve(async (req) => {
       }
 
       const callerId = claimsData.claims.sub as string;
+      verifiedCallerId = callerId;
 
       // Server-side role check: must be admin OR have a sales role
       const { data: roleData } = await supabase
@@ -208,6 +211,7 @@ Deno.serve(async (req) => {
         .eq("user_id", callerId)
         .single();
 
+      verifiedCallerIsAdmin = !!roleData;
       if (!roleData && !profileData?.sales_role) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
           status: 403,
@@ -216,11 +220,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const payload: NotificationPayload = await req.json();
+    const rawPayload: NotificationPayload = await req.json();
+    // Escape every caller-supplied text value so it can't become markup in emails
+    const payload = Object.fromEntries(
+      Object.entries(rawPayload).map(([k, v]) => [k, typeof v === "string" && !k.endsWith("_id") && k !== "type" && k !== "role" && k !== "old_role" && k !== "new_status" ? escapeHtml(v) : v]),
+    ) as NotificationPayload;
 
     // Restrict admin-only notification types for non-internal calls
     if (!isInternalCall) {
-      const adminOnlyTypes = ['bulk_role_notification', 'role_approved', 'role_changed', 'commission_rate_changed', 'commission_status_changed'];
+      const adminOnlyTypes = ['bulk_role_notification', 'role_approved', 'role_changed', 'commission_rate_changed', 'commission_status_changed', 'investment_created'];
       if (adminOnlyTypes.includes(payload.type)) {
         // Re-check: caller must be admin for these types
         const authHeader = req.headers.get("Authorization");
@@ -696,6 +704,34 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Non-admin callers can only announce members they actually added themselves
+      if (!isInternalCall && !verifiedCallerIsAdmin) {
+        if (payload.sponsor_id !== verifiedCallerId) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: member } = await supabase
+          .from("profiles")
+          .select("parent_id, full_name, email, sales_role")
+          .eq("user_id", payload.user_id)
+          .maybeSingle();
+        const { data: sponsor } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", verifiedCallerId)
+          .maybeSingle();
+        if (!member || member.parent_id !== verifiedCallerId) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        payload.user_name = escapeHtml(member.full_name);
+        payload.user_email = member.email?.endsWith("@placeholder.local") ? undefined : escapeHtml(member.email);
+        payload.sponsor_name = escapeHtml(sponsor?.full_name ?? "");
+        if (member.sales_role) payload.role = member.sales_role;
+      }
+
       const roleKo = getRoleLabel(payload.role, 'ko');
       const roleEn = getRoleLabel(payload.role, 'en');
 
@@ -811,3 +847,7 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}

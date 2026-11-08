@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     // Read initial offset and the scheduler-only poll secret
     const { data: state, error: stateErr } = await supabase
       .from('telegram_bot_state')
-      .select('update_offset, poll_secret')
+      .select('update_offset, poll_secret, allowed_chat_ids')
       .eq('id', 1)
       .single();
 
@@ -80,6 +80,12 @@ Deno.serve(async (req) => {
         if (!update.message) continue;
 
         const msg = update.message;
+        const allowedChats: number[] = (state.allowed_chat_ids || []).map(Number);
+        if (!allowedChats.includes(Number(msg.chat?.id))) {
+          console.warn('Ignoring Telegram message from unapproved chat');
+          currentOffset = Math.max(currentOffset, update.update_id + 1);
+          continue;
+        }
         const hasDocument = !!(msg.document && msg.document.mime_type === 'application/pdf');
 
         // Store message
@@ -514,10 +520,10 @@ async function sendResearchAlert(supabase: any, payload: any) {
             텔레그램 리서치 / Telegram Research
           </span>
         </div>
-        <h2 style="color: #1a365d; margin: 0 0 8px; font-size: 18px;">${payload.title_ko}</h2>
-        ${payload.title_en && payload.title_en !== payload.title_ko ? `<p style="color: #718096; margin: 0 0 16px; font-size: 14px;">${payload.title_en}</p>` : ''}
+        <h2 style="color: #1a365d; margin: 0 0 8px; font-size: 18px;">${escapeHtml(payload.title_ko)}</h2>
+        ${payload.title_en && payload.title_en !== payload.title_ko ? `<p style="color: #718096; margin: 0 0 16px; font-size: 14px;">${escapeHtml(payload.title_en)}</p>` : ''}
         <p style="color: #2d3748; margin: 0 0 8px; font-size: 14px;">새로운 콘텐츠가 추가되었습니다 / New content has been added</p>
-        ${payload.summary_ko ? `<p style="color: #4a5568; margin: 16px 0 0; font-size: 13px; line-height: 1.6; border-left: 3px solid #1a365d; padding-left: 12px;">${payload.summary_ko.slice(0, 300)}</p>` : ''}
+        ${payload.summary_ko ? `<p style="color: #4a5568; margin: 16px 0 0; font-size: 13px; line-height: 1.6; border-left: 3px solid #1a365d; padding-left: 12px;">${escapeHtml(payload.summary_ko.slice(0, 300))}</p>` : ''}
         <div style="margin-top: 24px;">
           <a href="https://namsan-gateway-connect.lovable.app/research" style="display: inline-block; background: #1a365d; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-size: 14px;">
             자세히 보기 / Read More
@@ -603,4 +609,8 @@ async function sendResearchAlert(supabase: any, payload: any) {
   } catch (err) {
     console.error('Failed to send research alerts:', err);
   }
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }

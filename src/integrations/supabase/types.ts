@@ -1302,18 +1302,21 @@ export type Database = {
       }
       telegram_bot_state: {
         Row: {
+          allowed_chat_ids: number[]
           id: number
           poll_secret: string
           update_offset: number
           updated_at: string
         }
         Insert: {
+          allowed_chat_ids?: number[]
           id: number
           poll_secret?: string
           update_offset?: number
           updated_at?: string
         }
         Update: {
+          allowed_chat_ids?: number[]
           id?: number
           poll_secret?: string
           update_offset?: number
