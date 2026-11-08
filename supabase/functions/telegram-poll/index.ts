@@ -1,13 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { requestTelegramJson, TelegramGatewayError } from './gateway.ts';
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/telegram';
 const MAX_RUNTIME_MS = 55_000;
 const MIN_REMAINING_MS = 5_000;
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -49,8 +46,9 @@ Deno.serve(async (req) => {
       const timeout = Math.min(50, Math.floor(remainingMs / 1000) - 5);
       if (timeout < 1) break;
 
-      const response = await fetch(`${GATEWAY_URL}/getUpdates`, {
+      const data = await requestTelegramJson((requestRemainingMs) => fetch(`${GATEWAY_URL}/getUpdates`, {
         method: 'POST',
+        signal: AbortSignal.timeout(requestRemainingMs),
         headers: {
           'Authorization': `Bearer ${LOVABLE_API_KEY}`,
           'X-Connection-Api-Key': TELEGRAM_API_KEY,
@@ -58,18 +56,15 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           offset: currentOffset,
-          timeout,
+          timeout: Math.min(timeout, Math.max(1, Math.floor(requestRemainingMs / 1000) - 1)),
           allowed_updates: ['message'],
         }),
+      }), startTime + MAX_RUNTIME_MS - MIN_REMAINING_MS, {
+        onFailure: (error) => console.error(`getUpdates failed [${error.status}]:`, error.details),
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        console.error('getUpdates failed:', data);
-        return errorResponse(`Telegram API failed [${response.status}]`);
-      }
-
-      const updates = data.result ?? [];
+      if (!Array.isArray(data.result)) throw new TelegramGatewayError(502, 'Invalid Telegram updates list');
+      const updates = data.result;
       if (updates.length === 0) continue;
 
       // Process each update
@@ -125,14 +120,15 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error('Polling error:', err);
+    if (err instanceof TelegramGatewayError) return errorResponse('Telegram polling failed', err.status, err.details);
     return errorResponse(err instanceof Error ? err.message : 'Unknown error');
   }
 });
 
-function errorResponse(message: string) {
+function errorResponse(message: string, status = 500, details?: string) {
   return new Response(
-    JSON.stringify({ error: message }),
-    { status: 500, headers: { 'Content-Type': 'application/json' } }
+    JSON.stringify({ error: message, status, details }),
+    { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
 
@@ -440,9 +436,13 @@ async function downloadAndUploadPdf(
       body: JSON.stringify({ file_id: fileId }),
     });
 
-    const fileData = await fileResponse.json();
     if (!fileResponse.ok) {
-      console.error('getFile failed:', fileData);
+      console.error(`getFile failed [${fileResponse.status}]:`, await fileResponse.text());
+      return null;
+    }
+    const fileData = await fileResponse.json();
+    if (!fileData.ok || typeof fileData.result?.file_path !== 'string') {
+      console.error('getFile returned an invalid Telegram response');
       return null;
     }
 
