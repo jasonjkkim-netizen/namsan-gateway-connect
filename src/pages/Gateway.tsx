@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Cpu, Landmark } from 'lucide-react';
-import logo from '@/assets/namsan-logo.png';
+import logo from '@/assets/namsan-logo-gold.png';
 import namsanTowerBg from '@/assets/namsan-tower-night.jpg';
 
 const cards = [
@@ -25,7 +25,7 @@ export default function Gateway() {
       <div className="absolute inset-0 bg-primary/80" />
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-16">
         <img src={logo} alt="Namsan Partners" className="h-14 sm:h-20 mb-6 object-contain" />
-        <h1 className="text-3xl sm:text-5xl font-light text-primary-foreground text-center mb-3">Namsan Partners</h1>
+        <h1 className="gateway-brand-title text-3xl sm:text-5xl font-light text-center mb-3">Namsan Partners</h1>
         <p className="text-primary-foreground/70 text-center mb-12 max-w-xl">Choose a division to continue.</p>
         <div className="grid gap-6 sm:grid-cols-2 w-full max-w-4xl">
           {cards.map(({ to, icon: Icon, title, desc }) => (

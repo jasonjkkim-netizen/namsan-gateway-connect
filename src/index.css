@@ -34,6 +34,9 @@
     --accent: 43 62% 47%;
     --accent-foreground: 0 0% 100%;
 
+    /* High-contrast brand lettering on the navy gateway */
+    --gateway-brand: 43 54% 70%;
+
     /* Success/Warning States */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -134,6 +137,11 @@
 }
 
 @layer components {
+  .gateway-brand-title {
+    color: hsl(var(--gateway-brand));
+    letter-spacing: 0;
+  }
+
   .card-elevated {
     @apply bg-card rounded-lg border border-border;
     box-shadow: var(--shadow-md);

@@ -1,5 +1,9 @@
 # Access review
 
+## Landing-page brand contrast
+- [x] Improve logo and name contrast with champagne gold, keeping the original font style and exact logo lettering.
+- [x] Verify the logo loads and both screen layouts remain readable.
+
 ## Telegram polling repair
 - [x] Confirm gateway error handling: parsing occurred before status checking and no transient retry existed.
 - [x] Add bounded transient retries and safe response parsing without advancing offset on failed polls.
