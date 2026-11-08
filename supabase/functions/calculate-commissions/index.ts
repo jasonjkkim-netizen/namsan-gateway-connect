@@ -314,7 +314,8 @@ Deno.serve(async (req) => {
         rate_used: rate.upfront_rate,
         set_by_user_id: userId,
         currency: investment.invested_currency || "USD",
-        status: "available",
+        // Sales-initiated calculations need admin approval before payout eligibility
+        status: isAdmin ? "available" : "pending",
       });
     }
 

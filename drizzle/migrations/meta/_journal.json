@@ -8,6 +8,13 @@
       "when": 1794142608836,
       "tag": "0000_explicit_public_page_access",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794144362445,
+      "tag": "0001_lock_commission_payout_fields",
+      "breakpoints": true
     }
   ]
 }
