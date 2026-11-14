@@ -64,6 +64,13 @@
       "when": 1794645939551,
       "tag": "0008_selected_security_access_boundaries",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794646759647,
+      "tag": "0009_restrict_selected_hierarchy_helpers",
+      "breakpoints": true
     }
   ]
 }

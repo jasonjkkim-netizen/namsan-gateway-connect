@@ -6,6 +6,7 @@
 - Keep finance calculations in the tested integer-KRW engine; editable seed terms and explicit draft cashflow premiums are separate, and metered power carries into the following month.
 - Finance invoices store self-contained snapshots and server-generated unique numbers so later contract changes cannot silently change saved drafts.
 - Seed finance records through the database data tools, not DDL migrations; managed migration artifacts remain tool-owned.
-- Sales subtree RPCs authorize the requested root before returning names; keep boolean hierarchy checks independent to avoid policy recursion.
+- Sales subtree and boolean hierarchy RPCs authorize the requested root; keep traversal independent to avoid policy recursion, and reserve commission-depth lookup for trusted server calls.
 - Member-shared settings use an explicit key allowlist and approved active accounts; public image URLs do not require client file-listing permission.
 - Telegram PDF ingestion caps streamed bytes at the research upload limit and validates PDF signatures before storage to reject oversized or mislabeled files.
+- Chat normalizes all caller history to user context; only the server may assign authoritative model roles, preventing forged assistant turns while preserving follow-up context.
