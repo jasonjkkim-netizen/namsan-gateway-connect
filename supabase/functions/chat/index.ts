@@ -114,7 +114,7 @@ serve(async (req) => {
     }
 
     for (const msg of messages) {
-      if (!msg.role || !msg.content || typeof msg.content !== "string") {
+      if (!msg || typeof msg !== "object" || !msg.role || !msg.content || typeof msg.content !== "string") {
         return new Response(
           JSON.stringify({ error: "Invalid message structure" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -149,7 +149,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
+          ...messages.map(({ role, content }) => ({ role, content })),
         ],
         stream: true,
       }),

@@ -104,7 +104,7 @@ serve(async (req: Request) => {
           console.log('Newsletter email sent', result?.data?.id ?? '');
           sentCount++;
         } catch (emailError) {
-          console.error('Newsletter email failed:', (emailError as Error)?.message ?? 'unknown error');
+          console.error('Newsletter email delivery failed');
         }
       }
     }
@@ -130,7 +130,7 @@ serve(async (req: Request) => {
       }
     );
   } catch (error: any) {
-    console.error("Newsletter error:", error);
+    console.error("Newsletter delivery failed");
     return new Response(
       JSON.stringify({ error: error.message }),
       {

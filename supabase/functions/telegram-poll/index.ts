@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { requestTelegramJson, TelegramGatewayError } from './gateway.ts';
+import { MAX_PDF_BYTES, readValidatedPdf } from './pdf.ts';
 
 const GATEWAY_URL = 'https://connector-gateway.lovable.dev/telegram';
 const MAX_RUNTIME_MS = 55_000;
@@ -461,9 +462,13 @@ async function downloadAndUploadPdf(
     }
 
     const filePath = fileData.result.file_path;
+    if (Number(fileData.result.file_size) > MAX_PDF_BYTES) {
+      throw new Error('PDF exceeds the 20 MB limit');
+    }
 
     // Step 2: Download the file
     const downloadResponse = await fetch(`${GATEWAY_URL}/file/${filePath}`, {
+      signal: AbortSignal.timeout(15_000),
       headers: {
         'Authorization': `Bearer ${lovableKey}`,
         'X-Connection-Api-Key': telegramKey,
@@ -475,7 +480,7 @@ async function downloadAndUploadPdf(
       return null;
     }
 
-    const fileBytes = new Uint8Array(await downloadResponse.arrayBuffer());
+    const fileBytes = await readValidatedPdf(downloadResponse);
 
     // Step 3: Upload to Supabase Storage
     const sanitizedName = `${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`;

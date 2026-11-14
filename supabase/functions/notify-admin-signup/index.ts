@@ -66,13 +66,12 @@ async function sendSms(to: string, content: string) {
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      console.error("SMS send failed:", response.status, err);
+      console.error("SMS send failed:", response.status);
     } else {
-      console.log("SMS sent to:", recipient);
+      console.log("Signup SMS sent");
     }
   } catch (err) {
-    console.error("SMS send error:", err);
+    console.error("Signup SMS delivery failed");
   }
 }
 
@@ -229,7 +228,7 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailHtml,
     });
 
-    console.log("Signup notification email sent:", emailResponse);
+    console.log("Signup notification email delivery completed");
 
     // Send SMS to webmasters
     if (recipientPhones.length > 0) {
@@ -246,7 +245,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error in notify-admin-signup function:", errorMessage);
+    console.error("Signup notification failed");
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }

@@ -57,6 +57,13 @@
       "when": 1794643678107,
       "tag": "0007_finance_actual_deposit_and_invoice_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794645939551,
+      "tag": "0008_selected_security_access_boundaries",
+      "breakpoints": true
     }
   ]
 }
