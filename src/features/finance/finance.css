@@ -1,0 +1,11 @@
+.finance-shell h1,.finance-shell h2,.finance-shell h3 {letter-spacing:0;}
+.finance-invoice {width:100%;max-width:210mm;min-height:297mm;}
+.finance-invoice td {white-space:normal;overflow-wrap:anywhere;}
+@media print {
+ @page {size:A4;margin:12mm;}
+ body:has(.finance-invoice) * {visibility:hidden;}
+ body:has(.finance-invoice) .finance-invoice,body:has(.finance-invoice) .finance-invoice * {visibility:visible;}
+ body:has(.finance-invoice) .finance-invoice {position:absolute;inset:0;width:100%;max-width:none;min-height:0;margin:0;padding:0;border:0;}
+ body:has(.finance-invoice) header,body:has(.finance-invoice) nav,body:has(.finance-invoice) .finance-noprint {display:none!important;}
+ .finance-invoice tr {break-inside:avoid;}
+}

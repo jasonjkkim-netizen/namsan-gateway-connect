@@ -515,6 +515,409 @@ export type Database = {
           },
         ]
       }
+      finance_company: {
+        Row: {
+          address: string
+          ceo: string
+          id: number
+          legal_name_ko: string
+          name: string
+          registration_number: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          ceo?: string
+          id?: number
+          legal_name_ko?: string
+          name?: string
+          registration_number?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          ceo?: string
+          id?: number
+          legal_name_ko?: string
+          name?: string
+          registration_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_counterparties: {
+        Row: {
+          contact: string | null
+          created_at: string
+          id: string
+          kind: string
+          memo: string | null
+          name: string
+        }
+        Insert: {
+          contact?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          memo?: string | null
+          name: string
+        }
+        Update: {
+          contact?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          memo?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
+      finance_documents: {
+        Row: {
+          created_at: string
+          doc_date: string | null
+          file_path: string | null
+          id: string
+          name: string
+          project_id: string | null
+          source_url: string | null
+          status: string
+          terms: Json
+          type: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          doc_date?: string | null
+          file_path?: string | null
+          id?: string
+          name: string
+          project_id?: string | null
+          source_url?: string | null
+          status?: string
+          terms?: Json
+          type?: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          doc_date?: string | null
+          file_path?: string | null
+          id?: string
+          name?: string
+          project_id?: string | null
+          source_url?: string | null
+          status?: string
+          terms?: Json
+          type?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "finance_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_entries: {
+        Row: {
+          amount: number
+          counterparty_id: string
+          created_at: string
+          currency: string
+          description: string
+          due_date: string | null
+          id: string
+          issue_date: string
+          kind: string
+          paid_date: string | null
+          project_id: string | null
+          status: string
+        }
+        Insert: {
+          amount?: number
+          counterparty_id: string
+          created_at?: string
+          currency?: string
+          description: string
+          due_date?: string | null
+          id?: string
+          issue_date?: string
+          kind?: string
+          paid_date?: string | null
+          project_id?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          counterparty_id?: string
+          created_at?: string
+          currency?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          issue_date?: string
+          kind?: string
+          paid_date?: string | null
+          project_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_entries_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "finance_counterparties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "finance_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          currency: string
+          date: string
+          id: string
+          memo: string | null
+          payee_name: string
+          project_id: string | null
+          status: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          currency?: string
+          date?: string
+          id?: string
+          memo?: string | null
+          payee_name: string
+          project_id?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          currency?: string
+          date?: string
+          id?: string
+          memo?: string | null
+          payee_name?: string
+          project_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_expenses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "finance_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_history: {
+        Row: {
+          action: string
+          actor_email: string
+          after_values: Json | null
+          before_values: Json | null
+          created_at: string
+          id: string
+          project_id: string | null
+          target_id: string | null
+          target_table: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string
+          after_values?: Json | null
+          before_values?: Json | null
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          target_id?: string | null
+          target_table: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string
+          after_values?: Json | null
+          before_values?: Json | null
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          target_id?: string | null
+          target_table?: string
+        }
+        Relationships: []
+      }
+      finance_invoices: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issue_date: string
+          project_id: string | null
+          snapshot: Json
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          project_id?: string | null
+          snapshot?: Json
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          project_id?: string | null
+          snapshot?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "finance_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_monthly_actuals: {
+        Row: {
+          actual_paid: number
+          actual_received: number
+          average_power_kw: number
+          created_at: string
+          currency: string
+          id: string
+          month: string
+          note: string | null
+          project_id: string
+        }
+        Insert: {
+          actual_paid?: number
+          actual_received?: number
+          average_power_kw?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          month: string
+          note?: string | null
+          project_id: string
+        }
+        Update: {
+          actual_paid?: number
+          actual_received?: number
+          average_power_kw?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          month?: string
+          note?: string | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_monthly_actuals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "finance_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_projects: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          status: string
+          terms: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+          status?: string
+          terms?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string
+          terms?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      finance_tasks: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          name: string
+          note: string | null
+          project_id: string | null
+          source_url: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          project_id?: string | null
+          source_url?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          project_id?: string | null
+          source_url?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "finance_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flagship_portfolio_items: {
         Row: {
           asset_type: string
@@ -1651,6 +2054,7 @@ export type Database = {
         Args: { _ancestor_id: string; _descendant_id: string }
         Returns: boolean
       }
+      is_webmaster: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

@@ -16,3 +16,8 @@
 - [x] Define existing public pages and remove unrelated anonymous policies/grants without widening sensitive data.
 - [x] Verify signed-out public pages and denied private data after policy cleanup.
 - [x] Record and report confirmed access defects separately from public-access cleanup.
+## Internal finance portal
+- [ ] Add webmaster-only routes and database protection without changing existing permissions.
+- [ ] Build cashflow, projects, receivables, staff, deadlines, documents, invoices, history and company screens.
+- [ ] Populate supplied projects, tasks and company defaults.
+- [ ] Verify cashflow/deposit/gate tests and signed-in save/read flows; do not publish.
