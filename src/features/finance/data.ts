@@ -3,15 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database, Json } from '@/integrations/supabase/types';
 import type { Terms } from './engine';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 export type TableName = 'finance_projects'|'finance_tasks'|'finance_documents'|'finance_invoices'|'finance_monthly_actuals'|'finance_history'|'finance_company'|'finance_counterparties'|'finance_entries'|'finance_expenses';
 export type FinanceRow = {id:string|number;[key:string]:unknown};
 export interface Project {id:string;name:string;status:string;terms:Terms}
 export const tables:TableName[]=['finance_projects','finance_tasks','finance_documents','finance_invoices','finance_monthly_actuals','finance_history','finance_company','finance_counterparties','finance_entries','finance_expenses'];
 export function useFinanceData() {
  const client=useQueryClient();
- const query=useQuery({queryKey:['finance'],queryFn:async()=>{
-  const results=await Promise.all(tables.map(async table=>{const {data,error}=await supabase.from(table).select('*');if(error)throw error;return [table,data] as const;}));
-  return Object.fromEntries(results) as Record<TableName,FinanceRow[]>;
+ const {user}=useAuth();
+ const query=useQuery({queryKey:['finance',user?.id],queryFn:async()=>{
+  const results=await Promise.all(tables.map(async table=>{const rows:FinanceRow[]=[];for(let offset=0;;offset+=1000){const {data,error}=await supabase.from(table).select('*').order('id').range(offset,offset+999);if(error)throw error;rows.push(...data);if(data.length<1000)break;}return [table,rows] as const;}));
+  return Object.fromEntries(results) as unknown as Record<TableName,FinanceRow[]>;
  }});
  async function save(table:TableName,record:Record<string,unknown>,existing=false){
   const cleaned=Object.fromEntries(Object.entries(record).filter(([k])=>k!=='created_at'&&k!=='updated_at'));

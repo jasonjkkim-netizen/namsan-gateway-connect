@@ -808,6 +808,7 @@ export type Database = {
       }
       finance_monthly_actuals: {
         Row: {
+          actual_deposit_paid: number
           actual_paid: number
           actual_received: number
           average_power_kw: number
@@ -819,6 +820,7 @@ export type Database = {
           project_id: string
         }
         Insert: {
+          actual_deposit_paid?: number
           actual_paid?: number
           actual_received?: number
           average_power_kw?: number
@@ -830,6 +832,7 @@ export type Database = {
           project_id: string
         }
         Update: {
+          actual_deposit_paid?: number
           actual_paid?: number
           actual_received?: number
           average_power_kw?: number

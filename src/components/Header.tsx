@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, BarChart3, ArrowLeft } from 'lucide-react';
+import { LogOut, Settings, BarChart3, ArrowLeft, Landmark } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import { ConsultationButton } from './ConsultationButton';
 import logo from '@/assets/namsan-logo.png';
@@ -88,6 +88,19 @@ export function Header() {
                 </Button>
               )}
               {/* Show back to market button on admin page (desktop) */}
+              {profile?.sales_role === 'webmaster' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  aria-label={language === 'ko' ? '재무' : 'Finance'}
+                  title={language === 'ko' ? '재무' : 'Finance'}
+                  onClick={() => navigate('/finance')}
+                  className="flex items-center gap-1 md:gap-2 h-7 px-2 md:h-9 md:px-3"
+                >
+                  <Landmark className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="hidden md:inline">{language === 'ko' ? '재무' : 'Finance'}</span>
+                </Button>
+              )}
               {isAdminPage && (
                 <Button
                   variant="outline"

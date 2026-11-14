@@ -1,5 +1,5 @@
 export type Terms = Record<string, string | number | boolean | null>;
-export interface Actual { id?: string; project_id: string; month: string; currency: string; actual_paid: number; actual_received: number; average_power_kw: number }
+export interface Actual { id?: string; project_id: string; month: string; currency: string; actual_paid: number; actual_received: number; actual_deposit_paid?: number; average_power_kw: number }
 export const DEFAULT_TERMS: Terms = {capacity_kw:1500,racks:100,kw_per_rack:15,rent:370000,internet:3500000,power:192384,vat:10,deposit_months:6,term_months:60,elapsed_months:6,escalation:3,penalty:60,start_date:'2026-12-01',rates_vat_included:false,deposit_vat_included:true};
 export function number(t: Terms, key: string, fallback = 0) { const v=t[key]; return v === null || v === undefined || v === '' ? fallback : Number(v); }
 export function money(value: number, currency = 'KRW') { return `${currency} ${new Intl.NumberFormat('ko-KR',{minimumFractionDigits:currency==='USD'?2:0,maximumFractionDigits:currency==='USD'?2:0}).format(value)}`; }
@@ -50,5 +50,6 @@ export function cashYears() {return Array.from({length:7},(_,i)=>2026+i);}
 export function cashMonths(year: number,lease:Terms,sub:Terms,actuals:Actual[]) {return Array.from({length:12},(_,i)=>`${year}-${String(i+1).padStart(2,'0')}-01`).filter(m=>m>='2026-11-01'&&m<='2032-12-01').map(m=>cashMonth(m,lease,sub,actuals));}
 export function canOpenFinance(user: unknown, role: string|null|undefined) {return Boolean(user)&&role==='webmaster';}
 export function earliestDeadline<T extends {due_date:string|null;status:string}>(tasks:T[]) {return tasks.filter(t=>t.status!=='done'&&t.due_date).sort((a,b)=>(a.due_date||'').localeCompare(b.due_date||''))[0];}
-export const comparisonKeys=['party','address','capacity_kw','rent','currency','vat','payment_schedule','delivery_date','start_date','deposit_months','first_due','second_due','final_due','payment_days','metered_minimum','handover','escalation','term_months','penalty','inspection','title_condition','title_date','rates_vat_included'];
+export function depositProgress(actuals: Actual[], total:number) {return Math.min(total,actuals.filter(a=>a.project_id==='lease'&&a.currency==='KRW').reduce((sum,a)=>sum+Number(a.actual_deposit_paid||0),0));}
+export const comparisonKeys=['party','address','capacity_kw','rent','currency','vat','payment_schedule','delivery_date','start_date','deposit_months','first_due','second_due','final_due','payment_days','metered_minimum','handover','escalation','term_months','penalty','inspection','title_condition','title_date','rates_vat_included','early_termination','title_transfer'];
 export function compare(a: unknown,b:unknown) {if(a===undefined||a===null||a===''||b===undefined||b===null||b===''||String(a).toLowerCase().includes('checking')||String(b).toLowerCase().includes('checking'))return 'insufficient evidence'; return String(a)===String(b)?'match':'mismatch';}

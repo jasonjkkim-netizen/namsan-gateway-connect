@@ -1,5 +1,5 @@
 import { describe,it,expect } from 'vitest';
-import { DEFAULT_TERMS, cashMonth, costs, deposits, canOpenFinance, earliestDeadline, termination } from './engine';
+import { DEFAULT_TERMS, cashMonth, costs, deposits, canOpenFinance, earliestDeadline, termination, depositProgress } from './engine';
 const sub={...DEFAULT_TERMS,schedule_premium_percent:1.5,service_fee:1248750000,overseas_deposit:7482783000};
 describe('monthly cashflow rules',()=>{
  it('domestic fixed includes VAT exactly once',()=>{expect(costs(DEFAULT_TERMS)).toEqual({rent:610500000,internet:3850000,power:317433600,fixed:614350000});});
@@ -21,3 +21,5 @@ describe('webmaster gate',()=>{
  it('all other or absent roles denied',()=>{for(const role of ['district_manager','agent','client',null,undefined])expect(canOpenFinance({id:'u'},role)).toBe(false);});
  it('earliest open deadline includes overdue, excludes done and undated',()=>{expect(earliestDeadline([{due_date:null,status:'decision needed'},{due_date:'2026-11-12',status:'done'},{due_date:'2026-11-18',status:'confirmed'},{due_date:'2026-11-13',status:'needs checking'}])?.due_date).toBe('2026-11-13');});
 });
+
+it('deposit progress only counts the recorded deposit portion',()=>{expect(depositProgress([{project_id:'lease',month:'2026-11-01',currency:'KRW',actual_paid:500000000,actual_received:0,actual_deposit_paid:368610000,average_power_kw:1500}],3686100000)).toBe(368610000);});
