@@ -1,5 +1,11 @@
 # Access review
 
+## Finance data transfer
+- [x] Identify Namsan Contract Compass and verify 34 source records across 10 finance tables; no document rows exist.
+- [x] Export and validate all finance rows in a standalone JSON backup, including 20 audit-history records.
+- [ ] Import the backup without replacing existing contract data; blocked because this chat cannot write to the destination project, and its current restore format differs.
+- [ ] Verify destination records before retiring source tables; keep source data intact meanwhile. Destructive table removal is prohibited by the current migration constraints.
+
 ## Finance page removal
 - [x] Remove the finance page route and header link; preserve stored records.
 - [x] Verify finance URLs no longer open the portal and existing public pages still load.
