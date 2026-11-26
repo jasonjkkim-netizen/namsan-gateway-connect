@@ -704,6 +704,8 @@ Deno.serve(async (req) => {
         });
       }
 
+      let memberRole = payload.role;
+
       // Non-admin callers can only announce members they actually added themselves
       if (!isInternalCall && !verifiedCallerIsAdmin) {
         if (payload.sponsor_id !== verifiedCallerId) {
@@ -729,11 +731,11 @@ Deno.serve(async (req) => {
         payload.user_name = escapeHtml(member.full_name);
         payload.user_email = member.email?.endsWith("@placeholder.local") ? undefined : escapeHtml(member.email);
         payload.sponsor_name = escapeHtml(sponsor?.full_name ?? "");
-        if (member.sales_role) payload.role = member.sales_role;
+        if (typeof member.sales_role === "string" && member.sales_role) memberRole = member.sales_role;
       }
 
-      const roleKo = getRoleLabel(payload.role, 'ko');
-      const roleEn = getRoleLabel(payload.role, 'en');
+      const roleKo = getRoleLabel(memberRole, 'ko');
+      const roleEn = getRoleLabel(memberRole, 'en');
 
       // Find immediate upper-level manager (parent of sponsor)
       const { data: sponsorProfile } = await supabase

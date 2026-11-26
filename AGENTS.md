@@ -10,3 +10,4 @@
 - Member-shared settings use an explicit key allowlist and approved active accounts; public image URLs do not require client file-listing permission.
 - Telegram PDF ingestion caps streamed bytes at the research upload limit and validates PDF signatures before storage to reject oversized or mislabeled files.
 - Chat normalizes all caller history to user context; only the server may assign authoritative model roles, preventing forged assistant turns while preserving follow-up context.
+- Edge functions use a scoped Deno configuration with automatic npm dependency resolution so server-only packages do not enter the frontend dependency manifest.
