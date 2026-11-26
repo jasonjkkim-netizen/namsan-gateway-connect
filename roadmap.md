@@ -1,5 +1,9 @@
 # Access review
 
+## Finance page removal
+- [x] Remove the finance page route and header link; preserve stored records.
+- [x] Verify finance URLs no longer open the portal and existing public pages still load.
+
 ## Landing-page brand contrast
 - [x] Improve logo and name contrast with champagne gold, keeping the original font style and exact logo lettering.
 - [x] Verify the logo loads and both screen layouts remain readable.

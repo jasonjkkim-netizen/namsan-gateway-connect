@@ -6,8 +6,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { WebmasterRoute } from "@/components/WebmasterRoute";
-import Finance from "./pages/Finance";
 import { ChatWidget } from "@/components/chat/ChatWidget";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ProductPopup } from "@/components/ProductPopup";
@@ -78,7 +76,6 @@ const App = () => (
                     <Dashboard />
                   </ProtectedRoute>
                 } />
-                <Route path="/finance/*" element={<WebmasterRoute><Finance /></WebmasterRoute>} />
                 <Route path="/products" element={
                   <ProtectedRoute>
                     <Products />
